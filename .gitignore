@@ -1,0 +1,64 @@
+# ===========================================
+# Go-WebGPU .gitignore
+# ===========================================
+
+# -------------------------------------------
+# Private Development
+# -------------------------------------------
+# Internal development documentation
+docs/dev/
+# Project index (auto-generated)
+INDEX.md
+
+# -------------------------------------------
+# AI Tools
+# -------------------------------------------
+#
+.claude/
+# GODA checkpoint system
+.goda/
+# GOCO AI tools
+.goco/
+
+# -------------------------------------------
+# IDE & Editors
+# -------------------------------------------
+# JetBrains (GoLand, IntelliJ)
+.idea/
+# Visual Studio Code
+.vscode/
+# Vim swap files
+*.swp
+*.swo
+
+# -------------------------------------------
+# Build Artifacts
+# -------------------------------------------
+# Windows executables
+*.exe
+# Windows DLLs (local copies)
+*.dll
+# Linux/macOS shared libraries (local copies)
+*.so
+*.dylib
+
+# -------------------------------------------
+# Dependencies
+# -------------------------------------------
+# wgpu-native binaries (download separately per platform)
+lib/
+
+# -------------------------------------------
+# Test Artifacts
+# -------------------------------------------
+# Coverage reports
+coverage.out
+coverage.txt
+coverage.html
+# Compiled test binaries
+*.test
+
+# -------------------------------------------
+# Temporary Files
+# -------------------------------------------
+tmp/

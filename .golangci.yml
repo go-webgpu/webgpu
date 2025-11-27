@@ -1,0 +1,119 @@
+# golangci-lint v2 configuration for go-webgpu
+# https://golangci-lint.run/docs/configuration/file/
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    # Critical
+    - govet
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unused
+    # Quality
+    - gocyclo
+    - cyclop
+    - funlen
+    # Style
+    - revive
+    # Security
+    - gosec
+
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - unsafeptr      # FFI code uses unsafe.Pointer correctly
+        - fieldalignment # FFI structs must match C layout
+
+    errcheck:
+      check-type-assertions: true
+      exclude-functions:
+        - "(*syscall.LazyProc).Call"
+
+    gocyclo:
+      min-complexity: 20
+
+    cyclop:
+      max-complexity: 20
+
+    funlen:
+      lines: 100
+      statements: 60
+
+    gosec:
+      excludes:
+        - G103  # Allow unsafe for FFI
+        - G104  # Unhandled errors (FFI calls don't return errors)
+        - G115  # Integer overflow
+
+  exclusions:
+    generated: strict
+    presets:
+      - common-false-positives
+    rules:
+      # Test files - relax all linters
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - cyclop
+          - funlen
+          - errcheck
+          - gosec
+          - staticcheck
+          - unused
+      # FFI types/enums - no comments needed for C-compatible definitions
+      - path: (types|enums)\.go
+        linters:
+          - unused
+          - revive
+      # FFI render_pipeline has C struct padding
+      - path: render_pipeline\.go
+        linters:
+          - unused
+      # wgpu.go has procs for future use and long init
+      - path: wgpu\.go
+        linters:
+          - unused
+          - funlen
+      # render_pipeline.go has long create function
+      - path: render_pipeline\.go
+        linters:
+          - funlen
+      # Exclude revive exported comments for FFI bindings
+      - linters:
+          - revive
+        text: "exported:"
+      # Exclude unused-parameter for FFI callbacks (signature must match C)
+      - linters:
+          - revive
+        text: "unused-parameter:"
+      # Exclude staticcheck SA5004 (empty default in select - needed for polling)
+      - linters:
+          - staticcheck
+        text: "SA5004:"
+    paths:
+      - vendor
+      - examples/build
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      colors: true
+  sort-order:
+    - linter
+    - file

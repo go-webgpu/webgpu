@@ -1,0 +1,164 @@
+name: Tests
+
+# Testing Strategy:
+# - Build verification on Linux, macOS, and Windows (cross-platform library)
+# - WebGPU bindings via goffi + wgpu-native
+# - Go 1.25+ required (matches go.mod requirement)
+# - Dependencies: goffi, golang.org/x/sys
+#
+# NOTE: GPU tests require wgpu-native DLL and actual GPU hardware.
+# Full GPU tests are skipped in CI - only math tests and build verification run.
+#
+# Branch Strategy (Git Flow):
+# - feature/** branches: Development work
+# - release/** branches: Pre-release testing
+# - hotfix/** branches: Critical bug fixes
+# - develop branch: Integration branch
+# - main branch: Production-ready code only
+# - Pull requests: Must pass all checks before merge
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  # Unit tests - Cross-platform
+  unit-tests:
+    name: Unit Tests - ${{ matrix.os }} - Go ${{ matrix.go-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]  # macos-latest = ARM64 (Apple Silicon)
+        go-version: ['1.25']  # Match go.mod requirement
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run go vet
+      if: matrix.os == 'ubuntu-latest'
+      run: CGO_ENABLED=0 go vet -unsafeptr=false ./wgpu/...
+
+    - name: Build library
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          CGO_ENABLED=0 go build -v ./wgpu/...
+        else
+          go build -v ./...
+        fi
+
+    - name: Build examples (Windows only)
+      if: matrix.os == 'windows-latest'
+      run: go build -v ./examples/...
+
+    - name: Run math tests (no GPU required)
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3"
+        else
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3"
+        fi
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25'
+      uses: codecov/codecov-action@v4
+      continue-on-error: true
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-unit
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      env:
+        CGO_ENABLED: 0
+      with:
+        version: latest
+        args: --timeout=5m ./wgpu/...
+
+  # Formatting check
+  formatting:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "ERROR: The following files are not formatted:"
+          gofmt -l .
+          echo ""
+          echo "Run 'go fmt ./...' to fix formatting issues."
+          exit 1
+        fi
+        echo "All files are properly formatted ✓"
+
+  # Benchmarks (informational only)
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail CI on benchmark failures
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+
+    - name: Run benchmarks
+      run: |
+        echo "=== Math Benchmarks ==="
+        CGO_ENABLED=0 go test -bench=Benchmark -benchmem ./wgpu/... -run "^$" || true
+
+        echo ""
+        echo "Note: GPU benchmarks require wgpu-native and are skipped in CI"
