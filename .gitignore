@@ -62,3 +62,5 @@ coverage.html
 # Temporary Files
 # -------------------------------------------
 tmp/
+# Ignore wgpu-native headers (download with download-wgpu-native.sh)
+include/

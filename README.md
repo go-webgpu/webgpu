@@ -1,6 +1,17 @@
 # go-webgpu
 
-Zero-CGO WebGPU bindings for Go using [goffi](https://github.com/go-webgpu/goffi) + [wgpu-native](https://github.com/gfx-rs/wgpu-native).
+> **Zero-CGO WebGPU bindings for Go — GPU-accelerated graphics and compute in pure Go**
+
+[![GitHub Release](https://img.shields.io/github/v/release/go-webgpu/webgpu?include_prereleases&style=flat-square&logo=github&color=blue)](https://github.com/go-webgpu/webgpu/releases/latest)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/go-webgpu/webgpu?style=flat-square&logo=go)](https://go.dev/dl/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-webgpu/webgpu.svg)](https://pkg.go.dev/github.com/go-webgpu/webgpu)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/go-webgpu/webgpu/test.yml?branch=main&style=flat-square&logo=github-actions&label=CI)](https://github.com/go-webgpu/webgpu/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/go-webgpu/webgpu?style=flat-square)](https://goreportcard.com/report/github.com/go-webgpu/webgpu)
+[![License](https://img.shields.io/github/license/go-webgpu/webgpu?style=flat-square)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/go-webgpu/webgpu?style=flat-square&logo=github)](https://github.com/go-webgpu/webgpu/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/go-webgpu/webgpu?style=flat-square&logo=github)](https://github.com/go-webgpu/webgpu/issues)
+
+Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgpu-native](https://github.com/gfx-rs/wgpu-native). No CGO required.
 
 ## Status
 
