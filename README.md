@@ -122,6 +122,19 @@ cd examples/triangle && go run .
 └─────────────────────────────────────────┘
 ```
 
+## Looking for Pure Go WebGPU?
+
+This project uses FFI bindings to wgpu-native. If you're looking for a **100% Pure Go** WebGPU implementation (no native dependencies), check out:
+
+👉 **[github.com/gogpu](https://github.com/gogpu)** — Pure Go GPU ecosystem
+
+| Project | Description |
+|---------|-------------|
+| [gogpu/wgpu](https://github.com/gogpu/wgpu) | Pure Go WebGPU implementation |
+| [gogpu/naga](https://github.com/gogpu/naga) | Pure Go shader compiler (WGSL/SPIR-V) |
+| [gogpu/gogpu](https://github.com/gogpu/gogpu) | High-level GPU compute framework |
+| [gogpu/gg](https://github.com/gogpu/gg) | Pure Go graphics library |
+
 ## Dependencies
 
 - [goffi](https://github.com/go-webgpu/goffi) — Pure Go FFI for callbacks
