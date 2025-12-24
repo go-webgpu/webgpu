@@ -2,7 +2,7 @@
 
 > **Strategic Focus**: Production-grade Zero-CGO WebGPU bindings for Go
 
-**Last Updated**: 2024-11-28 | **Current Version**: v0.1.0 | **Target**: v1.0.0 stable
+**Last Updated**: 2024-12-24 | **Current Version**: v0.1.1 | **Target**: v1.0.0 stable
 
 ---
 
@@ -12,12 +12,12 @@ Build **production-ready, cross-platform WebGPU bindings** for Go with zero CGO 
 
 ### Current State vs Target
 
-| Metric | Current (v0.1.0) | Target (v1.0.0) |
+| Metric | Current (v0.1.1) | Target (v1.0.0) |
 |--------|------------------|-----------------|
 | Platforms | Windows, Linux, macOS (x64, arm64) | All major platforms |
 | CGO Required | No (Zero-CGO) | No |
 | API Coverage | ~80% WebGPU | 100% WebGPU |
-| wgpu-native | v24.0.0.2 | Latest stable |
+| wgpu-native | v24.0.3.1 | Latest stable |
 | Test Coverage | ~70% | 90%+ |
 | Examples | 11 | 20+ |
 
@@ -26,7 +26,7 @@ Build **production-ready, cross-platform WebGPU bindings** for Go with zero CGO 
 ## Release Strategy
 
 ```
-v0.1.0 (Current) -> Initial release with core features + ARM64
+v0.1.1 (Current) -> Hotfix: goffi PointerType bug + PR workflow
          |
 v0.2.0 (Next) -> API improvements, builder patterns
          |
@@ -157,7 +157,7 @@ v1.0.0 STABLE -> Production release with API stability guarantee
 
 ---
 
-## Current Examples (v0.1.0)
+## Current Examples (v0.1.x)
 
 | Example | Features Demonstrated |
 |---------|----------------------|
@@ -179,9 +179,9 @@ v1.0.0 STABLE -> Production release with API stability guarantee
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| wgpu-native | v24.0.0.2 | WebGPU implementation |
-| goffi | v0.3.1 | Pure-Go FFI (x64 + ARM64) |
-| Go | 1.21+ | Language runtime |
+| wgpu-native | v24.0.3.1 | WebGPU implementation |
+| goffi | v0.3.3 | Pure-Go FFI (x64 + ARM64) |
+| Go | 1.25+ | Language runtime |
 
 ### Upstream Tracking
 
@@ -215,8 +215,9 @@ Priority features are marked in GitHub Issues with labels:
 
 | Version | Date | Type | Key Changes |
 |---------|------|------|-------------|
+| v0.1.1 | 2024-12-24 | Hotfix | goffi v0.3.3 (PointerType fix), PR workflow |
 | v0.1.0 | 2024-11-28 | Initial | Core API, 11 examples, 5 platforms (x64 + ARM64) |
 
 ---
 
-*Current: v0.1.0 | Next: v0.2.0 (API Improvements) | Target: v1.0.0 (Q4 2025)*
+*Current: v0.1.1 | Next: v0.2.0 (API Improvements) | Target: v1.0.0 (Q4 2025)*

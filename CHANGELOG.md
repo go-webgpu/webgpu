@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2024-12-24
+
+### Changed
+
+- **goffi:** v0.3.1 → v0.3.3 (PointerType argument passing hotfix)
+- **golang.org/x/sys:** v0.38.0 → v0.39.0
+
+### Fixed
+
+- Critical bug in PointerType argument passing ([goffi#4](https://github.com/go-webgpu/goffi/issues/4))
+
+### Infrastructure
+
+- Branch protection enabled for `main`
+- All changes now require Pull Requests
+- Updated CONTRIBUTING.md with PR workflow
+
+---
+
 ## [0.1.0] - 2024-11-28
 
 ### Added
@@ -70,4 +89,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependencies
 - github.com/go-webgpu/goffi v0.3.1
-- wgpu-native v24.0.0.2
+- wgpu-native v24.0.3.1
