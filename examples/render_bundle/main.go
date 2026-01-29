@@ -48,7 +48,8 @@ var (
 	procDefWindowProcW   = user32.NewProc("DefWindowProcW")
 	procPostQuitMessage  = user32.NewProc("PostQuitMessage")
 	procLoadCursorW      = user32.NewProc("LoadCursorW")
-	procGetModuleHandleW = user32.NewProc("GetModuleHandleW")
+	kernel32             = windows.NewLazyDLL("kernel32.dll")
+	procGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
 )
 
 // WNDCLASSEXW represents the Win32 WNDCLASSEXW structure.
@@ -97,9 +98,18 @@ type App struct {
 }
 
 // Shader source (WGSL)
+// NOTE: This shader uses a fallback approach for triangle coloring.
+// Instead of @builtin(primitive_index) (which requires PRIMITIVE_INDEX GPU capability),
+// we calculate the triangle index from vertex_index and pass color via varying.
+// This works on ALL GPUs, including older hardware without primitive_index support.
 const shaderSource = `
+struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+}
+
 @vertex
-fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
+fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
     // Three triangles at different positions
     var positions = array<vec2<f32>, 9>(
         // Triangle 1 (left)
@@ -115,19 +125,28 @@ fn vs_main(@builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
         vec2<f32>(0.5, -0.3),
         vec2<f32>(0.9, -0.3)
     );
-    return vec4<f32>(positions[idx], 0.0, 1.0);
-}
 
-@fragment
-fn fs_main(@builtin(primitive_index) prim_idx: u32) -> @location(0) vec4<f32> {
-    // Different color for each triangle
+    // Colors for each triangle
     var colors = array<vec3<f32>, 3>(
         vec3<f32>(1.0, 0.2, 0.2),  // Red
         vec3<f32>(0.2, 1.0, 0.2),  // Green
         vec3<f32>(0.2, 0.2, 1.0)   // Blue
     );
-    let tri_idx = prim_idx;
-    return vec4<f32>(colors[tri_idx], 1.0);
+
+    // Calculate triangle index from vertex index (3 vertices per triangle)
+    // This is the FALLBACK for @builtin(primitive_index)
+    let tri_idx = idx / 3u;
+
+    var out: VertexOutput;
+    out.position = vec4<f32>(positions[idx], 0.0, 1.0);
+    out.color = colors[tri_idx];
+    return out;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    // Use color passed from vertex shader (works on all GPUs!)
+    return vec4<f32>(in.color, 1.0);
 }
 `
 
@@ -141,6 +160,11 @@ func main() {
 	fmt.Println("  - Reduced CPU overhead (commands recorded once)")
 	fmt.Println("  - Better driver optimization opportunities")
 	fmt.Println("  - Useful for static scene elements")
+	fmt.Println()
+	fmt.Println("Note: This example uses a FALLBACK approach for per-triangle coloring.")
+	fmt.Println("Instead of @builtin(primitive_index) (requires PRIMITIVE_INDEX capability),")
+	fmt.Println("we calculate triangle index from vertex_index in the vertex shader.")
+	fmt.Println("This works on ALL GPUs, including older hardware.")
 	fmt.Println()
 
 	app := &App{

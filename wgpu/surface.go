@@ -13,19 +13,20 @@ type surfaceDescriptor struct {
 	label       StringView // 16 bytes
 }
 
-// surfaceConfiguration is the native structure for configuring a surface.
-type surfaceConfiguration struct {
-	nextInChain     uintptr                     // 8 bytes
-	device          uintptr                     // 8 bytes (WGPUDevice handle)
-	format          gputypes.TextureFormat      // 4 bytes
-	_pad1           [4]byte                     // 4 bytes padding
-	usage           gputypes.TextureUsage       // 8 bytes (uint64)
-	width           uint32                      // 4 bytes
-	height          uint32                      // 4 bytes
-	viewFormatCount uintptr                     // 8 bytes (size_t)
-	viewFormats     uintptr                     // 8 bytes (pointer)
-	alphaMode       gputypes.CompositeAlphaMode // 4 bytes
-	presentMode     gputypes.PresentMode        // 4 bytes
+// surfaceConfigurationWire is the FFI-compatible structure for configuring a surface.
+// Uses uint32 for format (converted from gputypes) and uint64 for usage.
+type surfaceConfigurationWire struct {
+	nextInChain     uintptr // 8 bytes
+	device          uintptr // 8 bytes (WGPUDevice handle)
+	format          uint32  // 4 bytes (converted from gputypes.TextureFormat)
+	_pad1           [4]byte // 4 bytes padding
+	usage           uint64  // 8 bytes (TextureUsage as uint64)
+	width           uint32  // 4 bytes
+	height          uint32  // 4 bytes
+	viewFormatCount uintptr // 8 bytes (size_t)
+	viewFormats     uintptr // 8 bytes (pointer)
+	alphaMode       uint32  // 4 bytes (CompositeAlphaMode)
+	presentMode     uint32  // 4 bytes (PresentMode)
 }
 
 // surfaceTexture is the native structure returned by GetCurrentTexture.
@@ -64,20 +65,21 @@ var (
 
 // Configure configures the surface for rendering.
 // This replaces the deprecated SwapChain API.
+// Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (s *Surface) Configure(config *SurfaceConfiguration) {
 	mustInit()
 
-	nativeConfig := surfaceConfiguration{
+	nativeConfig := surfaceConfigurationWire{
 		nextInChain:     0,
 		device:          config.Device.handle,
-		format:          config.Format,
-		usage:           config.Usage,
+		format:          toWGPUTextureFormat(config.Format),
+		usage:           uint64(config.Usage),
 		width:           config.Width,
 		height:          config.Height,
 		viewFormatCount: 0,
 		viewFormats:     0,
-		alphaMode:       config.AlphaMode,
-		presentMode:     config.PresentMode,
+		alphaMode:       uint32(config.AlphaMode),
+		presentMode:     uint32(config.PresentMode),
 	}
 
 	procSurfaceConfigure.Call( //nolint:errcheck

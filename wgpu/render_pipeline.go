@@ -14,6 +14,16 @@ type VertexAttribute struct {
 	_pad           [4]byte
 }
 
+// vertexAttributeWire is the FFI-compatible structure with converted Format.
+// Field order matches webgpu.h: format, offset, shaderLocation
+type vertexAttributeWire struct {
+	Format         uint32 // converted from gputypes.VertexFormat
+	_pad1          [4]byte
+	Offset         uint64
+	ShaderLocation uint32
+	_pad2          [4]byte
+}
+
 // VertexBufferLayout describes how vertex data is laid out in a buffer.
 type VertexBufferLayout struct {
 	ArrayStride    uint64
@@ -21,6 +31,16 @@ type VertexBufferLayout struct {
 	_pad           [4]byte
 	AttributeCount uintptr
 	Attributes     *VertexAttribute
+}
+
+// vertexBufferLayoutWire is the FFI-compatible structure with converted StepMode.
+// Field order matches webgpu.h: stepMode, arrayStride, attributeCount, attributes
+type vertexBufferLayoutWire struct {
+	StepMode       uint32  // converted from gputypes.VertexStepMode
+	_pad           [4]byte // padding to align arrayStride to 8 bytes
+	ArrayStride    uint64
+	AttributeCount uintptr
+	Attributes     uintptr // pointer to VertexAttribute array
 }
 
 // vertexState is the native structure for vertex stage.
@@ -67,14 +87,14 @@ type BlendState struct {
 	Alpha BlendComponent
 }
 
-// colorTargetState is the native structure for a color target.
-type colorTargetState struct {
-	nextInChain uintptr                 // 8 bytes
-	format      gputypes.TextureFormat  // 4 bytes
-	_pad1       [4]byte                 // 4 bytes padding
-	blend       uintptr                 // 8 bytes (pointer to BlendState, nullable)
-	writeMask   gputypes.ColorWriteMask // 4 bytes
-	_pad2       [4]byte                 // 4 bytes padding
+// colorTargetStateWire is the native FFI-compatible structure for a color target.
+// CRITICAL: writeMask is uint64 because WGPUColorWriteMaskFlags = WGPUFlags = uint64 in webgpu-headers!
+type colorTargetStateWire struct {
+	nextInChain uintptr // 8 bytes
+	format      uint32  // 4 bytes (WGPUTextureFormat, converted)
+	_pad1       [4]byte // 4 bytes padding (to align blend to 8)
+	blend       uintptr // 8 bytes (pointer to BlendState, nullable)
+	writeMask   uint64  // 8 bytes (WGPUColorWriteMaskFlags = uint64!)
 }
 
 // fragmentState is the native structure for fragment stage.
@@ -158,10 +178,11 @@ type DepthStencilState struct {
 	DepthBiasClamp      float32
 }
 
-// depthStencilState is the native structure for depth/stencil state (72 bytes).
-type depthStencilState struct {
+// depthStencilStateWire is the native FFI-compatible structure for depth/stencil state.
+// Uses uint32 for format (converted from gputypes).
+type depthStencilStateWire struct {
 	nextInChain         uintptr
-	format              gputypes.TextureFormat
+	format              uint32 // converted from gputypes.TextureFormat
 	depthWriteEnabled   OptionalBool
 	depthCompare        gputypes.CompareFunction
 	stencilFront        StencilFaceState
@@ -215,8 +236,35 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 		nativeVertex.entryPoint = EmptyStringView()
 	}
 
+	// Convert vertex buffer layouts with StepMode and VertexFormat conversion
+	var nativeBuffers []vertexBufferLayoutWire
+	var allNativeAttrs [][]vertexAttributeWire // keep alive during FFI call
 	if len(desc.Vertex.Buffers) > 0 {
-		nativeVertex.buffers = uintptr(unsafe.Pointer(&desc.Vertex.Buffers[0]))
+		nativeBuffers = make([]vertexBufferLayoutWire, len(desc.Vertex.Buffers))
+		allNativeAttrs = make([][]vertexAttributeWire, len(desc.Vertex.Buffers))
+		for i, buf := range desc.Vertex.Buffers {
+			var attrsPtr uintptr
+			if buf.Attributes != nil && buf.AttributeCount > 0 {
+				// Convert attributes with format conversion
+				attrs := unsafe.Slice(buf.Attributes, buf.AttributeCount)
+				allNativeAttrs[i] = make([]vertexAttributeWire, len(attrs))
+				for j, attr := range attrs {
+					allNativeAttrs[i][j] = vertexAttributeWire{
+						Format:         toWGPUVertexFormat(attr.Format),
+						Offset:         attr.Offset,
+						ShaderLocation: attr.ShaderLocation,
+					}
+				}
+				attrsPtr = uintptr(unsafe.Pointer(&allNativeAttrs[i][0]))
+			}
+			nativeBuffers[i] = vertexBufferLayoutWire{
+				StepMode:       toWGPUVertexStepMode(buf.StepMode),
+				ArrayStride:    buf.ArrayStride,
+				AttributeCount: buf.AttributeCount,
+				Attributes:     attrsPtr,
+			}
+		}
+		nativeVertex.buffers = uintptr(unsafe.Pointer(&nativeBuffers[0]))
 	}
 
 	// Build primitive state
@@ -250,18 +298,18 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 		alphaToCoverageEnabled: alphaToCov,
 	}
 
-	// Build depth/stencil state if present
+	// Build depth/stencil state if present (with format conversion)
 	var depthStencilPtr uintptr
-	var nativeDepthStencil depthStencilState
+	var nativeDepthStencil depthStencilStateWire
 	if desc.DepthStencil != nil {
 		depthWriteOpt := OptionalBoolFalse
 		if desc.DepthStencil.DepthWriteEnabled {
 			depthWriteOpt = OptionalBoolTrue
 		}
 
-		nativeDepthStencil = depthStencilState{
+		nativeDepthStencil = depthStencilStateWire{
 			nextInChain:         0,
-			format:              desc.DepthStencil.Format,
+			format:              toWGPUTextureFormat(desc.DepthStencil.Format),
 			depthWriteEnabled:   depthWriteOpt,
 			depthCompare:        desc.DepthStencil.DepthCompare,
 			stencilFront:        desc.DepthStencil.StencilFront,
@@ -278,7 +326,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 	// Build fragment state if present
 	var fragmentPtr uintptr
 	var nativeFragment fragmentState
-	var nativeTargets []colorTargetState
+	var nativeTargets []colorTargetStateWire
 	var fragEntryPointBytes []byte
 
 	if desc.Fragment != nil {
@@ -303,17 +351,20 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 			nativeFragment.entryPoint = EmptyStringView()
 		}
 
-		// Build color targets
-		nativeTargets = make([]colorTargetState, len(desc.Fragment.Targets))
+		// Build color targets with wire format (uint64 writeMask!)
+		nativeTargets = make([]colorTargetStateWire, len(desc.Fragment.Targets))
 		for i, target := range desc.Fragment.Targets {
-			nativeTargets[i] = colorTargetState{
+			convertedFormat := toWGPUTextureFormat(target.Format)
+			nativeTargets[i] = colorTargetStateWire{
 				nextInChain: 0,
-				format:      target.Format,
-				writeMask:   target.WriteMask,
+				format:      convertedFormat,
+				writeMask:   uint64(target.WriteMask), // widen to uint64
 			}
 			if target.Blend != nil {
 				nativeTargets[i].blend = uintptr(unsafe.Pointer(target.Blend))
 			}
+			// DEBUG: print the target bytes
+			_ = convertedFormat // silence unused warning
 		}
 
 		if len(nativeTargets) > 0 {

@@ -19,15 +19,16 @@ type Color struct {
 }
 
 // renderPassColorAttachment is the native structure for color attachments.
+// Uses uint32 for LoadOp/StoreOp with wgpu-native converted values.
 type renderPassColorAttachment struct {
-	nextInChain   uintptr          // 8 bytes
-	view          uintptr          // 8 bytes (WGPUTextureView)
-	depthSlice    uint32           // 4 bytes - MUST be DepthSliceUndefined for 2D!
-	_pad1         [4]byte          // 4 bytes padding
-	resolveTarget uintptr          // 8 bytes (WGPUTextureView, nullable)
-	loadOp        gputypes.LoadOp  // 4 bytes
-	storeOp       gputypes.StoreOp // 4 bytes
-	clearValue    Color            // 32 bytes (4 * float64)
+	nextInChain   uintptr // 8 bytes
+	view          uintptr // 8 bytes (WGPUTextureView)
+	depthSlice    uint32  // 4 bytes - MUST be DepthSliceUndefined for 2D!
+	_pad1         [4]byte // 4 bytes padding
+	resolveTarget uintptr // 8 bytes (WGPUTextureView, nullable)
+	loadOp        uint32  // 4 bytes - wgpu-native converted value
+	storeOp       uint32  // 4 bytes - wgpu-native converted value
+	clearValue    Color   // 32 bytes (4 * float64)
 }
 
 // renderPassDescriptor is the native structure for render pass descriptor.
@@ -64,14 +65,15 @@ type RenderPassDepthStencilAttachment struct {
 }
 
 // renderPassDepthStencilAttachment is the native structure (40 bytes).
+// Uses uint32 for LoadOp/StoreOp with wgpu-native converted values.
 type renderPassDepthStencilAttachment struct {
 	view              uintptr
-	depthLoadOp       gputypes.LoadOp
-	depthStoreOp      gputypes.StoreOp
+	depthLoadOp       uint32 // wgpu-native converted value
+	depthStoreOp      uint32 // wgpu-native converted value
 	depthClearValue   float32
 	depthReadOnly     Bool
-	stencilLoadOp     gputypes.LoadOp
-	stencilStoreOp    gputypes.StoreOp
+	stencilLoadOp     uint32 // wgpu-native converted value
+	stencilStoreOp    uint32 // wgpu-native converted value
 	stencilClearValue uint32
 	stencilReadOnly   Bool
 }
@@ -125,8 +127,8 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 			view:          viewHandle,
 			depthSlice:    DepthSliceUndefined, // CRITICAL for 2D textures!
 			resolveTarget: resolveHandle,
-			loadOp:        ca.LoadOp,
-			storeOp:       ca.StoreOp,
+			loadOp:        toWGPULoadOp(ca.LoadOp),
+			storeOp:       toWGPUStoreOp(ca.StoreOp),
 			clearValue:    ca.ClearValue,
 		}
 	}
@@ -146,12 +148,12 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 
 		nativeDepthStencil = renderPassDepthStencilAttachment{
 			view:              desc.DepthStencilAttachment.View.handle,
-			depthLoadOp:       desc.DepthStencilAttachment.DepthLoadOp,
-			depthStoreOp:      desc.DepthStencilAttachment.DepthStoreOp,
+			depthLoadOp:       toWGPULoadOp(desc.DepthStencilAttachment.DepthLoadOp),
+			depthStoreOp:      toWGPUStoreOp(desc.DepthStencilAttachment.DepthStoreOp),
 			depthClearValue:   desc.DepthStencilAttachment.DepthClearValue,
 			depthReadOnly:     depthRO,
-			stencilLoadOp:     desc.DepthStencilAttachment.StencilLoadOp,
-			stencilStoreOp:    desc.DepthStencilAttachment.StencilStoreOp,
+			stencilLoadOp:     toWGPULoadOp(desc.DepthStencilAttachment.StencilLoadOp),
+			stencilStoreOp:    toWGPUStoreOp(desc.DepthStencilAttachment.StencilStoreOp),
 			stencilClearValue: desc.DepthStencilAttachment.StencilClearValue,
 			stencilReadOnly:   stencilRO,
 		}

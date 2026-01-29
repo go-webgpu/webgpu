@@ -47,7 +47,8 @@ var (
 	procDefWindowProcW   = user32.NewProc("DefWindowProcW")
 	procPostQuitMessage  = user32.NewProc("PostQuitMessage")
 	procLoadCursorW      = user32.NewProc("LoadCursorW")
-	procGetModuleHandleW = user32.NewProc("GetModuleHandleW")
+	kernel32             = windows.NewLazyDLL("kernel32.dll")
+	procGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
 )
 
 // WNDCLASSEXW represents the Win32 WNDCLASSEXW structure.
