@@ -38,7 +38,7 @@ Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgp
 ## Requirements
 
 - Go 1.25+
-- wgpu-native v24.0.3.1 ([download](https://github.com/gfx-rs/wgpu-native/releases))
+- wgpu-native v27.0.4.0 ([download](https://github.com/gfx-rs/wgpu-native/releases))
 
 ## Installation
 

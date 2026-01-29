@@ -19,11 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Integration with [gogpu ecosystem](https://github.com/gogpu) via gputypes
 - Full webgpu.h spec compliance for enum values
+- Comprehensive conversion layer (`wgpu/convert.go`) for wgpu-native v27 compatibility
+  - TextureFormat (~45 formats), VertexFormat (~30 formats)
+  - VertexStepMode, TextureSampleType, TextureViewDimension, StorageTextureAccess
+  - Wire structs with correct FFI padding (uint64 flags)
 
 ### Fixed
 
 - TextureFormat enum values mismatch (BGRA8Unorm was 0x17, now correct 0x1B)
 - Compatibility with gogpu Rust backend
+- Struct padding in BindGroupLayout wire structs (sampler, texture, storage)
+- PipelineLayout creation in examples (use CreatePipelineLayoutSimple)
+- GetModuleHandleW: kernel32.dll instead of user32.dll (all Windows examples)
+- Sampler MaxAnisotropy default (wgpu-native requires >= 1)
+- Texture SampleCount/MipLevelCount defaults (wgpu-native requires >= 1)
+- render_bundle shader: fallback without primitive_index (works on all GPUs)
 
 ### Migration Guide
 
