@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 const computeShaderDouble = `
@@ -37,9 +39,9 @@ func TestCreatePipelineLayout(t *testing.T) {
 	layoutEntries := []BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeStorage,
+				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},
@@ -180,9 +182,9 @@ func TestCreateComputePipelineWithExplicitLayout(t *testing.T) {
 	layoutEntries := []BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeStorage,
+				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},

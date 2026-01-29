@@ -3,6 +3,8 @@ package wgpu
 import (
 	"testing"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestCreateRenderBundleEncoder(t *testing.T) {
@@ -25,8 +27,8 @@ func TestCreateRenderBundleEncoder(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating render bundle encoder...")
-	colorFormats := []TextureFormat{TextureFormatBGRA8Unorm}
-	encoder := device.CreateRenderBundleEncoderSimple(colorFormats, TextureFormatUndefined, 1)
+	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	encoder := device.CreateRenderBundleEncoderSimple(colorFormats, gputypes.TextureFormatUndefined, 1)
 	if encoder == nil {
 		t.Fatal("CreateRenderBundleEncoderSimple returned nil")
 	}
@@ -58,8 +60,8 @@ func TestRenderBundleEncoderFinish(t *testing.T) {
 	}
 	defer device.Release()
 
-	colorFormats := []TextureFormat{TextureFormatBGRA8Unorm}
-	encoder := device.CreateRenderBundleEncoderSimple(colorFormats, TextureFormatUndefined, 1)
+	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	encoder := device.CreateRenderBundleEncoderSimple(colorFormats, gputypes.TextureFormatUndefined, 1)
 	if encoder == nil {
 		t.Fatal("CreateRenderBundleEncoderSimple returned nil")
 	}
@@ -125,7 +127,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		t.Fatal("CreateRenderPipelineSimple returned nil")
@@ -133,8 +135,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 	defer pipeline.Release()
 
 	// Create render bundle encoder
-	colorFormats := []TextureFormat{TextureFormatBGRA8Unorm}
-	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, TextureFormatUndefined, 1)
+	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, gputypes.TextureFormatUndefined, 1)
 	if bundleEncoder == nil {
 		t.Fatal("CreateRenderBundleEncoderSimple returned nil")
 	}
@@ -179,7 +181,7 @@ func TestRenderBundleWithVertexBuffer(t *testing.T) {
 	}
 	bufferSize := uint64(len(vertices) * 4)
 	vertexBuffer := device.CreateBuffer(&BufferDescriptor{
-		Usage:            BufferUsageVertex | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
@@ -222,7 +224,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		t.Fatal("CreateRenderPipelineSimple returned nil")
@@ -230,8 +232,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 	defer pipeline.Release()
 
 	// Create render bundle with vertex buffer
-	colorFormats := []TextureFormat{TextureFormatBGRA8Unorm}
-	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, TextureFormatUndefined, 1)
+	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, gputypes.TextureFormatUndefined, 1)
 	if bundleEncoder == nil {
 		t.Fatal("CreateRenderBundleEncoderSimple returned nil")
 	}

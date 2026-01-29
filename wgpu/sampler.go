@@ -1,20 +1,24 @@
 package wgpu
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/gogpu/gputypes"
+)
 
 // SamplerDescriptor describes a sampler to create.
 type SamplerDescriptor struct {
 	NextInChain   uintptr
 	Label         StringView
-	AddressModeU  AddressMode
-	AddressModeV  AddressMode
-	AddressModeW  AddressMode
-	MagFilter     FilterMode
-	MinFilter     FilterMode
-	MipmapFilter  MipmapFilterMode
+	AddressModeU  gputypes.AddressMode
+	AddressModeV  gputypes.AddressMode
+	AddressModeW  gputypes.AddressMode
+	MagFilter     gputypes.FilterMode
+	MinFilter     gputypes.FilterMode
+	MipmapFilter  gputypes.MipmapFilterMode
 	LodMinClamp   float32
 	LodMaxClamp   float32
-	Compare       CompareFunction
+	Compare       gputypes.CompareFunction
 	MaxAnisotropy uint16
 	_pad          [2]byte
 }
@@ -39,12 +43,12 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
 func (d *Device) CreateLinearSampler() *Sampler {
 	desc := SamplerDescriptor{
 		Label:        EmptyStringView(),
-		AddressModeU: AddressModeClampToEdge,
-		AddressModeV: AddressModeClampToEdge,
-		AddressModeW: AddressModeClampToEdge,
-		MagFilter:    FilterModeLinear,
-		MinFilter:    FilterModeLinear,
-		MipmapFilter: MipmapFilterModeLinear,
+		AddressModeU: gputypes.AddressModeClampToEdge,
+		AddressModeV: gputypes.AddressModeClampToEdge,
+		AddressModeW: gputypes.AddressModeClampToEdge,
+		MagFilter:    gputypes.FilterModeLinear,
+		MinFilter:    gputypes.FilterModeLinear,
+		MipmapFilter: gputypes.MipmapFilterModeLinear,
 		LodMinClamp:  0.0,
 		LodMaxClamp:  32.0,
 	}
@@ -55,12 +59,12 @@ func (d *Device) CreateLinearSampler() *Sampler {
 func (d *Device) CreateNearestSampler() *Sampler {
 	desc := SamplerDescriptor{
 		Label:        EmptyStringView(),
-		AddressModeU: AddressModeClampToEdge,
-		AddressModeV: AddressModeClampToEdge,
-		AddressModeW: AddressModeClampToEdge,
-		MagFilter:    FilterModeNearest,
-		MinFilter:    FilterModeNearest,
-		MipmapFilter: MipmapFilterModeNearest,
+		AddressModeU: gputypes.AddressModeClampToEdge,
+		AddressModeV: gputypes.AddressModeClampToEdge,
+		AddressModeW: gputypes.AddressModeClampToEdge,
+		MagFilter:    gputypes.FilterModeNearest,
+		MinFilter:    gputypes.FilterModeNearest,
+		MipmapFilter: gputypes.MipmapFilterModeNearest,
 		LodMinClamp:  0.0,
 		LodMaxClamp:  1.0,
 	}

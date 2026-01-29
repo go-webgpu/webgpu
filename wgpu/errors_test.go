@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 // TestErrorScopeEmptyStack tests popping an error scope when stack is empty.
@@ -88,7 +90,7 @@ func TestErrorScopeValidation(t *testing.T) {
 	desc := BufferDescriptor{
 		NextInChain:      0,
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst | BufferUsageMapRead,
+		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             0, // Invalid: size must be > 0
 		MappedAtCreation: False,
 	}

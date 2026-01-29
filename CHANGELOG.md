@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-01-29
+
+### Changed
+
+- **BREAKING:** All WebGPU types now use `github.com/gogpu/gputypes` directly
+  - `TextureFormat`, `BufferUsage`, `ShaderStage`, etc. are now from gputypes
+  - Enum values now match webgpu.h specification (fixes compatibility issues)
+  - Example: `wgpu.TextureFormatBGRA8Unorm` → `gputypes.TextureFormatBGRA8Unorm`
+- **goffi:** v0.3.7 (ARM64 Darwin improvements)
+
+### Added
+
+- Integration with [gogpu ecosystem](https://github.com/gogpu) via gputypes
+- Full webgpu.h spec compliance for enum values
+
+### Fixed
+
+- TextureFormat enum values mismatch (BGRA8Unorm was 0x17, now correct 0x1B)
+- Compatibility with gogpu Rust backend
+
+### Migration Guide
+
+Update imports in your code:
+```go
+import (
+    "github.com/go-webgpu/webgpu/wgpu"
+    "github.com/gogpu/gputypes"  // NEW
+)
+
+// Before:
+config.Format = wgpu.TextureFormatBGRA8Unorm
+
+// After:
+config.Format = gputypes.TextureFormatBGRA8Unorm
+```
+
+---
+
 ## [0.1.1] - 2024-12-24
 
 ### Changed

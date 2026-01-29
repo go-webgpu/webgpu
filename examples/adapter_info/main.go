@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 
 	// Request adapter (GPU)
 	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{
-		PowerPreference: wgpu.PowerPreferenceHighPerformance,
+		PowerPreference: gputypes.PowerPreferenceHighPerformance,
 	})
 	if err != nil {
 		log.Fatalf("Failed to request adapter: %v", err)

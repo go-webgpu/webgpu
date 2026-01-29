@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 // TestCommandEncoderClearBuffer tests buffer clearing functionality.
@@ -27,7 +29,7 @@ func TestCommandEncoderClearBuffer(t *testing.T) {
 	// Create a buffer
 	bufferDesc := BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst | BufferUsageCopySrc,
+		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageCopySrc,
 		Size:             256,
 		MappedAtCreation: False,
 	}
@@ -146,13 +148,13 @@ func TestTextureQueryAPIs(t *testing.T) {
 	// Create a texture
 	textureDesc := TextureDescriptor{
 		Label: EmptyStringView(),
-		Usage: TextureUsageTextureBinding | TextureUsageCopyDst,
-		Size: Extent3D{
+		Usage: gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
+		Size: gputypes.Extent3D{
 			Width:              512,
 			Height:             256,
 			DepthOrArrayLayers: 4,
 		},
-		Format:        TextureFormatRGBA8Unorm,
+		Format:        gputypes.TextureFormatRGBA8Unorm,
 		MipLevelCount: 3,
 		SampleCount:   1,
 	}
@@ -184,7 +186,7 @@ func TestTextureQueryAPIs(t *testing.T) {
 	}
 
 	format := texture.GetFormat()
-	if format != TextureFormatRGBA8Unorm {
+	if format != gputypes.TextureFormatRGBA8Unorm {
 		t.Errorf("Expected format RGBA8Unorm, got %d", format)
 	}
 }
@@ -210,7 +212,7 @@ func TestTextureQueryAPIsNil(t *testing.T) {
 		t.Errorf("Expected mip levels 0 for nil texture, got %d", mips)
 	}
 
-	if format := texture.GetFormat(); format != TextureFormatUndefined {
+	if format := texture.GetFormat(); format != gputypes.TextureFormatUndefined {
 		t.Errorf("Expected format Undefined for nil texture, got %d", format)
 	}
 }

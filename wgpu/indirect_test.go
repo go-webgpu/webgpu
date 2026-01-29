@@ -3,6 +3,8 @@ package wgpu
 import (
 	"testing"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestDispatchWorkgroupsIndirect(t *testing.T) {
@@ -60,7 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	bufferSize := uint64(numElements * 4)
 
 	storageBuffer := device.CreateBuffer(&BufferDescriptor{
-		Usage:            BufferUsageStorage | BufferUsageCopySrc | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
@@ -85,7 +87,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	indirectSize := uint64(unsafe.Sizeof(indirectArgs))
 
 	indirectBuffer := device.CreateBuffer(&BufferDescriptor{
-		Usage:            BufferUsageIndirect | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
 		MappedAtCreation: True,
 	})
@@ -225,7 +227,7 @@ func TestRenderBundleDrawIndirect(t *testing.T) {
 	indirectSize := uint64(unsafe.Sizeof(indirectArgs))
 
 	indirectBuffer := device.CreateBuffer(&BufferDescriptor{
-		Usage:            BufferUsageIndirect | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
 		MappedAtCreation: True,
 	})
@@ -267,7 +269,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		t.Fatal("CreateRenderPipelineSimple returned nil")
@@ -275,8 +277,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 	defer pipeline.Release()
 
 	// Create render bundle with indirect draw
-	colorFormats := []TextureFormat{TextureFormatBGRA8Unorm}
-	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, TextureFormatUndefined, 1)
+	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	bundleEncoder := device.CreateRenderBundleEncoderSimple(colorFormats, gputypes.TextureFormatUndefined, 1)
 	if bundleEncoder == nil {
 		t.Fatal("CreateRenderBundleEncoderSimple returned nil")
 	}

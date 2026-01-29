@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -318,12 +319,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      wgpu.TextureFormatBGRA8Unorm,
-		Usage:       wgpu.TextureUsageRenderAttachment,
+		Format:      gputypes.TextureFormatBGRA8Unorm,
+		Usage:       gputypes.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
-		PresentMode: wgpu.PresentModeFifo,
+		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
+		PresentMode: gputypes.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -341,7 +342,7 @@ func (app *App) createBuffers() error {
 	// Create vertex buffer
 	app.vertexBufSize = uint64(len(vertices) * int(unsafe.Sizeof(Vertex{})))
 	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             app.vertexBufSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -375,7 +376,7 @@ func (app *App) createBuffers() error {
 
 	app.indirectBufSize = uint64(unsafe.Sizeof(indirectArgs))
 	app.indirectBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageIndirect | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             app.indirectBufSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -405,12 +406,12 @@ func (app *App) createPipeline() error {
 	// Vertex attributes
 	vertexAttributes := []wgpu.VertexAttribute{
 		{
-			Format:         wgpu.VertexFormatFloat32x2,
+			Format:         gputypes.VertexFormatFloat32x2,
 			Offset:         0,
 			ShaderLocation: 0, // position
 		},
 		{
-			Format:         wgpu.VertexFormatFloat32x3,
+			Format:         gputypes.VertexFormatFloat32x3,
 			Offset:         8, // After position (2 * 4 bytes)
 			ShaderLocation: 1, // color
 		},
@@ -418,7 +419,7 @@ func (app *App) createPipeline() error {
 
 	vertexBufferLayout := wgpu.VertexBufferLayout{
 		ArrayStride:    uint64(unsafe.Sizeof(Vertex{})),
-		StepMode:       wgpu.VertexStepModeVertex,
+		StepMode:       gputypes.VertexStepModeVertex,
 		AttributeCount: uintptr(len(vertexAttributes)),
 		Attributes:     &vertexAttributes[0],
 	}
@@ -431,9 +432,9 @@ func (app *App) createPipeline() error {
 			Buffers:    []wgpu.VertexBufferLayout{vertexBufferLayout},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  wgpu.PrimitiveTopologyTriangleList,
-			FrontFace: wgpu.FrontFaceCCW,
-			CullMode:  wgpu.CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -443,8 +444,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    wgpu.TextureFormatBGRA8Unorm,
-				WriteMask: wgpu.ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -522,8 +523,8 @@ func (app *App) render() error {
 		Label: "Indirect Draw Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    app.surfaceTexView,
-			LoadOp:  wgpu.LoadOpClear,
-			StoreOp: wgpu.StoreOpStore,
+			LoadOp:  gputypes.LoadOpClear,
+			StoreOp: gputypes.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.1,

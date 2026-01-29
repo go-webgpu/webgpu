@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 )
 
 // Compute shader that doubles each element in the array
@@ -79,7 +80,7 @@ func main() {
 	// Create storage buffer
 	bufferSize := uint64(numElements * 4) // 4 bytes per float32
 	storageBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageStorage | wgpu.BufferUsageCopySrc | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -98,7 +99,7 @@ func main() {
 
 	// Create readback buffer for results
 	readbackBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: wgpu.False,
 	})

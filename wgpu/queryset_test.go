@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 // Note: QuerySet tests require TIMESTAMP_QUERY feature which may not be
@@ -119,7 +121,7 @@ func TestWriteTimestamp(t *testing.T) {
 
 	// Create buffer to resolve query results
 	resultBuffer := device.CreateBuffer(&BufferDescriptor{
-		Usage: BufferUsageQueryResolve | BufferUsageCopySrc,
+		Usage: gputypes.BufferUsageQueryResolve | gputypes.BufferUsageCopySrc,
 		Size:  16, // 2 timestamps * 8 bytes each
 	})
 	if resultBuffer == nil {

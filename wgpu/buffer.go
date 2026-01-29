@@ -6,23 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/goffi/ffi"
-)
-
-// BufferUsage describes how a buffer will be used.
-type BufferUsage uint64
-
-const (
-	BufferUsageNone         BufferUsage = 0x0000000000000000
-	BufferUsageMapRead      BufferUsage = 0x0000000000000001
-	BufferUsageMapWrite     BufferUsage = 0x0000000000000002
-	BufferUsageCopySrc      BufferUsage = 0x0000000000000004
-	BufferUsageCopyDst      BufferUsage = 0x0000000000000008
-	BufferUsageIndex        BufferUsage = 0x0000000000000010
-	BufferUsageVertex       BufferUsage = 0x0000000000000020
-	BufferUsageUniform      BufferUsage = 0x0000000000000040
-	BufferUsageStorage      BufferUsage = 0x0000000000000080
-	BufferUsageIndirect     BufferUsage = 0x0000000000000100
-	BufferUsageQueryResolve BufferUsage = 0x0000000000000200
+	"github.com/gogpu/gputypes"
 )
 
 // MapMode specifies the mapping mode for MapAsync.
@@ -109,11 +93,11 @@ func initMapCallback() {
 
 // BufferDescriptor describes a buffer to create.
 type BufferDescriptor struct {
-	NextInChain      uintptr     // *ChainedStruct
-	Label            StringView  // Buffer label for debugging
-	Usage            BufferUsage // How the buffer will be used
-	Size             uint64      // Size in bytes
-	MappedAtCreation Bool        // If true, buffer is mapped when created
+	NextInChain      uintptr              // *ChainedStruct
+	Label            StringView           // Buffer label for debugging
+	Usage            gputypes.BufferUsage // How the buffer will be used
+	Size             uint64               // Size in bytes
+	MappedAtCreation Bool                 // If true, buffer is mapped when created
 }
 
 // CreateBuffer creates a new GPU buffer.
@@ -274,13 +258,13 @@ func (q *Queue) WriteBufferRaw(buffer *Buffer, offset uint64, data unsafe.Pointe
 }
 
 // GetUsage returns the usage flags of this buffer.
-func (b *Buffer) GetUsage() BufferUsage {
+func (b *Buffer) GetUsage() gputypes.BufferUsage {
 	mustInit()
 	if b == nil || b.handle == 0 {
-		return BufferUsageNone
+		return gputypes.BufferUsageNone
 	}
 	usage, _, _ := procBufferGetUsage.Call(b.handle)
-	return BufferUsage(usage)
+	return gputypes.BufferUsage(usage)
 }
 
 // GetMapState returns the current mapping state of this buffer.

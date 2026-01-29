@@ -75,7 +75,7 @@
 //	    Fragment: &wgpu.FragmentState{
 //	        Module:     fsModule,
 //	        EntryPoint: "main",
-//	        Targets:    []wgpu.ColorTargetState{{Format: format, WriteMask: wgpu.ColorWriteMaskAll}},
+//	        Targets:    []wgpu.ColorTargetState{{Format: format, WriteMask: gputypes.ColorWriteMaskAll}},
 //	    },
 //	    // ... other configuration
 //	})
@@ -114,8 +114,8 @@
 // Pre-record render commands for efficient replay:
 //
 //	bundleEncoder := device.CreateRenderBundleEncoderSimple(
-//	    []wgpu.TextureFormat{surfaceFormat},
-//	    wgpu.TextureFormatUndefined,
+//	    []gputypes.TextureFormat{surfaceFormat},
+//	    gputypes.TextureFormatUndefined,
 //	    1,
 //	)
 //	bundleEncoder.SetPipeline(pipeline)

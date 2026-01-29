@@ -1,13 +1,17 @@
 package wgpu
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/gogpu/gputypes"
+)
 
 // RenderBundleEncoderDescriptor describes a render bundle encoder.
 type RenderBundleEncoderDescriptor struct {
 	Label              StringView
 	ColorFormatCount   uintptr // size_t
-	ColorFormats       *TextureFormat
-	DepthStencilFormat TextureFormat
+	ColorFormats       *gputypes.TextureFormat
+	DepthStencilFormat gputypes.TextureFormat
 	SampleCount        uint32
 	DepthReadOnly      Bool
 	StencilReadOnly    Bool
@@ -35,7 +39,7 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 		label              StringView
 		colorFormatCount   uintptr
 		colorFormats       uintptr
-		depthStencilFormat TextureFormat
+		depthStencilFormat gputypes.TextureFormat
 		sampleCount        uint32
 		depthReadOnly      Bool
 		stencilReadOnly    Bool
@@ -65,7 +69,7 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 }
 
 // CreateRenderBundleEncoderSimple creates a render bundle encoder with common settings.
-func (d *Device) CreateRenderBundleEncoderSimple(colorFormats []TextureFormat, depthFormat TextureFormat, sampleCount uint32) *RenderBundleEncoder {
+func (d *Device) CreateRenderBundleEncoderSimple(colorFormats []gputypes.TextureFormat, depthFormat gputypes.TextureFormat, sampleCount uint32) *RenderBundleEncoder {
 	desc := &RenderBundleEncoderDescriptor{
 		ColorFormatCount:   uintptr(len(colorFormats)),
 		DepthStencilFormat: depthFormat,
@@ -112,7 +116,7 @@ func (rbe *RenderBundleEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, off
 }
 
 // SetIndexBuffer sets the index buffer.
-func (rbe *RenderBundleEncoder) SetIndexBuffer(buffer *Buffer, format IndexFormat, offset, size uint64) {
+func (rbe *RenderBundleEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.IndexFormat, offset, size uint64) {
 	mustInit()
 	procRenderBundleEncoderSetIndexBuffer.Call( //nolint:errcheck
 		rbe.handle,

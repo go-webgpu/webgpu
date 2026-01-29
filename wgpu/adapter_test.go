@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestRequestAdapter(t *testing.T) {
@@ -34,7 +36,7 @@ func TestRequestAdapterWithOptions(t *testing.T) {
 
 	options := &RequestAdapterOptions{
 		FeatureLevel:    FeatureLevelCore,
-		PowerPreference: PowerPreferenceHighPerformance,
+		PowerPreference: gputypes.PowerPreferenceHighPerformance,
 	}
 
 	t.Log("Requesting high-performance adapter...")

@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestCreateTexture(t *testing.T) {
@@ -25,14 +27,14 @@ func TestCreateTexture(t *testing.T) {
 
 	t.Log("Creating 2D texture...")
 	texture := device.CreateTexture(&TextureDescriptor{
-		Usage:     TextureUsageTextureBinding | TextureUsageCopyDst,
-		Dimension: TextureDimension2D,
-		Size: Extent3D{
+		Usage:     gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
+		Dimension: gputypes.TextureDimension2D,
+		Size: gputypes.Extent3D{
 			Width:              256,
 			Height:             256,
 			DepthOrArrayLayers: 1,
 		},
-		Format:        TextureFormatRGBA8Unorm,
+		Format:        gputypes.TextureFormatRGBA8Unorm,
 		MipLevelCount: 1,
 		SampleCount:   1,
 	})
@@ -68,14 +70,14 @@ func TestCreateTextureView(t *testing.T) {
 	defer device.Release()
 
 	texture := device.CreateTexture(&TextureDescriptor{
-		Usage:     TextureUsageTextureBinding,
-		Dimension: TextureDimension2D,
-		Size: Extent3D{
+		Usage:     gputypes.TextureUsageTextureBinding,
+		Dimension: gputypes.TextureDimension2D,
+		Size: gputypes.Extent3D{
 			Width:              128,
 			Height:             128,
 			DepthOrArrayLayers: 1,
 		},
-		Format:        TextureFormatRGBA8Unorm,
+		Format:        gputypes.TextureFormatRGBA8Unorm,
 		MipLevelCount: 1,
 		SampleCount:   1,
 	})
@@ -118,7 +120,7 @@ func TestCreateDepthTexture(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating depth texture...")
-	depthTexture := device.CreateDepthTexture(800, 600, TextureFormatDepth24Plus)
+	depthTexture := device.CreateDepthTexture(800, 600, gputypes.TextureFormatDepth24Plus)
 	if depthTexture == nil {
 		t.Fatal("CreateDepthTexture returned nil")
 	}
@@ -152,12 +154,12 @@ func TestCreateSampler(t *testing.T) {
 
 	t.Log("Creating sampler...")
 	sampler := device.CreateSampler(&SamplerDescriptor{
-		AddressModeU:  AddressModeRepeat,
-		AddressModeV:  AddressModeRepeat,
-		AddressModeW:  AddressModeRepeat,
-		MagFilter:     FilterModeLinear,
-		MinFilter:     FilterModeLinear,
-		MipmapFilter:  MipmapFilterModeLinear,
+		AddressModeU:  gputypes.AddressModeRepeat,
+		AddressModeV:  gputypes.AddressModeRepeat,
+		AddressModeW:  gputypes.AddressModeRepeat,
+		MagFilter:     gputypes.FilterModeLinear,
+		MinFilter:     gputypes.FilterModeLinear,
+		MipmapFilter:  gputypes.MipmapFilterModeLinear,
 		MaxAnisotropy: 1,
 	})
 	if sampler == nil {
@@ -207,14 +209,14 @@ func TestTextureFormats(t *testing.T) {
 	// Test common texture format constants
 	formats := []struct {
 		name   string
-		format TextureFormat
+		format gputypes.TextureFormat
 	}{
-		{"RGBA8Unorm", TextureFormatRGBA8Unorm},
-		{"BGRA8Unorm", TextureFormatBGRA8Unorm},
-		{"Depth24Plus", TextureFormatDepth24Plus},
-		{"Depth32Float", TextureFormatDepth32Float},
-		{"R8Unorm", TextureFormatR8Unorm},
-		{"RG8Unorm", TextureFormatRG8Unorm},
+		{"RGBA8Unorm", gputypes.TextureFormatRGBA8Unorm},
+		{"BGRA8Unorm", gputypes.TextureFormatBGRA8Unorm},
+		{"Depth24Plus", gputypes.TextureFormatDepth24Plus},
+		{"Depth32Float", gputypes.TextureFormatDepth32Float},
+		{"R8Unorm", gputypes.TextureFormatR8Unorm},
+		{"RG8Unorm", gputypes.TextureFormatRG8Unorm},
 	}
 
 	for _, f := range formats {

@@ -3,6 +3,8 @@ package wgpu
 import (
 	"errors"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 // surfaceDescriptor is the native structure for surface creation.
@@ -13,17 +15,17 @@ type surfaceDescriptor struct {
 
 // surfaceConfiguration is the native structure for configuring a surface.
 type surfaceConfiguration struct {
-	nextInChain     uintptr            // 8 bytes
-	device          uintptr            // 8 bytes (WGPUDevice handle)
-	format          TextureFormat      // 4 bytes
-	_pad1           [4]byte            // 4 bytes padding
-	usage           TextureUsage       // 8 bytes (uint64)
-	width           uint32             // 4 bytes
-	height          uint32             // 4 bytes
-	viewFormatCount uintptr            // 8 bytes (size_t)
-	viewFormats     uintptr            // 8 bytes (pointer)
-	alphaMode       CompositeAlphaMode // 4 bytes
-	presentMode     PresentMode        // 4 bytes
+	nextInChain     uintptr                     // 8 bytes
+	device          uintptr                     // 8 bytes (WGPUDevice handle)
+	format          gputypes.TextureFormat      // 4 bytes
+	_pad1           [4]byte                     // 4 bytes padding
+	usage           gputypes.TextureUsage       // 8 bytes (uint64)
+	width           uint32                      // 4 bytes
+	height          uint32                      // 4 bytes
+	viewFormatCount uintptr                     // 8 bytes (size_t)
+	viewFormats     uintptr                     // 8 bytes (pointer)
+	alphaMode       gputypes.CompositeAlphaMode // 4 bytes
+	presentMode     gputypes.PresentMode        // 4 bytes
 }
 
 // surfaceTexture is the native structure returned by GetCurrentTexture.
@@ -37,12 +39,12 @@ type surfaceTexture struct {
 // SurfaceConfiguration describes how to configure a surface.
 type SurfaceConfiguration struct {
 	Device      *Device
-	Format      TextureFormat
-	Usage       TextureUsage
+	Format      gputypes.TextureFormat
+	Usage       gputypes.TextureUsage
 	Width       uint32
 	Height      uint32
-	AlphaMode   CompositeAlphaMode
-	PresentMode PresentMode
+	AlphaMode   gputypes.CompositeAlphaMode
+	PresentMode gputypes.PresentMode
 }
 
 // SurfaceTexture holds the result of GetCurrentTexture.

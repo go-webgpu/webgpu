@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -280,12 +281,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      wgpu.TextureFormatBGRA8Unorm,
-		Usage:       wgpu.TextureUsageRenderAttachment,
+		Format:      gputypes.TextureFormatBGRA8Unorm,
+		Usage:       gputypes.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
-		PresentMode: wgpu.PresentModeFifo,
+		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
+		PresentMode: gputypes.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -305,7 +306,7 @@ func (app *App) createPipeline() error {
 		nil, // auto layout
 		shader, "vs_main",
 		shader, "fs_main",
-		wgpu.TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		return fmt.Errorf("failed to create render pipeline")
@@ -355,8 +356,8 @@ func (app *App) renderTriangle(encoder *wgpu.CommandEncoder, view *wgpu.TextureV
 		Label: "Triangle Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  wgpu.LoadOpClear,
-			StoreOp: wgpu.StoreOpStore,
+			LoadOp:  gputypes.LoadOpClear,
+			StoreOp: gputypes.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,

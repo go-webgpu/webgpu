@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/goffi/ffi"
+	"github.com/gogpu/gputypes"
 )
 
 // StringView represents a WebGPU string view (pointer + length).
@@ -28,7 +29,7 @@ type Future struct {
 type RequestAdapterOptions struct {
 	NextInChain          uintptr // *ChainedStruct
 	FeatureLevel         FeatureLevel
-	PowerPreference      PowerPreference
+	PowerPreference      gputypes.PowerPreference
 	ForceFallbackAdapter Bool
 	CompatibilityMode    Bool
 	CompatibleSurface    uintptr // WGPUSurface

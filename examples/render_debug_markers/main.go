@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 
 	// Request adapter
 	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{
-		PowerPreference: wgpu.PowerPreferenceHighPerformance,
+		PowerPreference: gputypes.PowerPreferenceHighPerformance,
 	})
 	if err != nil {
 		log.Fatalf("Failed to request adapter: %v", err)
@@ -35,16 +36,16 @@ func main() {
 	// Create a simple texture for rendering
 	texture := device.CreateTexture(&wgpu.TextureDescriptor{
 		Label: wgpu.EmptyStringView(),
-		Size: wgpu.Extent3D{
+		Size: gputypes.Extent3D{
 			Width:              800,
 			Height:             600,
 			DepthOrArrayLayers: 1,
 		},
 		MipLevelCount: 1,
 		SampleCount:   1,
-		Dimension:     wgpu.TextureDimension2D,
-		Format:        wgpu.TextureFormatRGBA8Unorm,
-		Usage:         wgpu.TextureUsageRenderAttachment,
+		Dimension:     gputypes.TextureDimension2D,
+		Format:        gputypes.TextureFormatRGBA8Unorm,
+		Usage:         gputypes.TextureUsageRenderAttachment,
 	})
 	if texture == nil {
 		log.Fatal("Failed to create texture")
@@ -81,14 +82,14 @@ func main() {
 		ColorAttachments: []wgpu.RenderPassColorAttachment{
 			{
 				View:   view,
-				LoadOp: wgpu.LoadOpClear,
+				LoadOp: gputypes.LoadOpClear,
 				ClearValue: wgpu.Color{
 					R: 0.1,
 					G: 0.2,
 					B: 0.3,
 					A: 1.0,
 				},
-				StoreOp: wgpu.StoreOpStore,
+				StoreOp: gputypes.StoreOpStore,
 			},
 		},
 	})

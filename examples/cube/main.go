@@ -13,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -325,12 +326,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      wgpu.TextureFormatBGRA8Unorm,
-		Usage:       wgpu.TextureUsageRenderAttachment,
+		Format:      gputypes.TextureFormatBGRA8Unorm,
+		Usage:       gputypes.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
-		PresentMode: wgpu.PresentModeFifo,
+		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
+		PresentMode: gputypes.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -338,7 +339,7 @@ func (app *App) configureSurface() error {
 
 // createDepthTexture creates the depth texture and view.
 func (app *App) createDepthTexture() error {
-	app.depthTexture = app.device.CreateDepthTexture(app.width, app.height, wgpu.TextureFormatDepth24Plus)
+	app.depthTexture = app.device.CreateDepthTexture(app.width, app.height, gputypes.TextureFormatDepth24Plus)
 	if app.depthTexture == nil {
 		return fmt.Errorf("failed to create depth texture")
 	}
@@ -427,7 +428,7 @@ func (app *App) createVertexBuffer() error {
 	// Create buffer with MappedAtCreation = true for easy data upload
 	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -461,7 +462,7 @@ func (app *App) createUniformBuffer() error {
 	// Create buffer with Uniform usage and CopyDst for updates
 	app.uniformBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageUniform | gputypes.BufferUsageCopyDst,
 		Size:             uniformBufferSize,
 		MappedAtCreation: wgpu.False,
 	})
@@ -478,9 +479,9 @@ func (app *App) createBindGroupLayout() error {
 	entries := []wgpu.BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: wgpu.ShaderStageVertex,
+			Visibility: gputypes.ShaderStageVertex,
 			Buffer: wgpu.BufferBindingLayout{
-				Type:             wgpu.BufferBindingTypeUniform,
+				Type:             gputypes.BufferBindingTypeUniform,
 				HasDynamicOffset: wgpu.False,
 				MinBindingSize:   64, // mat4x4f = 64 bytes
 			},
@@ -542,13 +543,13 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         wgpu.VertexFormatFloat32x3, // position: vec3f
+			Format:         gputypes.VertexFormatFloat32x3, // position: vec3f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
-			Offset:         12,                         // 3 floats * 4 bytes = 12 bytes offset
+			Format:         gputypes.VertexFormatFloat32x3, // color: vec3f
+			Offset:         12,                             // 3 floats * 4 bytes = 12 bytes offset
 			ShaderLocation: 1,
 		},
 	}
@@ -562,31 +563,31 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    24, // 6 floats * 4 bytes = 24 bytes per vertex
-				StepMode:       wgpu.VertexStepModeVertex,
+				StepMode:       gputypes.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  wgpu.PrimitiveTopologyTriangleList,
-			FrontFace: wgpu.FrontFaceCCW,
-			CullMode:  wgpu.CullModeBack, // Enable back-face culling for cube
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeBack, // Enable back-face culling for cube
 		},
 		DepthStencil: &wgpu.DepthStencilState{
-			Format:            wgpu.TextureFormatDepth24Plus,
+			Format:            gputypes.TextureFormatDepth24Plus,
 			DepthWriteEnabled: true,
-			DepthCompare:      wgpu.CompareFunctionLess,
+			DepthCompare:      gputypes.CompareFunctionLess,
 			StencilFront: wgpu.StencilFaceState{
-				Compare:     wgpu.CompareFunctionAlways,
-				FailOp:      wgpu.StencilOperationKeep,
-				DepthFailOp: wgpu.StencilOperationKeep,
-				PassOp:      wgpu.StencilOperationKeep,
+				Compare:     gputypes.CompareFunctionAlways,
+				FailOp:      gputypes.StencilOperationKeep,
+				DepthFailOp: gputypes.StencilOperationKeep,
+				PassOp:      gputypes.StencilOperationKeep,
 			},
 			StencilBack: wgpu.StencilFaceState{
-				Compare:     wgpu.CompareFunctionAlways,
-				FailOp:      wgpu.StencilOperationKeep,
-				DepthFailOp: wgpu.StencilOperationKeep,
-				PassOp:      wgpu.StencilOperationKeep,
+				Compare:     gputypes.CompareFunctionAlways,
+				FailOp:      gputypes.StencilOperationKeep,
+				DepthFailOp: gputypes.StencilOperationKeep,
+				PassOp:      gputypes.StencilOperationKeep,
 			},
 			StencilReadMask:     0xFFFFFFFF,
 			StencilWriteMask:    0xFFFFFFFF,
@@ -602,8 +603,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    wgpu.TextureFormatBGRA8Unorm,
-				WriteMask: wgpu.ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -693,8 +694,8 @@ func (app *App) renderCube(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 		Label: "Cube Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  wgpu.LoadOpClear,
-			StoreOp: wgpu.StoreOpStore,
+			LoadOp:  gputypes.LoadOpClear,
+			StoreOp: gputypes.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,
@@ -704,12 +705,12 @@ func (app *App) renderCube(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 		}},
 		DepthStencilAttachment: &wgpu.RenderPassDepthStencilAttachment{
 			View:              app.depthTextureView,
-			DepthLoadOp:       wgpu.LoadOpClear,
-			DepthStoreOp:      wgpu.StoreOpStore,
+			DepthLoadOp:       gputypes.LoadOpClear,
+			DepthStoreOp:      gputypes.StoreOpStore,
 			DepthClearValue:   1.0,
 			DepthReadOnly:     false,
-			StencilLoadOp:     wgpu.LoadOpClear,
-			StencilStoreOp:    wgpu.StoreOpStore,
+			StencilLoadOp:     gputypes.LoadOpClear,
+			StencilStoreOp:    gputypes.StoreOpStore,
 			StencilClearValue: 0,
 			StencilReadOnly:   false,
 		},

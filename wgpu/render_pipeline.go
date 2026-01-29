@@ -1,10 +1,14 @@
 package wgpu
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/gogpu/gputypes"
+)
 
 // VertexAttribute describes a vertex attribute.
 type VertexAttribute struct {
-	Format         VertexFormat
+	Format         gputypes.VertexFormat
 	Offset         uint64
 	ShaderLocation uint32
 	_pad           [4]byte
@@ -13,7 +17,7 @@ type VertexAttribute struct {
 // VertexBufferLayout describes how vertex data is laid out in a buffer.
 type VertexBufferLayout struct {
 	ArrayStride    uint64
-	StepMode       VertexStepMode
+	StepMode       gputypes.VertexStepMode
 	_pad           [4]byte
 	AttributeCount uintptr
 	Attributes     *VertexAttribute
@@ -32,13 +36,13 @@ type vertexState struct {
 
 // primitiveState is the native structure for primitive assembly.
 type primitiveState struct {
-	nextInChain      uintptr           // 8 bytes
-	topology         PrimitiveTopology // 4 bytes
-	stripIndexFormat IndexFormat       // 4 bytes
-	frontFace        FrontFace         // 4 bytes
-	cullMode         CullMode          // 4 bytes
-	unclippedDepth   Bool              // 4 bytes
-	_pad             [4]byte           // 4 bytes padding
+	nextInChain      uintptr                    // 8 bytes
+	topology         gputypes.PrimitiveTopology // 4 bytes
+	stripIndexFormat gputypes.IndexFormat       // 4 bytes
+	frontFace        gputypes.FrontFace         // 4 bytes
+	cullMode         gputypes.CullMode          // 4 bytes
+	unclippedDepth   Bool                       // 4 bytes
+	_pad             [4]byte                    // 4 bytes padding
 }
 
 // multisampleState is the native structure for multisample state.
@@ -52,9 +56,9 @@ type multisampleState struct {
 
 // BlendComponent describes blend state for a color component.
 type BlendComponent struct {
-	Operation BlendOperation
-	SrcFactor BlendFactor
-	DstFactor BlendFactor
+	Operation gputypes.BlendOperation
+	SrcFactor gputypes.BlendFactor
+	DstFactor gputypes.BlendFactor
 }
 
 // BlendState describes how colors are blended.
@@ -65,12 +69,12 @@ type BlendState struct {
 
 // colorTargetState is the native structure for a color target.
 type colorTargetState struct {
-	nextInChain uintptr        // 8 bytes
-	format      TextureFormat  // 4 bytes
-	_pad1       [4]byte        // 4 bytes padding
-	blend       uintptr        // 8 bytes (pointer to BlendState, nullable)
-	writeMask   ColorWriteMask // 4 bytes
-	_pad2       [4]byte        // 4 bytes padding
+	nextInChain uintptr                 // 8 bytes
+	format      gputypes.TextureFormat  // 4 bytes
+	_pad1       [4]byte                 // 4 bytes padding
+	blend       uintptr                 // 8 bytes (pointer to BlendState, nullable)
+	writeMask   gputypes.ColorWriteMask // 4 bytes
+	_pad2       [4]byte                 // 4 bytes padding
 }
 
 // fragmentState is the native structure for fragment stage.
@@ -96,47 +100,11 @@ type renderPipelineDescriptor struct {
 	fragment     uintptr          // 8 bytes (nullable, pointer to fragmentState)
 }
 
-// BlendOperation describes a blend operation.
-type BlendOperation uint32
-
-const (
-	BlendOperationUndefined       BlendOperation = 0x00
-	BlendOperationAdd             BlendOperation = 0x01
-	BlendOperationSubtract        BlendOperation = 0x02
-	BlendOperationReverseSubtract BlendOperation = 0x03
-	BlendOperationMin             BlendOperation = 0x04
-	BlendOperationMax             BlendOperation = 0x05
-)
-
-// BlendFactor describes a blend factor.
-type BlendFactor uint32
-
-const (
-	BlendFactorUndefined         BlendFactor = 0x00
-	BlendFactorZero              BlendFactor = 0x01
-	BlendFactorOne               BlendFactor = 0x02
-	BlendFactorSrc               BlendFactor = 0x03
-	BlendFactorOneMinusSrc       BlendFactor = 0x04
-	BlendFactorSrcAlpha          BlendFactor = 0x05
-	BlendFactorOneMinusSrcAlpha  BlendFactor = 0x06
-	BlendFactorDst               BlendFactor = 0x07
-	BlendFactorOneMinusDst       BlendFactor = 0x08
-	BlendFactorDstAlpha          BlendFactor = 0x09
-	BlendFactorOneMinusDstAlpha  BlendFactor = 0x0A
-	BlendFactorSrcAlphaSaturated BlendFactor = 0x0B
-	BlendFactorConstant          BlendFactor = 0x0C
-	BlendFactorOneMinusConstant  BlendFactor = 0x0D
-	BlendFactorSrc1              BlendFactor = 0x0E
-	BlendFactorOneMinusSrc1      BlendFactor = 0x0F
-	BlendFactorSrc1Alpha         BlendFactor = 0x10
-	BlendFactorOneMinusSrc1Alpha BlendFactor = 0x11
-)
-
 // ColorTargetState describes a render target in a render pipeline.
 type ColorTargetState struct {
-	Format    TextureFormat
+	Format    gputypes.TextureFormat
 	Blend     *BlendState // nil for no blending
-	WriteMask ColorWriteMask
+	WriteMask gputypes.ColorWriteMask
 }
 
 // VertexState describes the vertex stage of a render pipeline.
@@ -155,10 +123,10 @@ type FragmentState struct {
 
 // PrimitiveState describes how primitives are assembled.
 type PrimitiveState struct {
-	Topology         PrimitiveTopology
-	StripIndexFormat IndexFormat
-	FrontFace        FrontFace
-	CullMode         CullMode
+	Topology         gputypes.PrimitiveTopology
+	StripIndexFormat gputypes.IndexFormat
+	FrontFace        gputypes.FrontFace
+	CullMode         gputypes.CullMode
 }
 
 // MultisampleState describes multisampling.
@@ -170,17 +138,17 @@ type MultisampleState struct {
 
 // StencilFaceState describes stencil operations for a face.
 type StencilFaceState struct {
-	Compare     CompareFunction
-	FailOp      StencilOperation
-	DepthFailOp StencilOperation
-	PassOp      StencilOperation
+	Compare     gputypes.CompareFunction
+	FailOp      gputypes.StencilOperation
+	DepthFailOp gputypes.StencilOperation
+	PassOp      gputypes.StencilOperation
 }
 
 // DepthStencilState describes depth and stencil test state (user API).
 type DepthStencilState struct {
-	Format              TextureFormat
+	Format              gputypes.TextureFormat
 	DepthWriteEnabled   bool
-	DepthCompare        CompareFunction
+	DepthCompare        gputypes.CompareFunction
 	StencilFront        StencilFaceState
 	StencilBack         StencilFaceState
 	StencilReadMask     uint32
@@ -193,9 +161,9 @@ type DepthStencilState struct {
 // depthStencilState is the native structure for depth/stencil state (72 bytes).
 type depthStencilState struct {
 	nextInChain         uintptr
-	format              TextureFormat
+	format              gputypes.TextureFormat
 	depthWriteEnabled   OptionalBool
-	depthCompare        CompareFunction
+	depthCompare        gputypes.CompareFunction
 	stencilFront        StencilFaceState
 	stencilBack         StencilFaceState
 	stencilReadMask     uint32
@@ -391,7 +359,7 @@ func (d *Device) CreateRenderPipelineSimple(
 	vertexEntryPoint string,
 	fragmentShader *ShaderModule,
 	fragmentEntryPoint string,
-	targetFormat TextureFormat,
+	targetFormat gputypes.TextureFormat,
 ) *RenderPipeline {
 	return d.CreateRenderPipeline(&RenderPipelineDescriptor{
 		Layout: layout,
@@ -400,9 +368,9 @@ func (d *Device) CreateRenderPipelineSimple(
 			EntryPoint: vertexEntryPoint,
 		},
 		Primitive: PrimitiveState{
-			Topology:  PrimitiveTopologyTriangleList,
-			FrontFace: FrontFaceCCW,
-			CullMode:  CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: MultisampleState{
 			Count: 1,
@@ -413,7 +381,7 @@ func (d *Device) CreateRenderPipelineSimple(
 			EntryPoint: fragmentEntryPoint,
 			Targets: []ColorTargetState{{
 				Format:    targetFormat,
-				WriteMask: ColorWriteMaskAll,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 	})

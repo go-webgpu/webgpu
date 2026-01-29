@@ -69,6 +69,11 @@ linters:
           - gosec
           - staticcheck
           - unused
+      # Examples - longer main functions are acceptable for demonstration code
+      - path: examples/
+        linters:
+          - funlen
+          - revive
       # FFI types/enums - no comments needed for C-compatible definitions
       - path: (types|enums)\.go
         linters:

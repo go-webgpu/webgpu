@@ -48,6 +48,21 @@ go get github.com/go-webgpu/webgpu
 
 Download wgpu-native and place `wgpu_native.dll` (Windows) or `libwgpu_native.so` (Linux) in your project directory or system PATH.
 
+## Type System
+
+This library uses [gputypes](https://github.com/gogpu/gputypes) for WebGPU type definitions, ensuring compatibility with the [gogpu ecosystem](https://github.com/gogpu) and webgpu.h specification.
+
+```go
+import (
+    "github.com/go-webgpu/webgpu/wgpu"
+    "github.com/gogpu/gputypes"
+)
+
+// Use gputypes for WebGPU enums
+config.Format = gputypes.TextureFormatBGRA8Unorm
+buffer.Usage = gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst
+```
+
 ## Quick Start
 
 ```go

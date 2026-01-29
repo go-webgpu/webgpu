@@ -1,27 +1,19 @@
 package wgpu
 
-import "unsafe"
+import (
+	"unsafe"
 
-// Extent3D defines the size of a texture.
-type Extent3D struct {
-	Width              uint32
-	Height             uint32
-	DepthOrArrayLayers uint32
-}
-
-// Origin3D defines an offset in a texture.
-type Origin3D struct {
-	X, Y, Z uint32
-}
+	"github.com/gogpu/gputypes"
+)
 
 // TextureDescriptor describes a texture to create.
 type TextureDescriptor struct {
 	NextInChain     uintptr
 	Label           StringView
-	Usage           TextureUsage
-	Dimension       TextureDimension
-	Size            Extent3D
-	Format          TextureFormat
+	Usage           gputypes.TextureUsage
+	Dimension       gputypes.TextureDimension
+	Size            gputypes.Extent3D
+	Format          gputypes.TextureFormat
 	MipLevelCount   uint32
 	SampleCount     uint32
 	ViewFormatCount uintptr
@@ -32,15 +24,15 @@ type TextureDescriptor struct {
 type TextureViewDescriptor struct {
 	NextInChain     uintptr
 	Label           StringView
-	Format          TextureFormat
-	Dimension       TextureViewDimension
+	Format          gputypes.TextureFormat
+	Dimension       gputypes.TextureViewDimension
 	BaseMipLevel    uint32
 	MipLevelCount   uint32
 	BaseArrayLayer  uint32
 	ArrayLayerCount uint32
 	Aspect          TextureAspect
 	_pad            [4]byte
-	Usage           TextureUsage
+	Usage           gputypes.TextureUsage
 }
 
 // CreateView creates a view into this texture.
@@ -123,13 +115,13 @@ func (t *Texture) GetMipLevelCount() uint32 {
 }
 
 // GetFormat returns the texture format.
-func (t *Texture) GetFormat() TextureFormat {
+func (t *Texture) GetFormat() gputypes.TextureFormat {
 	mustInit()
 	if t == nil || t.handle == 0 {
-		return TextureFormatUndefined
+		return gputypes.TextureFormatUndefined
 	}
 	result, _, _ := procTextureGetFormat.Call(t.handle)
-	return TextureFormat(result)
+	return gputypes.TextureFormat(result)
 }
 
 // Release releases the texture view reference.
@@ -163,7 +155,7 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 type TexelCopyTextureInfo struct {
 	Texture  uintptr
 	MipLevel uint32
-	Origin   Origin3D
+	Origin   gputypes.Origin3D
 	Aspect   TextureAspect
 }
 
@@ -181,7 +173,7 @@ type TexelCopyBufferInfo struct {
 }
 
 // WriteTexture writes data to a texture.
-func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *Extent3D) {
+func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) {
 	mustInit()
 	if dest == nil || layout == nil || size == nil || len(data) == 0 {
 		return

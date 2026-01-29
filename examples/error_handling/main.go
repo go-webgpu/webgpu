@@ -1,3 +1,4 @@
+// Package main demonstrates WebGPU error handling using error scopes.
 package main
 
 import (
@@ -76,19 +77,19 @@ func main() {
 	// Catch validation errors
 	device.PushErrorScope(wgpu.ErrorFilterValidation)
 	fmt.Println("Monitoring for validation errors...")
-	errType, message = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance)
 	fmt.Printf("Validation filter: errType=%v\n", errType)
 
 	// Catch out-of-memory errors
 	device.PushErrorScope(wgpu.ErrorFilterOutOfMemory)
 	fmt.Println("Monitoring for out-of-memory errors...")
-	errType, message = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance)
 	fmt.Printf("Out-of-memory filter: errType=%v\n", errType)
 
 	// Catch internal errors
 	device.PushErrorScope(wgpu.ErrorFilterInternal)
 	fmt.Println("Monitoring for internal errors...")
-	errType, message = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance)
 	fmt.Printf("Internal filter: errType=%v\n", errType)
 
 	fmt.Println("\n=== Error Handling Examples Completed ===")

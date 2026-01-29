@@ -3,6 +3,8 @@ package wgpu
 import (
 	"testing"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestCreateBuffer(t *testing.T) {
@@ -27,7 +29,7 @@ func TestCreateBuffer(t *testing.T) {
 	t.Log("Creating buffer...")
 	desc := &BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst | BufferUsageMapRead,
+		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
 		MappedAtCreation: False,
 	}
@@ -73,7 +75,7 @@ func TestBufferMappedAtCreation(t *testing.T) {
 	t.Log("Creating buffer with MappedAtCreation...")
 	desc := &BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopySrc,
+		Usage:            gputypes.BufferUsageCopySrc,
 		Size:             64,
 		MappedAtCreation: True,
 	}
@@ -130,7 +132,7 @@ func TestQueueWriteBuffer(t *testing.T) {
 	t.Log("Creating buffer for WriteBuffer test...")
 	desc := &BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
 		MappedAtCreation: False,
 	}
@@ -179,7 +181,7 @@ func TestQueueWriteBufferRaw(t *testing.T) {
 	t.Log("Creating buffer for WriteBufferRaw test...")
 	desc := &BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
 		MappedAtCreation: False,
 	}

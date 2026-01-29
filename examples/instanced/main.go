@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 )
 
 // Vertex data: position (x, y) + color (r, g, b)
@@ -130,7 +131,7 @@ func main() {
 	// Create vertex buffer (per-vertex data)
 	vertexBufferSize := uint64(len(triangleVertices)) * uint64(unsafe.Sizeof(triangleVertices[0]))
 	vertexBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -150,7 +151,7 @@ func main() {
 	// Create instance buffer (per-instance data)
 	instanceBufferSize := uint64(len(instanceData)) * uint64(unsafe.Sizeof(instanceData[0]))
 	instanceBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             instanceBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -169,14 +170,14 @@ func main() {
 
 	// Define vertex attributes for per-vertex buffer
 	vertexAttributes := []wgpu.VertexAttribute{
-		{Format: wgpu.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 0}, // position
-		{Format: wgpu.VertexFormatFloat32x3, Offset: 8, ShaderLocation: 1}, // color
+		{Format: gputypes.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 0}, // position
+		{Format: gputypes.VertexFormatFloat32x3, Offset: 8, ShaderLocation: 1}, // color
 	}
 
 	// Define vertex attributes for per-instance buffer
 	instanceAttributes := []wgpu.VertexAttribute{
-		{Format: wgpu.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 2}, // offset
-		{Format: wgpu.VertexFormatFloat32, Offset: 8, ShaderLocation: 3},   // scale
+		{Format: gputypes.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 2}, // offset
+		{Format: gputypes.VertexFormatFloat32, Offset: 8, ShaderLocation: 3},   // scale
 	}
 
 	// Create render pipeline with two vertex buffer layouts:
@@ -190,14 +191,14 @@ func main() {
 				// Per-vertex buffer (slot 0)
 				{
 					ArrayStride:    uint64(unsafe.Sizeof(Vertex{})),
-					StepMode:       wgpu.VertexStepModeVertex,
+					StepMode:       gputypes.VertexStepModeVertex,
 					AttributeCount: uintptr(len(vertexAttributes)),
 					Attributes:     &vertexAttributes[0],
 				},
 				// Per-instance buffer (slot 1)
 				{
 					ArrayStride:    uint64(unsafe.Sizeof(InstanceData{})),
-					StepMode:       wgpu.VertexStepModeInstance, // Key: advances per instance, not per vertex
+					StepMode:       gputypes.VertexStepModeInstance, // Key: advances per instance, not per vertex
 					AttributeCount: uintptr(len(instanceAttributes)),
 					Attributes:     &instanceAttributes[0],
 				},
@@ -207,13 +208,13 @@ func main() {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{
-				{Format: wgpu.TextureFormatRGBA8Unorm, WriteMask: wgpu.ColorWriteMaskAll},
+				{Format: gputypes.TextureFormatRGBA8Unorm, WriteMask: gputypes.ColorWriteMaskAll},
 			},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  wgpu.PrimitiveTopologyTriangleList,
-			FrontFace: wgpu.FrontFaceCCW,
-			CullMode:  wgpu.CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -227,9 +228,9 @@ func main() {
 
 	// Create output texture
 	outputTexture := device.CreateTexture(&wgpu.TextureDescriptor{
-		Size:   wgpu.Extent3D{Width: 256, Height: 256, DepthOrArrayLayers: 1},
-		Format: wgpu.TextureFormatRGBA8Unorm,
-		Usage:  wgpu.TextureUsageRenderAttachment | wgpu.TextureUsageCopySrc,
+		Size:   gputypes.Extent3D{Width: 256, Height: 256, DepthOrArrayLayers: 1},
+		Format: gputypes.TextureFormatRGBA8Unorm,
+		Usage:  gputypes.TextureUsageRenderAttachment | gputypes.TextureUsageCopySrc,
 	})
 	if outputTexture == nil {
 		log.Fatal("failed to create output texture")
@@ -250,8 +251,8 @@ func main() {
 		ColorAttachments: []wgpu.RenderPassColorAttachment{
 			{
 				View:       outputView,
-				LoadOp:     wgpu.LoadOpClear,
-				StoreOp:    wgpu.StoreOpStore,
+				LoadOp:     gputypes.LoadOpClear,
+				StoreOp:    gputypes.StoreOpStore,
 				ClearValue: wgpu.Color{R: 0.1, G: 0.1, B: 0.1, A: 1.0},
 			},
 		},

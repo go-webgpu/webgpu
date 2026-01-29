@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/goffi/ffi"
+	"github.com/gogpu/gputypes"
 )
 
 // RequestDeviceCallbackInfo holds callback configuration for RequestDevice.
@@ -186,15 +187,15 @@ type DeviceDescriptor struct {
 
 // CreateDepthTexture creates a depth texture with the specified dimensions and format.
 // This is a convenience function for creating depth buffers for render passes.
-func (d *Device) CreateDepthTexture(width, height uint32, format TextureFormat) *Texture {
+func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.TextureFormat) *Texture {
 	mustInit()
 
 	desc := TextureDescriptor{
 		NextInChain:     0,
 		Label:           EmptyStringView(),
-		Usage:           TextureUsageRenderAttachment,
-		Dimension:       TextureDimension2D,
-		Size:            Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
+		Usage:           gputypes.TextureUsageRenderAttachment,
+		Dimension:       gputypes.TextureDimension2D,
+		Size:            gputypes.Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
 		Format:          format,
 		MipLevelCount:   1,
 		SampleCount:     1,

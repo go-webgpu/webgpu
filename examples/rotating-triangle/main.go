@@ -13,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -323,12 +324,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      wgpu.TextureFormatBGRA8Unorm,
-		Usage:       wgpu.TextureUsageRenderAttachment,
+		Format:      gputypes.TextureFormatBGRA8Unorm,
+		Usage:       gputypes.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
-		PresentMode: wgpu.PresentModeFifo,
+		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
+		PresentMode: gputypes.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -350,7 +351,7 @@ func (app *App) createVertexBuffer() error {
 	// Create buffer with MappedAtCreation = true for easy data upload
 	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -384,7 +385,7 @@ func (app *App) createUniformBuffer() error {
 	// Create buffer with Uniform usage and CopyDst for updates
 	app.uniformBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageUniform | gputypes.BufferUsageCopyDst,
 		Size:             uniformBufferSize,
 		MappedAtCreation: wgpu.False,
 	})
@@ -401,9 +402,9 @@ func (app *App) createBindGroupLayout() error {
 	entries := []wgpu.BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: wgpu.ShaderStageVertex,
+			Visibility: gputypes.ShaderStageVertex,
 			Buffer: wgpu.BufferBindingLayout{
-				Type:             wgpu.BufferBindingTypeUniform,
+				Type:             gputypes.BufferBindingTypeUniform,
 				HasDynamicOffset: wgpu.False,
 				MinBindingSize:   64, // mat4x4f = 64 bytes
 			},
@@ -464,13 +465,13 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         wgpu.VertexFormatFloat32x2, // position: vec2f
+			Format:         gputypes.VertexFormatFloat32x2, // position: vec2f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
-			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
+			Format:         gputypes.VertexFormatFloat32x3, // color: vec3f
+			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}
@@ -484,15 +485,15 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    20, // 5 floats * 4 bytes = 20 bytes per vertex
-				StepMode:       wgpu.VertexStepModeVertex,
+				StepMode:       gputypes.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  wgpu.PrimitiveTopologyTriangleList,
-			FrontFace: wgpu.FrontFaceCCW,
-			CullMode:  wgpu.CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -502,8 +503,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    wgpu.TextureFormatBGRA8Unorm,
-				WriteMask: wgpu.ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -590,8 +591,8 @@ func (app *App) renderTriangle(encoder *wgpu.CommandEncoder, view *wgpu.TextureV
 		Label: "Rotating Triangle Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  wgpu.LoadOpClear,
-			StoreOp: wgpu.StoreOpStore,
+			LoadOp:  gputypes.LoadOpClear,
+			StoreOp: gputypes.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,

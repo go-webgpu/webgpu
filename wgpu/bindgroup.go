@@ -2,70 +2,14 @@ package wgpu
 
 import (
 	"unsafe"
-)
 
-// ShaderStage identifies which shader stages can access a binding.
-type ShaderStage uint64
-
-const (
-	ShaderStageNone     ShaderStage = 0x0000000000000000
-	ShaderStageVertex   ShaderStage = 0x0000000000000001
-	ShaderStageFragment ShaderStage = 0x0000000000000002
-	ShaderStageCompute  ShaderStage = 0x0000000000000004
-)
-
-// BufferBindingType describes how a buffer is bound.
-type BufferBindingType uint32
-
-const (
-	BufferBindingTypeBindingNotUsed  BufferBindingType = 0x00000000
-	BufferBindingTypeUndefined       BufferBindingType = 0x00000001
-	BufferBindingTypeUniform         BufferBindingType = 0x00000002
-	BufferBindingTypeStorage         BufferBindingType = 0x00000003
-	BufferBindingTypeReadOnlyStorage BufferBindingType = 0x00000004
-)
-
-// SamplerBindingType describes how a sampler is bound.
-type SamplerBindingType uint32
-
-const (
-	SamplerBindingTypeBindingNotUsed SamplerBindingType = 0x00000000
-	SamplerBindingTypeUndefined      SamplerBindingType = 0x00000001
-	SamplerBindingTypeFiltering      SamplerBindingType = 0x00000002
-	SamplerBindingTypeNonFiltering   SamplerBindingType = 0x00000003
-	SamplerBindingTypeComparison     SamplerBindingType = 0x00000004
-)
-
-// TextureSampleType describes how a texture is sampled.
-type TextureSampleType uint32
-
-const (
-	TextureSampleTypeBindingNotUsed    TextureSampleType = 0x00000000
-	TextureSampleTypeUndefined         TextureSampleType = 0x00000001
-	TextureSampleTypeFloat             TextureSampleType = 0x00000002
-	TextureSampleTypeUnfilterableFloat TextureSampleType = 0x00000003
-	TextureSampleTypeDepth             TextureSampleType = 0x00000004
-	TextureSampleTypeSint              TextureSampleType = 0x00000005
-	TextureSampleTypeUint              TextureSampleType = 0x00000006
-)
-
-// TextureViewDimension describes the dimension of a texture view.
-type TextureViewDimension uint32
-
-const (
-	TextureViewDimensionUndefined TextureViewDimension = 0x00000000
-	TextureViewDimension1D        TextureViewDimension = 0x00000001
-	TextureViewDimension2D        TextureViewDimension = 0x00000002
-	TextureViewDimension2DArray   TextureViewDimension = 0x00000003
-	TextureViewDimensionCube      TextureViewDimension = 0x00000004
-	TextureViewDimensionCubeArray TextureViewDimension = 0x00000005
-	TextureViewDimension3D        TextureViewDimension = 0x00000006
+	"github.com/gogpu/gputypes"
 )
 
 // BufferBindingLayout describes buffer binding properties.
 type BufferBindingLayout struct {
 	NextInChain      uintptr // *ChainedStruct
-	Type             BufferBindingType
+	Type             gputypes.BufferBindingType
 	HasDynamicOffset Bool
 	MinBindingSize   uint64
 }
@@ -73,80 +17,30 @@ type BufferBindingLayout struct {
 // SamplerBindingLayout describes sampler binding properties.
 type SamplerBindingLayout struct {
 	NextInChain uintptr // *ChainedStruct
-	Type        SamplerBindingType
+	Type        gputypes.SamplerBindingType
 }
 
 // TextureBindingLayout describes texture binding properties.
 type TextureBindingLayout struct {
 	NextInChain   uintptr // *ChainedStruct
-	SampleType    TextureSampleType
-	ViewDimension TextureViewDimension
+	SampleType    gputypes.TextureSampleType
+	ViewDimension gputypes.TextureViewDimension
 	Multisampled  Bool
 }
-
-// StorageTextureAccess describes storage texture access mode.
-type StorageTextureAccess uint32
-
-const (
-	StorageTextureAccessBindingNotUsed StorageTextureAccess = 0x00000000
-	StorageTextureAccessUndefined      StorageTextureAccess = 0x00000001
-	StorageTextureAccessWriteOnly      StorageTextureAccess = 0x00000002
-	StorageTextureAccessReadOnly       StorageTextureAccess = 0x00000003
-	StorageTextureAccessReadWrite      StorageTextureAccess = 0x00000004
-)
-
-// TextureFormat describes the format of texture data.
-type TextureFormat uint32
-
-const (
-	TextureFormatUndefined            TextureFormat = 0x00
-	TextureFormatR8Unorm              TextureFormat = 0x01
-	TextureFormatR8Snorm              TextureFormat = 0x02
-	TextureFormatR8Uint               TextureFormat = 0x03
-	TextureFormatR8Sint               TextureFormat = 0x04
-	TextureFormatR16Uint              TextureFormat = 0x05
-	TextureFormatR16Sint              TextureFormat = 0x06
-	TextureFormatR16Float             TextureFormat = 0x07
-	TextureFormatRG8Unorm             TextureFormat = 0x08
-	TextureFormatRG8Snorm             TextureFormat = 0x09
-	TextureFormatRG8Uint              TextureFormat = 0x0A
-	TextureFormatRG8Sint              TextureFormat = 0x0B
-	TextureFormatR32Float             TextureFormat = 0x0C
-	TextureFormatR32Uint              TextureFormat = 0x0D
-	TextureFormatR32Sint              TextureFormat = 0x0E
-	TextureFormatRG16Uint             TextureFormat = 0x0F
-	TextureFormatRG16Sint             TextureFormat = 0x10
-	TextureFormatRG16Float            TextureFormat = 0x11
-	TextureFormatRGBA8Unorm           TextureFormat = 0x12
-	TextureFormatRGBA8UnormSrgb       TextureFormat = 0x13
-	TextureFormatRGBA8Snorm           TextureFormat = 0x14
-	TextureFormatRGBA8Uint            TextureFormat = 0x15
-	TextureFormatRGBA8Sint            TextureFormat = 0x16
-	TextureFormatBGRA8Unorm           TextureFormat = 0x17
-	TextureFormatBGRA8UnormSrgb       TextureFormat = 0x18
-	TextureFormatRGBA16Float          TextureFormat = 0x21
-	TextureFormatRGBA32Float          TextureFormat = 0x23
-	TextureFormatStencil8             TextureFormat = 0x26
-	TextureFormatDepth16Unorm         TextureFormat = 0x27
-	TextureFormatDepth24Plus          TextureFormat = 0x28
-	TextureFormatDepth24PlusStencil8  TextureFormat = 0x29
-	TextureFormatDepth32Float         TextureFormat = 0x2A
-	TextureFormatDepth32FloatStencil8 TextureFormat = 0x2B
-)
 
 // StorageTextureBindingLayout describes storage texture binding properties.
 type StorageTextureBindingLayout struct {
 	NextInChain   uintptr // *ChainedStruct
-	Access        StorageTextureAccess
-	Format        TextureFormat
-	ViewDimension TextureViewDimension
+	Access        gputypes.StorageTextureAccess
+	Format        gputypes.TextureFormat
+	ViewDimension gputypes.TextureViewDimension
 }
 
 // BindGroupLayoutEntry describes a single binding in a bind group layout.
 type BindGroupLayoutEntry struct {
 	NextInChain    uintptr // *ChainedStruct
 	Binding        uint32
-	Visibility     ShaderStage
+	Visibility     gputypes.ShaderStage
 	Buffer         BufferBindingLayout
 	Sampler        SamplerBindingLayout
 	Texture        TextureBindingLayout

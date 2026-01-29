@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 // CommandEncoderDescriptor describes a command encoder.
@@ -130,7 +132,7 @@ func (enc *CommandEncoder) PopDebugGroup() {
 
 // CopyBufferToTexture copies data from a buffer to a texture.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, destination *TexelCopyTextureInfo, copySize *Extent3D) {
+func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if source == nil || destination == nil || copySize == nil {
 		return
@@ -145,7 +147,7 @@ func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, dest
 
 // CopyTextureToBuffer copies data from a texture to a buffer.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *Extent3D) {
+func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if source == nil || destination == nil || copySize == nil {
 		return
@@ -160,7 +162,7 @@ func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, des
 
 // CopyTextureToTexture copies data from one texture to another.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *Extent3D) {
+func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if source == nil || destination == nil || copySize == nil {
 		return

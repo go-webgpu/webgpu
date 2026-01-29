@@ -3,6 +3,8 @@ package wgpu
 import (
 	"testing"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 const computeDoubleShader = `
@@ -136,7 +138,7 @@ func TestComputePassDispatch(t *testing.T) {
 
 	buffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageStorage | BufferUsageCopySrc | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
@@ -249,7 +251,7 @@ func TestFullComputeExample(t *testing.T) {
 
 	storageBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageStorage | BufferUsageCopySrc | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
@@ -269,7 +271,7 @@ func TestFullComputeExample(t *testing.T) {
 	// Create readback buffer
 	readbackBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageMapRead | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: False,
 	})
@@ -362,7 +364,7 @@ func TestCopyBufferToBuffer(t *testing.T) {
 	// Create source buffer with data
 	srcBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopySrc | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: True,
 	})
@@ -381,7 +383,7 @@ func TestCopyBufferToBuffer(t *testing.T) {
 	// Create destination buffer
 	dstBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageCopyDst | BufferUsageMapRead,
+		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
 		MappedAtCreation: False,
 	})

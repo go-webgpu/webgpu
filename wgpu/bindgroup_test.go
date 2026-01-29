@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestCreateBindGroupLayout(t *testing.T) {
@@ -27,9 +29,9 @@ func TestCreateBindGroupLayout(t *testing.T) {
 	entries := []BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeStorage,
+				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},
@@ -69,7 +71,7 @@ func TestCreateBindGroup(t *testing.T) {
 	// Create buffer
 	bufferDesc := &BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageStorage | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: False,
 	}
@@ -83,9 +85,9 @@ func TestCreateBindGroup(t *testing.T) {
 	layoutEntries := []BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeStorage,
+				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},
@@ -136,7 +138,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 	// Create buffers
 	inputBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageStorage | BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: False,
 	})
@@ -147,7 +149,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 
 	outputBuffer := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
-		Usage:            BufferUsageStorage | BufferUsageCopySrc,
+		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc,
 		Size:             256,
 		MappedAtCreation: False,
 	})
@@ -160,17 +162,17 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 	layoutEntries := []BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeReadOnlyStorage,
+				Type:           gputypes.BufferBindingTypeReadOnlyStorage,
 				MinBindingSize: 0,
 			},
 		},
 		{
 			Binding:    1,
-			Visibility: ShaderStageCompute,
+			Visibility: gputypes.ShaderStageCompute,
 			Buffer: BufferBindingLayout{
-				Type:           BufferBindingTypeStorage,
+				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},

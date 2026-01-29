@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -319,12 +320,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      wgpu.TextureFormatBGRA8Unorm,
-		Usage:       wgpu.TextureUsageRenderAttachment,
+		Format:      gputypes.TextureFormatBGRA8Unorm,
+		Usage:       gputypes.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
-		PresentMode: wgpu.PresentModeFifo,
+		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
+		PresentMode: gputypes.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -367,14 +368,14 @@ func (app *App) createTexture() error {
 	// Create texture
 	textureDesc := wgpu.TextureDescriptor{
 		Label:     wgpu.EmptyStringView(),
-		Usage:     wgpu.TextureUsageTextureBinding | wgpu.TextureUsageCopyDst,
-		Dimension: wgpu.TextureDimension2D,
-		Size: wgpu.Extent3D{
+		Usage:     gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
+		Dimension: gputypes.TextureDimension2D,
+		Size: gputypes.Extent3D{
 			Width:              size,
 			Height:             size,
 			DepthOrArrayLayers: 1,
 		},
-		Format:        wgpu.TextureFormatRGBA8Unorm,
+		Format:        gputypes.TextureFormatRGBA8Unorm,
 		MipLevelCount: 1,
 		SampleCount:   1,
 	}
@@ -392,7 +393,7 @@ func (app *App) createTexture() error {
 	destInfo := wgpu.TexelCopyTextureInfo{
 		Texture:  app.texture.Handle(),
 		MipLevel: 0,
-		Origin:   wgpu.Origin3D{X: 0, Y: 0, Z: 0},
+		Origin:   gputypes.Origin3D{X: 0, Y: 0, Z: 0},
 		Aspect:   wgpu.TextureAspectAll,
 	}
 
@@ -402,7 +403,7 @@ func (app *App) createTexture() error {
 		RowsPerImage: size,
 	}
 
-	extent := wgpu.Extent3D{
+	extent := gputypes.Extent3D{
 		Width:              size,
 		Height:             size,
 		DepthOrArrayLayers: 1,
@@ -434,17 +435,17 @@ func (app *App) createBindGroup() error {
 	layoutEntries := []wgpu.BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: wgpu.ShaderStageFragment,
+			Visibility: gputypes.ShaderStageFragment,
 			Sampler: wgpu.SamplerBindingLayout{
-				Type: wgpu.SamplerBindingTypeFiltering,
+				Type: gputypes.SamplerBindingTypeFiltering,
 			},
 		},
 		{
 			Binding:    1,
-			Visibility: wgpu.ShaderStageFragment,
+			Visibility: gputypes.ShaderStageFragment,
 			Texture: wgpu.TextureBindingLayout{
-				SampleType:    wgpu.TextureSampleTypeFloat,
-				ViewDimension: wgpu.TextureViewDimension2D,
+				SampleType:    gputypes.TextureSampleTypeFloat,
+				ViewDimension: gputypes.TextureViewDimension2D,
 				Multisampled:  wgpu.False,
 			},
 		},
@@ -492,7 +493,7 @@ func (app *App) createBuffers() error {
 	vertexBufferSize := uint64(len(vertices) * 4)
 	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.EmptyStringView(),
-		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -515,7 +516,7 @@ func (app *App) createBuffers() error {
 	indexBufferSize := uint64(len(indices) * 2)
 	app.indexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.EmptyStringView(),
-		Usage:            wgpu.BufferUsageIndex | wgpu.BufferUsageCopyDst,
+		Usage:            gputypes.BufferUsageIndex | gputypes.BufferUsageCopyDst,
 		Size:             indexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -561,13 +562,13 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         wgpu.VertexFormatFloat32x2, // position: vec2f
+			Format:         gputypes.VertexFormatFloat32x2, // position: vec2f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         wgpu.VertexFormatFloat32x2, // uv: vec2f
-			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
+			Format:         gputypes.VertexFormatFloat32x2, // uv: vec2f
+			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}
@@ -581,15 +582,15 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    16, // 4 floats * 4 bytes = 16 bytes per vertex
-				StepMode:       wgpu.VertexStepModeVertex,
+				StepMode:       gputypes.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  wgpu.PrimitiveTopologyTriangleList,
-			FrontFace: wgpu.FrontFaceCCW,
-			CullMode:  wgpu.CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -599,8 +600,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    wgpu.TextureFormatBGRA8Unorm,
-				WriteMask: wgpu.ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -653,8 +654,8 @@ func (app *App) renderQuad(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 		Label: "Textured Quad Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  wgpu.LoadOpClear,
-			StoreOp: wgpu.StoreOpStore,
+			LoadOp:  gputypes.LoadOpClear,
+			StoreOp: gputypes.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.05,
 				G: 0.05,
@@ -670,8 +671,8 @@ func (app *App) renderQuad(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 
 	pass.SetPipeline(app.pipeline)
 	pass.SetBindGroup(0, app.bindGroup, nil)
-	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                   // 16 floats * 4 bytes
-	pass.SetIndexBuffer(app.indexBuffer, wgpu.IndexFormatUint16, 0, uint64(6*2)) // 6 indices * 2 bytes
+	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                       // 16 floats * 4 bytes
+	pass.SetIndexBuffer(app.indexBuffer, gputypes.IndexFormatUint16, 0, uint64(6*2)) // 6 indices * 2 bytes
 	pass.DrawIndexed(6, 1, 0, 0, 0)
 	pass.End()
 	return nil

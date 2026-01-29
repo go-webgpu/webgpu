@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
+	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -82,7 +83,7 @@ func runWithTimestamps(device *wgpu.Device, queue *wgpu.Queue, querySet *wgpu.Qu
 	// Create buffer to resolve query results (2 timestamps * 8 bytes each)
 	queryResultSize := uint64(16)
 	queryResultBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: wgpu.BufferUsageQueryResolve | wgpu.BufferUsageCopySrc,
+		Usage: gputypes.BufferUsageQueryResolve | gputypes.BufferUsageCopySrc,
 		Size:  queryResultSize,
 	})
 	if queryResultBuffer == nil {
@@ -92,7 +93,7 @@ func runWithTimestamps(device *wgpu.Device, queue *wgpu.Queue, querySet *wgpu.Qu
 
 	// Create staging buffer for CPU read
 	stagingBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
+		Usage: gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:  queryResultSize,
 	})
 	if stagingBuffer == nil {
@@ -133,7 +134,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	bufferSize := uint64(numElements * 4)
 
 	dataBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: wgpu.BufferUsageStorage,
+		Usage: gputypes.BufferUsageStorage,
 		Size:  bufferSize,
 	})
 	if dataBuffer == nil {
@@ -264,7 +265,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	bufferSize := uint64(numElements * 4)
 
 	buffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: wgpu.BufferUsageStorage,
+		Usage: gputypes.BufferUsageStorage,
 		Size:  bufferSize,
 	})
 	if buffer == nil {

@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"testing"
+
+	"github.com/gogpu/gputypes"
 )
 
 func TestCreateRenderPipelineSimple(t *testing.T) {
@@ -50,7 +52,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		t.Fatal("CreateRenderPipelineSimple returned nil")
@@ -115,14 +117,14 @@ fn fs_main() -> @location(0) vec4<f32> {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []ColorTargetState{{
-				Format:    TextureFormatBGRA8Unorm,
-				WriteMask: ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 		Primitive: PrimitiveState{
-			Topology:  PrimitiveTopologyTriangleList,
-			FrontFace: FrontFaceCCW,
-			CullMode:  CullModeNone,
+			Topology:  gputypes.PrimitiveTopologyTriangleList,
+			FrontFace: gputypes.FrontFaceCCW,
+			CullMode:  gputypes.CullModeNone,
 		},
 		Multisample: MultisampleState{
 			Count: 1,
@@ -189,7 +191,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		TextureFormatBGRA8Unorm,
+		gputypes.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		t.Fatal("CreateRenderPipelineSimple returned nil")
@@ -261,17 +263,17 @@ fn fs_main() -> @location(0) vec4<f32> {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []ColorTargetState{{
-				Format:    TextureFormatBGRA8Unorm,
-				WriteMask: ColorWriteMaskAll,
+				Format:    gputypes.TextureFormatBGRA8Unorm,
+				WriteMask: gputypes.ColorWriteMaskAll,
 			}},
 		},
 		DepthStencil: &DepthStencilState{
-			Format:            TextureFormatDepth24Plus,
+			Format:            gputypes.TextureFormatDepth24Plus,
 			DepthWriteEnabled: true,
-			DepthCompare:      CompareFunctionLess,
+			DepthCompare:      gputypes.CompareFunctionLess,
 		},
 		Primitive: PrimitiveState{
-			Topology: PrimitiveTopologyTriangleList,
+			Topology: gputypes.PrimitiveTopologyTriangleList,
 		},
 		Multisample: MultisampleState{
 			Count: 1,

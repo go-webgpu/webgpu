@@ -3,6 +3,8 @@ package wgpu
 import (
 	"math"
 	"unsafe"
+
+	"github.com/gogpu/gputypes"
 )
 
 // DepthSliceUndefined is used for 2D textures in color attachments.
@@ -18,14 +20,14 @@ type Color struct {
 
 // renderPassColorAttachment is the native structure for color attachments.
 type renderPassColorAttachment struct {
-	nextInChain   uintptr // 8 bytes
-	view          uintptr // 8 bytes (WGPUTextureView)
-	depthSlice    uint32  // 4 bytes - MUST be DepthSliceUndefined for 2D!
-	_pad1         [4]byte // 4 bytes padding
-	resolveTarget uintptr // 8 bytes (WGPUTextureView, nullable)
-	loadOp        LoadOp  // 4 bytes
-	storeOp       StoreOp // 4 bytes
-	clearValue    Color   // 32 bytes (4 * float64)
+	nextInChain   uintptr          // 8 bytes
+	view          uintptr          // 8 bytes (WGPUTextureView)
+	depthSlice    uint32           // 4 bytes - MUST be DepthSliceUndefined for 2D!
+	_pad1         [4]byte          // 4 bytes padding
+	resolveTarget uintptr          // 8 bytes (WGPUTextureView, nullable)
+	loadOp        gputypes.LoadOp  // 4 bytes
+	storeOp       gputypes.StoreOp // 4 bytes
+	clearValue    Color            // 32 bytes (4 * float64)
 }
 
 // renderPassDescriptor is the native structure for render pass descriptor.
@@ -43,20 +45,20 @@ type renderPassDescriptor struct {
 type RenderPassColorAttachment struct {
 	View          *TextureView
 	ResolveTarget *TextureView // For MSAA, nil otherwise
-	LoadOp        LoadOp
-	StoreOp       StoreOp
+	LoadOp        gputypes.LoadOp
+	StoreOp       gputypes.StoreOp
 	ClearValue    Color
 }
 
 // RenderPassDepthStencilAttachment describes a depth/stencil attachment (user API).
 type RenderPassDepthStencilAttachment struct {
 	View              *TextureView
-	DepthLoadOp       LoadOp
-	DepthStoreOp      StoreOp
+	DepthLoadOp       gputypes.LoadOp
+	DepthStoreOp      gputypes.StoreOp
 	DepthClearValue   float32
 	DepthReadOnly     bool
-	StencilLoadOp     LoadOp
-	StencilStoreOp    StoreOp
+	StencilLoadOp     gputypes.LoadOp
+	StencilStoreOp    gputypes.StoreOp
 	StencilClearValue uint32
 	StencilReadOnly   bool
 }
@@ -64,12 +66,12 @@ type RenderPassDepthStencilAttachment struct {
 // renderPassDepthStencilAttachment is the native structure (40 bytes).
 type renderPassDepthStencilAttachment struct {
 	view              uintptr
-	depthLoadOp       LoadOp
-	depthStoreOp      StoreOp
+	depthLoadOp       gputypes.LoadOp
+	depthStoreOp      gputypes.StoreOp
 	depthClearValue   float32
 	depthReadOnly     Bool
-	stencilLoadOp     LoadOp
-	stencilStoreOp    StoreOp
+	stencilLoadOp     gputypes.LoadOp
+	stencilStoreOp    gputypes.StoreOp
 	stencilClearValue uint32
 	stencilReadOnly   Bool
 }
@@ -227,7 +229,7 @@ func (rpe *RenderPassEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, offse
 }
 
 // SetIndexBuffer sets the index buffer for this pass.
-func (rpe *RenderPassEncoder) SetIndexBuffer(buffer *Buffer, format IndexFormat, offset, size uint64) {
+func (rpe *RenderPassEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.IndexFormat, offset, size uint64) {
 	mustInit()
 	procRenderPassEncoderSetIndexBuffer.Call( //nolint:errcheck
 		rpe.handle,
