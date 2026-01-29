@@ -29,9 +29,16 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
 	if desc == nil {
 		return nil
 	}
+
+	// wgpu-native requires MaxAnisotropy >= 1
+	descCopy := *desc
+	if descCopy.MaxAnisotropy == 0 {
+		descCopy.MaxAnisotropy = 1
+	}
+
 	handle, _, _ := procDeviceCreateSampler.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&descCopy)),
 	)
 	if handle == 0 {
 		return nil

@@ -79,10 +79,18 @@ linters:
         linters:
           - unused
           - revive
-      # FFI render_pipeline has C struct padding
+      # Conversion functions have large switch statements - inherently high complexity but straightforward
+      - path: convert\.go
+        linters:
+          - gocyclo
+          - cyclop
+          - funlen
+      # FFI render_pipeline has C struct padding and complex CreateRenderPipeline
       - path: render_pipeline\.go
         linters:
           - unused
+          - gocyclo
+          - cyclop
       # wgpu.go has procs for future use and long init
       - path: wgpu\.go
         linters:

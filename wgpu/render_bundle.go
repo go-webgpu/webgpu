@@ -33,13 +33,13 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 		return nil
 	}
 
-	// Build the native descriptor
+	// Build the native descriptor with converted format values
 	type nativeDesc struct {
 		nextInChain        uintptr
 		label              StringView
 		colorFormatCount   uintptr
 		colorFormats       uintptr
-		depthStencilFormat gputypes.TextureFormat
+		depthStencilFormat uint32 // converted from gputypes
 		sampleCount        uint32
 		depthReadOnly      Bool
 		stencilReadOnly    Bool
@@ -48,14 +48,21 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 	nd := nativeDesc{
 		label:              desc.Label,
 		colorFormatCount:   desc.ColorFormatCount,
-		depthStencilFormat: desc.DepthStencilFormat,
+		depthStencilFormat: toWGPUTextureFormat(desc.DepthStencilFormat),
 		sampleCount:        desc.SampleCount,
 		depthReadOnly:      desc.DepthReadOnly,
 		stencilReadOnly:    desc.StencilReadOnly,
 	}
 
+	// Convert color formats to wgpu-native values
+	var convertedFormats []uint32
 	if desc.ColorFormats != nil && desc.ColorFormatCount > 0 {
-		nd.colorFormats = uintptr(unsafe.Pointer(desc.ColorFormats))
+		formats := unsafe.Slice(desc.ColorFormats, desc.ColorFormatCount)
+		convertedFormats = make([]uint32, desc.ColorFormatCount)
+		for i, f := range formats {
+			convertedFormats[i] = toWGPUTextureFormat(f)
+		}
+		nd.colorFormats = uintptr(unsafe.Pointer(&convertedFormats[0]))
 	}
 
 	handle, _, _ := procDeviceCreateRenderBundleEncoder.Call(

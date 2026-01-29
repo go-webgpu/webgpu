@@ -20,6 +20,21 @@ type TextureDescriptor struct {
 	ViewFormats     uintptr
 }
 
+// textureDescriptorWire is the FFI-compatible struct with wgpu-native enum values.
+// CRITICAL: Usage is uint64 because wgpu-native defines WGPUTextureUsageFlags as uint64!
+type textureDescriptorWire struct {
+	NextInChain     uintptr
+	Label           StringView
+	Usage           uint64 // TextureUsage bitflags (uint64 in wgpu-native!)
+	Dimension       uint32 // TextureDimension (needs +1 shift)
+	Size            gputypes.Extent3D
+	Format          uint32 // TextureFormat (converted via map)
+	MipLevelCount   uint32
+	SampleCount     uint32
+	ViewFormatCount uintptr
+	ViewFormats     uintptr
+}
+
 // TextureViewDescriptor describes a texture view to create.
 type TextureViewDescriptor struct {
 	NextInChain     uintptr
@@ -31,18 +46,48 @@ type TextureViewDescriptor struct {
 	BaseArrayLayer  uint32
 	ArrayLayerCount uint32
 	Aspect          TextureAspect
-	_pad            [4]byte
+	_pad            [4]byte //nolint:unused // padding for FFI alignment
 	Usage           gputypes.TextureUsage
+}
+
+// textureViewDescriptorWire is the FFI-compatible struct with wgpu-native enum values.
+// CRITICAL: Usage is uint64 because wgpu-native defines WGPUTextureUsageFlags as uint64!
+type textureViewDescriptorWire struct {
+	NextInChain     uintptr
+	Label           StringView
+	Format          uint32 // TextureFormat (converted)
+	Dimension       uint32 // TextureViewDimension (needs +1 shift)
+	BaseMipLevel    uint32
+	MipLevelCount   uint32
+	BaseArrayLayer  uint32
+	ArrayLayerCount uint32
+	Aspect          TextureAspect
+	_pad            [4]byte
+	Usage           uint64 // TextureUsage bitflags (uint64 in wgpu-native!)
 }
 
 // CreateView creates a view into this texture.
 // Pass nil for default view parameters.
+// Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 	mustInit()
 
 	var descPtr uintptr
 	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+		// Convert to wire format with wgpu-native enum values
+		wireDesc := textureViewDescriptorWire{
+			NextInChain:     desc.NextInChain,
+			Label:           desc.Label,
+			Format:          toWGPUTextureFormat(desc.Format),
+			Dimension:       toWGPUTextureViewDimension(desc.Dimension),
+			BaseMipLevel:    desc.BaseMipLevel,
+			MipLevelCount:   desc.MipLevelCount,
+			BaseArrayLayer:  desc.BaseArrayLayer,
+			ArrayLayerCount: desc.ArrayLayerCount,
+			Aspect:          desc.Aspect,
+			Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
+		}
+		descPtr = uintptr(unsafe.Pointer(&wireDesc))
 	}
 
 	handle, _, _ := procTextureCreateView.Call(
@@ -115,13 +160,15 @@ func (t *Texture) GetMipLevelCount() uint32 {
 }
 
 // GetFormat returns the texture format.
+// The format is converted from wgpu-native enum to gputypes enum.
 func (t *Texture) GetFormat() gputypes.TextureFormat {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return gputypes.TextureFormatUndefined
 	}
 	result, _, _ := procTextureGetFormat.Call(t.handle)
-	return gputypes.TextureFormat(result)
+	// Convert from wgpu-native enum to gputypes
+	return fromWGPUTextureFormat(uint32(result))
 }
 
 // Release releases the texture view reference.
@@ -136,14 +183,40 @@ func (tv *TextureView) Release() {
 func (tv *TextureView) Handle() uintptr { return tv.handle }
 
 // CreateTexture creates a texture with the specified descriptor.
+// Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 	mustInit()
 	if desc == nil {
 		return nil
 	}
+
+	// wgpu-native requires MipLevelCount >= 1 and SampleCount >= 1
+	mipLevelCount := desc.MipLevelCount
+	if mipLevelCount == 0 {
+		mipLevelCount = 1
+	}
+	sampleCount := desc.SampleCount
+	if sampleCount == 0 {
+		sampleCount = 1
+	}
+
+	// Convert to wire format with wgpu-native enum values
+	wireDesc := textureDescriptorWire{
+		NextInChain:     desc.NextInChain,
+		Label:           desc.Label,
+		Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
+		Dimension:       toWGPUTextureDimension(desc.Dimension),
+		Size:            desc.Size,
+		Format:          toWGPUTextureFormat(desc.Format),
+		MipLevelCount:   mipLevelCount,
+		SampleCount:     sampleCount,
+		ViewFormatCount: desc.ViewFormatCount,
+		ViewFormats:     desc.ViewFormats,
+	}
+
 	handle, _, _ := procDeviceCreateTexture.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wireDesc)),
 	)
 	if handle == 0 {
 		return nil

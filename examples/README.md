@@ -266,5 +266,7 @@ To add a new example:
 
 ---
 
-**Last Updated:** 2025-11-28
-**go-webgpu Version:** 0.1.0
+**Last Updated:** 2026-01-29
+**go-webgpu Version:** 0.2.0
+
+**Note:** All examples use [gputypes](https://github.com/gogpu/gputypes) for WebGPU type definitions.

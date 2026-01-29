@@ -1,223 +1,217 @@
-# go-webgpu - Development Roadmap
+# go-webgpu Roadmap
 
-> **Strategic Focus**: Production-grade Zero-CGO WebGPU bindings for Go
+> **Mission**: Production-grade Zero-CGO WebGPU bindings for Go
 
-**Last Updated**: 2024-12-24 | **Current Version**: v0.1.1 | **Target**: v1.0.0 stable
+[![GitHub Project](https://img.shields.io/badge/GitHub-Project%20Board-blue?style=flat-square&logo=github)](https://github.com/go-webgpu/webgpu/projects)
+[![GitHub Issues](https://img.shields.io/github/issues/go-webgpu/webgpu?style=flat-square&logo=github)](https://github.com/go-webgpu/webgpu/issues)
+
+---
+
+## Disclaimer
+
+> **This roadmap represents our current plans and priorities, not commitments.**
+> Features, timelines, and priorities may change based on community feedback, technical constraints, and ecosystem developments. For the most current status, see our [GitHub Issues](https://github.com/go-webgpu/webgpu/issues) and [Project Board](https://github.com/go-webgpu/webgpu/projects).
 
 ---
 
 ## Vision
 
-Build **production-ready, cross-platform WebGPU bindings** for Go with zero CGO dependency, enabling GPU-accelerated graphics and compute in pure Go applications.
+Enable **GPU-accelerated graphics and compute in pure Go** — no CGO, no complexity, just Go.
 
-### Current State vs Target
+### Why go-webgpu?
 
-| Metric | Current (v0.1.1) | Target (v1.0.0) |
-|--------|------------------|-----------------|
-| Platforms | Windows, Linux, macOS (x64, arm64) | All major platforms |
-| CGO Required | No (Zero-CGO) | No |
-| API Coverage | ~80% WebGPU | 100% WebGPU |
-| wgpu-native | v24.0.3.1 | Latest stable |
-| Test Coverage | ~70% | 90%+ |
-| Examples | 11 | 20+ |
+| Challenge | Our Solution |
+|-----------|--------------|
+| CGO complexity | Zero-CGO via [goffi](https://github.com/go-webgpu/goffi) FFI |
+| Cross-compilation pain | Pure Go builds for all platforms |
+| WebGPU fragmentation | Unified API via [gputypes](https://github.com/gogpu/gputypes) |
+| Vendor lock-in | Open source, part of [gogpu ecosystem](https://github.com/gogpu) |
 
 ---
 
-## Release Strategy
+## Current Status
 
-```
-v0.1.1 (Current) -> Hotfix: goffi PointerType bug + PR workflow
-         |
-v0.2.0 (Next) -> API improvements, builder patterns
-         |
-v0.3.0 -> Advanced features (storage textures, texture arrays)
-         |
-v0.4.0 -> Performance optimizations
-         |
-v0.5.0 -> Extended examples and documentation
-         |
-v1.0.0-rc -> Feature freeze, API locked
-         |
-v1.0.0 STABLE -> Production release with API stability guarantee
-```
+| Metric | Status |
+|--------|--------|
+| **Latest Release** | ![GitHub Release](https://img.shields.io/github/v/release/go-webgpu/webgpu?style=flat-square) |
+| **Platforms** | Windows, Linux, macOS (x64, arm64) |
+| **API Coverage** | ~80% WebGPU |
+| **Examples** | 11 working demos |
+| **Test Coverage** | ~70% |
 
----
+### Technology Stack
 
-## v0.2.0 - API Improvements (NEXT)
-
-**Goal**: Improve API ergonomics and developer experience
-
-| ID | Feature | Impact | Status |
-|----|---------|--------|--------|
-| API-001 | Builder pattern for descriptors | Better ergonomics | Planned |
-| API-002 | Error wrapping with context | Better debugging | Planned |
-| API-003 | Resource tracking helpers | Memory management | Planned |
-
-**Target**: Q1 2025
+| Component | Version | Role |
+|-----------|---------|------|
+| [wgpu-native](https://github.com/gfx-rs/wgpu-native) | v27.0.4.0 | WebGPU implementation (Rust) |
+| [goffi](https://github.com/go-webgpu/goffi) | v0.3.7 | Zero-CGO FFI layer |
+| [gputypes](https://github.com/gogpu/gputypes) | latest | WebGPU type definitions |
 
 ---
 
-## v0.3.0 - Advanced Features (MEDIUM PRIORITY)
+## Roadmap Phases
 
-**Goal**: Complete WebGPU API coverage
+We use GitHub labels to track feature progress:
 
-| ID | Feature | Impact | Status |
-|----|---------|--------|--------|
-| FEAT-001 | Storage textures | Compute image processing | Planned |
-| FEAT-002 | Texture arrays | Sprite sheets, cubemaps | Planned |
-| FEAT-003 | Occlusion queries | Visibility testing | Planned |
-| FEAT-004 | Pipeline statistics | Performance profiling | Planned |
-| FEAT-005 | Multi-draw indirect | Batch rendering | Planned |
-
-**Target**: Q2 2025
+| Label | Meaning |
+|-------|---------|
+| `phase:exploring` | Under consideration, gathering feedback |
+| `phase:design` | Actively designing solution |
+| `phase:development` | Implementation in progress |
+| `phase:preview` | Available for testing |
+| `phase:stable` | Production ready |
 
 ---
 
-## v0.4.0 - Performance (MEDIUM PRIORITY)
+## Now: Stability & Ecosystem
 
-**Goal**: Optimize hot paths and reduce allocations
+**Focus**: Ensure rock-solid foundation for production use.
 
-| ID | Feature | Impact | Status |
-|----|---------|--------|--------|
-| PERF-001 | Command buffer pooling | Reduce allocations | Planned |
-| PERF-002 | Descriptor caching | Faster pipeline creation | Planned |
-| PERF-003 | Batch resource creation | Startup optimization | Planned |
-| PERF-004 | Memory-mapped staging | Faster uploads | Planned |
-
-**Target**: Q2 2025
+| Feature | Status | Issue |
+|---------|--------|-------|
+| gputypes integration | `stable` | — |
+| wgpu-native v27 compatibility | `stable` | — |
+| All 11 examples working | `stable` | — |
+| Enum conversion layer | `stable` | — |
 
 ---
 
-## v0.5.0 - Examples & Documentation (MEDIUM PRIORITY)
+## Next: Advanced Features
 
-**Goal**: Comprehensive learning resources
+**Focus**: Complete WebGPU API coverage.
 
-### New Examples
-
-| ID | Example | Demonstrates |
-|----|---------|--------------|
-| EX-001 | PBR Renderer | Material system, lighting |
-| EX-002 | Shadow Mapping | Depth textures, multi-pass |
-| EX-003 | Post-processing | Framebuffers, effects |
-| EX-004 | Particle System | Compute + render integration |
-| EX-005 | Text Rendering | Texture atlases, SDF fonts |
-| EX-006 | Deferred Shading | G-buffer, MRT |
-| EX-007 | Ray Marching | Compute shaders |
-| EX-008 | Image Processing | Compute filters |
-| EX-009 | Physics Simulation | GPU compute |
-
-### Documentation
-
-| ID | Document | Content |
-|----|----------|---------|
-| DOC-001 | API Reference | Complete godoc |
-| DOC-002 | Migration Guide | From other GPU libs |
-| DOC-003 | Performance Guide | Optimization tips |
-| DOC-004 | Troubleshooting | Common issues |
-
-**Target**: Q3 2025
+| Feature | Status | Issue |
+|---------|--------|-------|
+| Storage textures | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
+| Texture arrays | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
+| Occlusion queries | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
+| Pipeline statistics | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
+| Multi-draw indirect | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
 
 ---
 
-## v1.0.0 - Production Ready
+## Later: Performance & DX
 
-**Requirements**:
-- [ ] All v0.2.0-v0.5.0 features complete
-- [ ] API stability guarantee
-- [ ] Comprehensive documentation
+**Focus**: Optimize performance and developer experience.
+
+| Feature | Status | Issue |
+|---------|--------|-------|
+| Builder pattern for descriptors | `exploring` | — |
+| Command buffer pooling | `exploring` | — |
+| Descriptor caching | `exploring` | — |
+| Memory-mapped staging | `exploring` | — |
+| Error wrapping with context | `exploring` | — |
+
+---
+
+## Future: Extended Examples
+
+| Example | Demonstrates | Status |
+|---------|--------------|--------|
+| PBR Renderer | Material system, lighting | `exploring` |
+| Shadow Mapping | Depth textures, multi-pass | `exploring` |
+| Post-processing | Framebuffers, effects | `exploring` |
+| Particle System | Compute + render | `exploring` |
+| Text Rendering | SDF fonts, atlases | `exploring` |
+| Deferred Shading | G-buffer, MRT | `exploring` |
+
+---
+
+## v1.0 Requirements
+
+Before we tag v1.0.0 stable:
+
+- [ ] 100% WebGPU API coverage
 - [ ] 90%+ test coverage
+- [ ] Comprehensive documentation
 - [ ] Performance benchmarks
 - [ ] Security review
+- [ ] API stability guarantee
 
-**Guarantees**:
-- API stability (no breaking changes in v1.x.x)
+**v1.0 Guarantees**:
+- No breaking changes in v1.x.x
 - Semantic versioning
-- Long-term support
-
-**Target**: Q4 2025
-
----
-
-## Feature Comparison Matrix
-
-| Feature | wgpu-rs | Dawn | go-webgpu v0.1 | go-webgpu v1.0 |
-|---------|---------|------|----------------|----------------|
-| Zero-CGO | N/A | N/A | Yes | Yes |
-| Windows x64 | Yes | Yes | Yes | Yes |
-| Linux x64 | Yes | Yes | Yes | Yes |
-| Linux ARM64 | Yes | Yes | Yes | Yes |
-| macOS x64 | Yes | Yes | Yes | Yes |
-| macOS ARM64 | Yes | Yes | Yes | Yes |
-| Buffer mapping | Yes | Yes | Yes | Yes |
-| Compute shaders | Yes | Yes | Yes | Yes |
-| Render bundles | Yes | Yes | Yes | Yes |
-| Timestamp queries | Yes | Yes | Yes | Yes |
-| Storage textures | Yes | Yes | No | Yes |
-| Texture arrays | Yes | Yes | No | Yes |
-
----
-
-## Current Examples (v0.1.x)
-
-| Example | Features Demonstrated |
-|---------|----------------------|
-| Triangle | Basic rendering, shaders |
-| Colored Triangle | Vertex attributes |
-| Rotating Triangle | Uniform buffers, animation |
-| Textured Quad | Texture sampling, UV coords |
-| 3D Cube | Depth buffer, transforms, MVP |
-| MRT | Multiple render targets |
-| Compute | Compute shaders, storage buffers |
-| Instanced | Instance rendering, vertex step mode |
-| RenderBundle | Pre-recorded commands |
-| Timestamp Query | GPU timing |
-| Error Handling | Error scopes |
-
----
-
-## Dependencies
-
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| wgpu-native | v24.0.3.1 | WebGPU implementation |
-| goffi | v0.3.3 | Pure-Go FFI (x64 + ARM64) |
-| Go | 1.25+ | Language runtime |
-
-### Upstream Tracking
-
-- **wgpu-native**: Track releases for new features and security fixes
-- **goffi**: Track for performance improvements and new platforms
+- Long-term support commitment
 
 ---
 
 ## Out of Scope
 
-**Not planned**:
-- WebGL fallback (WebGPU only)
-- DirectX 11 backend (wgpu-native uses D3D12)
-- OpenGL backend (wgpu-native uses Vulkan/Metal)
-- Custom shader language (WGSL only)
+Features we **do not plan** to implement:
+
+| Feature | Reason |
+|---------|--------|
+| WebGL fallback | WebGPU-only library |
+| DirectX 11 backend | wgpu-native uses D3D12 |
+| OpenGL backend | wgpu-native uses Vulkan/Metal |
+| Custom shader language | WGSL standard only |
+| Browser support | Native applications only |
 
 ---
 
-## Contributing
+## How to Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to the roadmap.
+We welcome contributions! Here's how to get involved:
 
-Priority features are marked in GitHub Issues with labels:
-- `priority:high` - Next release
-- `priority:medium` - Future release
-- `help-wanted` - Community contributions welcome
+### 1. Find an Issue
+
+- [`good-first-issue`](https://github.com/go-webgpu/webgpu/labels/good-first-issue) — Great for newcomers
+- [`help-wanted`](https://github.com/go-webgpu/webgpu/labels/help-wanted) — Community contributions welcome
+- [`priority:high`](https://github.com/go-webgpu/webgpu/labels/priority%3Ahigh) — Most impactful work
+
+### 2. Propose Features
+
+Open a [Feature Request](https://github.com/go-webgpu/webgpu/issues/new?template=feature_request.md) to discuss before implementing.
+
+### 3. Submit PRs
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### 4. Join Discussion
+
+- [GitHub Discussions](https://github.com/go-webgpu/webgpu/discussions) — Questions, ideas, showcase
+- [Issues](https://github.com/go-webgpu/webgpu/issues) — Bug reports, feature requests
+
+---
+
+## Upstream Dependencies
+
+We track these projects for updates:
+
+| Project | What We Track | Our Issue |
+|---------|---------------|-----------|
+| [wgpu-native](https://github.com/gfx-rs/wgpu-native) | Releases, security fixes | [#3](https://github.com/go-webgpu/webgpu/issues/3) |
+| [webgpu-headers](https://github.com/webgpu-native/webgpu-headers) | Spec changes | [#3](https://github.com/go-webgpu/webgpu/issues/3) |
+| [goffi](https://github.com/go-webgpu/goffi) | Performance, platforms | — |
+| [gputypes](https://github.com/gogpu/gputypes) | Type definitions | — |
 
 ---
 
 ## Release History
 
-| Version | Date | Type | Key Changes |
-|---------|------|------|-------------|
-| v0.1.1 | 2024-12-24 | Hotfix | goffi v0.3.3 (PointerType fix), PR workflow |
-| v0.1.0 | 2024-11-28 | Initial | Core API, 11 examples, 5 platforms (x64 + ARM64) |
+| Version | Date | Highlights |
+|---------|------|------------|
+| **v0.2.0** | 2026-01-29 | gputypes integration, wgpu-native v27, all examples fixed |
+| v0.1.4 | 2026-01-03 | goffi v0.3.7 (ARM64 Darwin) |
+| v0.1.3 | 2025-12-29 | goffi v0.3.6 (ARM64 HFA fix) |
+| v0.1.2 | 2025-12-27 | goffi v0.3.5 |
+| v0.1.1 | 2024-12-24 | goffi hotfix, PR workflow |
+| v0.1.0 | 2024-11-28 | Initial release, 11 examples, 5 platforms |
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ---
 
-*Current: v0.1.1 | Next: v0.2.0 (API Improvements) | Target: v1.0.0 (Q4 2025)*
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [gogpu](https://github.com/gogpu) | Pure Go WebGPU ecosystem |
+| [gputypes](https://github.com/gogpu/gputypes) | Shared WebGPU type definitions |
+| [goffi](https://github.com/go-webgpu/goffi) | Zero-CGO FFI for Go |
+
+---
+
+<p align="center">
+  <sub>This roadmap is inspired by <a href="https://github.com/github/roadmap">GitHub's public roadmap</a> practices.</sub>
+</p>

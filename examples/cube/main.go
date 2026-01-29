@@ -50,7 +50,8 @@ var (
 	procDefWindowProcW   = user32.NewProc("DefWindowProcW")
 	procPostQuitMessage  = user32.NewProc("PostQuitMessage")
 	procLoadCursorW      = user32.NewProc("LoadCursorW")
-	procGetModuleHandleW = user32.NewProc("GetModuleHandleW")
+	kernel32             = windows.NewLazyDLL("kernel32.dll")
+	procGetModuleHandleW = kernel32.NewProc("GetModuleHandleW")
 )
 
 // WNDCLASSEXW represents the Win32 WNDCLASSEXW structure.
@@ -512,11 +513,7 @@ func (app *App) createBindGroup() error {
 
 // createPipelineLayout creates the pipeline layout with bind group layout.
 func (app *App) createPipelineLayout() (*wgpu.PipelineLayout, error) {
-	pipelineLayout := app.device.CreatePipelineLayout(&wgpu.PipelineLayoutDescriptor{
-		Label:                wgpu.EmptyStringView(),
-		BindGroupLayoutCount: 1,
-		BindGroupLayouts:     app.bindGroupLayout.Handle(),
-	})
+	pipelineLayout := app.device.CreatePipelineLayoutSimple([]*wgpu.BindGroupLayout{app.bindGroupLayout})
 	if pipelineLayout == nil {
 		return nil, fmt.Errorf("failed to create pipeline layout")
 	}
