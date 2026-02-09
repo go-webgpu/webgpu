@@ -39,14 +39,14 @@ type surfaceTexture struct {
 // surfaceCapabilitiesWire is the FFI-compatible structure for WGPUSurfaceCapabilities.
 // Matches C struct layout from wgpu-native v27.
 type surfaceCapabilitiesWire struct {
-	nextInChain     uintptr // 8 bytes (WGPUChainedStructOut*)
-	usages          uint64  // 8 bytes (WGPUTextureUsage bitflags)
-	formatCount     uintptr // 8 bytes (size_t)
-	formats         uintptr // 8 bytes (WGPUTextureFormat* - pointer to array)
+	nextInChain      uintptr // 8 bytes (WGPUChainedStructOut*)
+	usages           uint64  // 8 bytes (WGPUTextureUsage bitflags)
+	formatCount      uintptr // 8 bytes (size_t)
+	formats          uintptr // 8 bytes (WGPUTextureFormat* - pointer to array)
 	presentModeCount uintptr // 8 bytes (size_t)
-	presentModes    uintptr // 8 bytes (WGPUPresentMode* - pointer to array)
-	alphaModeCount  uintptr // 8 bytes (size_t)
-	alphaModes      uintptr // 8 bytes (WGPUCompositeAlphaMode* - pointer to array)
+	presentModes     uintptr // 8 bytes (WGPUPresentMode* - pointer to array)
+	alphaModeCount   uintptr // 8 bytes (size_t)
+	alphaModes       uintptr // 8 bytes (WGPUCompositeAlphaMode* - pointer to array)
 }
 
 // SurfaceConfiguration describes how to configure a surface.

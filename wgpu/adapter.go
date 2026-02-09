@@ -227,8 +227,8 @@ type SupportedLimits struct {
 // SupportedFeatures contains features supported by adapter or device.
 // This is the wire format for wgpuAdapterGetFeatures/wgpuDeviceGetFeatures.
 type SupportedFeatures struct {
-	FeatureCount uintptr       // size_t
-	Features     uintptr       // *FeatureName
+	FeatureCount uintptr // size_t
+	Features     uintptr // *FeatureName
 }
 
 // AdapterInfo contains information about the adapter.

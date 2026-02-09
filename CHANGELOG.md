@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-02-09
 
 ### Added
 
@@ -20,12 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fuzz testing** — 14 fuzz targets for FFI boundary (enum conversions, struct sizes, math)
 - **API stability policy** — `STABILITY.md` with stable/experimental classification
 - **Comprehensive godoc** — all exported symbols documented for pkg.go.dev
+- **Release automation** — GitHub Actions workflow for automated release on tag push
 
 ### Changed
 
 - Error-returning functions now use `checkInit()` instead of `mustInit()` panic
 - `PopErrorScope` deprecated in favor of `PopErrorScopeAsync`
 - Package doc consolidated into single `doc.go` (no more duplicate package comments)
+- `CONTRIBUTING.md` expanded with architecture, error handling, fuzz testing, stability sections
 
 ### Fixed
 
