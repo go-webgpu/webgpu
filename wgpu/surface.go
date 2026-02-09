@@ -37,6 +37,19 @@ type surfaceTexture struct {
 	_pad        [4]byte                        // 4 bytes padding
 }
 
+// surfaceCapabilitiesWire is the FFI-compatible structure for WGPUSurfaceCapabilities.
+// Matches C struct layout from wgpu-native v27.
+type surfaceCapabilitiesWire struct {
+	nextInChain     uintptr // 8 bytes (WGPUChainedStructOut*)
+	usages          uint64  // 8 bytes (WGPUTextureUsage bitflags)
+	formatCount     uintptr // 8 bytes (size_t)
+	formats         uintptr // 8 bytes (WGPUTextureFormat* - pointer to array)
+	presentModeCount uintptr // 8 bytes (size_t)
+	presentModes    uintptr // 8 bytes (WGPUPresentMode* - pointer to array)
+	alphaModeCount  uintptr // 8 bytes (size_t)
+	alphaModes      uintptr // 8 bytes (WGPUCompositeAlphaMode* - pointer to array)
+}
+
 // SurfaceConfiguration describes how to configure a surface.
 type SurfaceConfiguration struct {
 	Device      *Device
@@ -52,6 +65,15 @@ type SurfaceConfiguration struct {
 type SurfaceTexture struct {
 	Texture *Texture
 	Status  SurfaceGetCurrentTextureStatus
+}
+
+// SurfaceCapabilities describes the capabilities of a surface for presentation.
+// Returned by Surface.GetCapabilities() to query supported formats, present modes, etc.
+type SurfaceCapabilities struct {
+	Usages       gputypes.TextureUsage
+	Formats      []gputypes.TextureFormat
+	PresentModes []gputypes.PresentMode
+	AlphaModes   []gputypes.CompositeAlphaMode
 }
 
 // Error values for surface operations.
@@ -146,3 +168,62 @@ func (s *Surface) Release() {
 
 // Handle returns the underlying handle. For advanced use only.
 func (s *Surface) Handle() uintptr { return s.handle }
+
+// GetCapabilities queries the surface capabilities for the given adapter.
+// This determines which texture formats, present modes, and alpha modes are supported.
+// The caller must provide a valid adapter that will be used with this surface.
+func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error) {
+	mustInit()
+
+	if s == nil || s.handle == 0 {
+		return nil, errors.New("wgpu: surface is nil")
+	}
+	if adapter == nil || adapter.handle == 0 {
+		return nil, errors.New("wgpu: adapter is nil")
+	}
+
+	// Call wgpuSurfaceGetCapabilities
+	var wire surfaceCapabilitiesWire
+	procSurfaceGetCapabilities.Call( //nolint:errcheck
+		s.handle,
+		adapter.handle,
+		uintptr(unsafe.Pointer(&wire)),
+	)
+
+	// Convert wire struct to Go struct
+	caps := &SurfaceCapabilities{
+		Usages: gputypes.TextureUsage(wire.usages),
+	}
+
+	// Convert formats array
+	if wire.formatCount > 0 && wire.formats != 0 {
+		rawFormats := unsafe.Slice((*uint32)(unsafe.Pointer(wire.formats)), wire.formatCount)
+		caps.Formats = make([]gputypes.TextureFormat, len(rawFormats))
+		for i, f := range rawFormats {
+			caps.Formats[i] = fromWGPUTextureFormat(f)
+		}
+	}
+
+	// Convert present modes array
+	if wire.presentModeCount > 0 && wire.presentModes != 0 {
+		rawPresentModes := unsafe.Slice((*uint32)(unsafe.Pointer(wire.presentModes)), wire.presentModeCount)
+		caps.PresentModes = make([]gputypes.PresentMode, len(rawPresentModes))
+		for i, pm := range rawPresentModes {
+			caps.PresentModes[i] = gputypes.PresentMode(pm)
+		}
+	}
+
+	// Convert alpha modes array
+	if wire.alphaModeCount > 0 && wire.alphaModes != 0 {
+		rawAlphaModes := unsafe.Slice((*uint32)(unsafe.Pointer(wire.alphaModes)), wire.alphaModeCount)
+		caps.AlphaModes = make([]gputypes.CompositeAlphaMode, len(rawAlphaModes))
+		for i, am := range rawAlphaModes {
+			caps.AlphaModes[i] = gputypes.CompositeAlphaMode(am)
+		}
+	}
+
+	// Free C memory allocated by wgpu-native
+	procSurfaceCapabilitiesFreeMembers.Call(uintptr(unsafe.Pointer(&wire))) //nolint:errcheck
+
+	return caps, nil
+}
