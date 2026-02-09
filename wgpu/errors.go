@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"unsafe"
@@ -98,6 +97,8 @@ func initErrorScopeCallback() {
 	errorScopeCallbackPtr = ffi.NewCallback(errorScopeCallbackHandler)
 }
 
+// Deprecated: PopErrorScope panics on failure. Use PopErrorScopeAsync instead.
+//
 // PopErrorScope pops the current error scope and returns the first error caught.
 // This is a synchronous wrapper that blocks until the result is available.
 //
@@ -130,10 +131,12 @@ func (d *Device) PopErrorScope(instance *Instance) (ErrorType, string) {
 // Note: Error scopes are LIFO - the last pushed scope is popped first.
 // If the error scope stack is empty, returns an error instead of panicking.
 func (d *Device) PopErrorScopeAsync(instance *Instance) (ErrorType, string, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return ErrorTypeNoError, "", err
+	}
 
 	if instance == nil {
-		return ErrorTypeNoError, "", errors.New("wgpu: instance is required for PopErrorScope")
+		return ErrorTypeNoError, "", &WGPUError{Op: "PopErrorScopeAsync", Message: "instance is required for PopErrorScope"}
 	}
 
 	// Initialize callback once
@@ -177,11 +180,11 @@ func (d *Device) PopErrorScopeAsync(instance *Instance) (ErrorType, string, erro
 			if result.status != PopErrorScopeStatusSuccess {
 				switch result.status {
 				case PopErrorScopeStatusEmptyStack:
-					return ErrorTypeNoError, "", errors.New("wgpu: error scope stack is empty")
+					return ErrorTypeNoError, "", &WGPUError{Op: "PopErrorScopeAsync", Message: "error scope stack is empty"}
 				case PopErrorScopeStatusInstanceDropped:
-					return ErrorTypeNoError, "", errors.New("wgpu: instance was dropped")
+					return ErrorTypeNoError, "", &WGPUError{Op: "PopErrorScopeAsync", Message: "instance was dropped"}
 				default:
-					return ErrorTypeNoError, "", fmt.Errorf("wgpu: pop error scope failed with status %d", result.status)
+					return ErrorTypeNoError, "", &WGPUError{Op: "PopErrorScopeAsync", Message: fmt.Sprintf("pop error scope failed with status %d", result.status)}
 				}
 			}
 			return result.errType, result.message, nil

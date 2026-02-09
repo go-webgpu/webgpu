@@ -3,7 +3,6 @@
 package wgpu
 
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -25,7 +24,9 @@ type surfaceSourceWaylandSurface struct {
 // display is the X11 Display pointer.
 // window is the X11 Window ID (XID).
 func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64) (*Surface, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Build WGPUSurfaceSourceXlibWindow
 	source := surfaceSourceXlibWindow{
@@ -48,7 +49,7 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 		uintptr(unsafe.Pointer(&desc)),
 	)
 	if handle == 0 {
-		return nil, errors.New("wgpu: failed to create surface")
+		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
 	return &Surface{handle: handle}, nil
@@ -58,7 +59,9 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 // display is the wl_display pointer.
 // surface is the wl_surface pointer.
 func (inst *Instance) CreateSurfaceFromWaylandSurface(display, surface uintptr) (*Surface, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Build WGPUSurfaceSourceWaylandSurface
 	source := surfaceSourceWaylandSurface{
@@ -81,7 +84,7 @@ func (inst *Instance) CreateSurfaceFromWaylandSurface(display, surface uintptr) 
 		uintptr(unsafe.Pointer(&desc)),
 	)
 	if handle == 0 {
-		return nil, errors.New("wgpu: failed to create surface")
+		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
 	return &Surface{handle: handle}, nil

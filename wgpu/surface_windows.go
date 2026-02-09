@@ -3,7 +3,6 @@
 package wgpu
 
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -18,7 +17,9 @@ type surfaceSourceWindowsHWND struct {
 // hinstance should be the HINSTANCE of the application (can be 0).
 // hwnd is the window handle to create the surface for.
 func (inst *Instance) CreateSurfaceFromWindowsHWND(hinstance, hwnd uintptr) (*Surface, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Build WGPUSurfaceSourceWindowsHWND
 	source := surfaceSourceWindowsHWND{
@@ -41,7 +42,7 @@ func (inst *Instance) CreateSurfaceFromWindowsHWND(hinstance, hwnd uintptr) (*Su
 		uintptr(unsafe.Pointer(&desc)),
 	)
 	if handle == 0 {
-		return nil, errors.New("wgpu: failed to create surface")
+		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
 	return &Surface{handle: handle}, nil

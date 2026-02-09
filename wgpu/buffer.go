@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"sync"
 	"unsafe"
 
@@ -154,7 +153,9 @@ func (b *Buffer) GetSize() uint64 {
 // After MapAsync succeeds, use GetMappedRange to access the data.
 // Call Unmap when done to release the mapping.
 func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) error {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return err
+	}
 
 	// Initialize callback once
 	mapCallbackOnce.Do(initMapCallback)
@@ -199,7 +200,7 @@ func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) err
 				if msg == "" {
 					msg = "buffer map failed"
 				}
-				return errors.New("wgpu: " + msg)
+				return &WGPUError{Op: "Buffer.MapAsync", Message: msg}
 			}
 			return nil
 		default:

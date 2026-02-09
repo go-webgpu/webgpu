@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"unsafe"
 
 	"github.com/gogpu/gputypes"
@@ -77,12 +76,13 @@ type SurfaceCapabilities struct {
 }
 
 // Error values for surface operations.
+// These are sentinel errors for programmatic error handling via errors.Is().
 var (
-	ErrSurfaceNeedsReconfigure = errors.New("wgpu: surface needs reconfigure")
-	ErrSurfaceLost             = errors.New("wgpu: surface lost")
-	ErrSurfaceTimeout          = errors.New("wgpu: surface texture timeout")
-	ErrSurfaceOutOfMemory      = errors.New("wgpu: out of memory")
-	ErrSurfaceDeviceLost       = errors.New("wgpu: device lost")
+	ErrSurfaceNeedsReconfigure = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface needs reconfigure"}
+	ErrSurfaceLost             = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface lost"}
+	ErrSurfaceTimeout          = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface texture timeout"}
+	ErrSurfaceOutOfMemory      = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "out of memory"}
+	ErrSurfaceDeviceLost       = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "device lost"}
 )
 
 // Configure configures the surface for rendering.
@@ -119,7 +119,9 @@ func (s *Surface) Unconfigure() {
 // GetCurrentTexture gets the current texture to render to.
 // Returns the texture and its status. Check status before using the texture.
 func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	var surfTex surfaceTexture
 
@@ -148,7 +150,7 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
 	case SurfaceGetCurrentTextureStatusDeviceLost:
 		return nil, ErrSurfaceDeviceLost
 	default:
-		return nil, errors.New("wgpu: failed to get surface texture")
+		return nil, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
 	}
 }
 
@@ -173,13 +175,15 @@ func (s *Surface) Handle() uintptr { return s.handle }
 // This determines which texture formats, present modes, and alpha modes are supported.
 // The caller must provide a valid adapter that will be used with this surface.
 func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	if s == nil || s.handle == 0 {
-		return nil, errors.New("wgpu: surface is nil")
+		return nil, &WGPUError{Op: "Surface.GetCapabilities", Message: "surface is nil"}
 	}
 	if adapter == nil || adapter.handle == 0 {
-		return nil, errors.New("wgpu: adapter is nil")
+		return nil, &WGPUError{Op: "Surface.GetCapabilities", Message: "adapter is nil"}
 	}
 
 	// Call wgpuSurfaceGetCapabilities

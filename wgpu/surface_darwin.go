@@ -3,7 +3,6 @@
 package wgpu
 
 import (
-	"errors"
 	"unsafe"
 )
 
@@ -16,7 +15,9 @@ type surfaceSourceMetalLayer struct {
 // CreateSurfaceFromMetalLayer creates a surface from a CAMetalLayer.
 // layer is the CAMetalLayer pointer from the native macOS view.
 func (inst *Instance) CreateSurfaceFromMetalLayer(layer uintptr) (*Surface, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Build WGPUSurfaceSourceMetalLayer
 	source := surfaceSourceMetalLayer{
@@ -38,7 +39,7 @@ func (inst *Instance) CreateSurfaceFromMetalLayer(layer uintptr) (*Surface, erro
 		uintptr(unsafe.Pointer(&desc)),
 	)
 	if handle == 0 {
-		return nil, errors.New("wgpu: failed to create surface")
+		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
 	return &Surface{handle: handle}, nil

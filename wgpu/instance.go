@@ -1,14 +1,15 @@
 package wgpu
 
 import (
-	"errors"
 	"unsafe"
 )
 
 // CreateInstance creates a new WebGPU instance.
 // Pass nil for default configuration.
 func CreateInstance(desc *InstanceDescriptor) (*Instance, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	var descPtr uintptr
 	if desc != nil {
@@ -17,7 +18,7 @@ func CreateInstance(desc *InstanceDescriptor) (*Instance, error) {
 
 	handle, _, _ := procCreateInstance.Call(descPtr)
 	if handle == 0 {
-		return nil, errors.New("wgpu: failed to create instance")
+		return nil, &WGPUError{Op: "CreateInstance", Message: "failed to create instance"}
 	}
 
 	return &Instance{handle: handle}, nil
