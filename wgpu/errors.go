@@ -48,12 +48,14 @@ type errorScopeResult struct {
 }
 
 var (
-	// Global registry for pending error scope operations
+	// errorScopeResults is the global registry for pending error scope operations.
+	// Protected by errorScopeResultsMu for concurrent access.
 	errorScopeResults   = make(map[uintptr]*errorScopeResult)
 	errorScopeResultsMu sync.Mutex
 	errorScopeResultID  uintptr
 
-	// Callback function pointer (created once)
+	// errorScopeCallbackPtr is the callback function pointer (created once).
+	// Protected by errorScopeCallbackOnce for concurrent initialization.
 	errorScopeCallbackPtr  uintptr
 	errorScopeCallbackOnce sync.Once
 )

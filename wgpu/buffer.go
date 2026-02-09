@@ -45,12 +45,14 @@ type mapRequest struct {
 }
 
 var (
-	// Global registry for pending map requests
+	// mapRequests is the global registry for pending map requests.
+	// Protected by mapRequestsMu for concurrent access.
 	mapRequests   = make(map[uintptr]*mapRequest)
 	mapRequestsMu sync.Mutex
 	mapRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// mapCallbackPtr is the callback function pointer (created once).
+	// Protected by mapCallbackOnce for concurrent initialization.
 	mapCallbackPtr  uintptr
 	mapCallbackOnce sync.Once
 )

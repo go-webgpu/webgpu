@@ -26,12 +26,14 @@ type deviceRequest struct {
 }
 
 var (
-	// Global registry for pending device requests
+	// deviceRequests is the global registry for pending device requests.
+	// Protected by deviceRequestsMu for concurrent access.
 	deviceRequests   = make(map[uintptr]*deviceRequest)
 	deviceRequestsMu sync.Mutex
 	deviceRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// deviceCallbackPtr is the callback function pointer (created once).
+	// Protected by deviceCallbackOnce for concurrent initialization.
 	deviceCallbackPtr  uintptr
 	deviceCallbackOnce sync.Once
 )

@@ -1,10 +1,3 @@
-// Package wgpu provides Go bindings to wgpu-native WebGPU implementation.
-//
-// This package uses cross-platform FFI for calling wgpu-native library.
-// On Windows: syscall.LazyDLL is used directly.
-// On Linux/macOS: goffi is used for dynamic library loading.
-// For callbacks, goffi's NewCallback is used on all platforms.
-// No C compiler required for building or running.
 package wgpu
 
 import (

@@ -52,12 +52,14 @@ type adapterRequest struct {
 }
 
 var (
-	// Global registry for pending adapter requests
+	// adapterRequests is the global registry for pending adapter requests.
+	// Protected by adapterRequestsMu for concurrent access.
 	adapterRequests   = make(map[uintptr]*adapterRequest)
 	adapterRequestsMu sync.Mutex
 	adapterRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// adapterCallbackPtr is the callback function pointer (created once).
+	// Protected by adapterCallbackOnce for concurrent initialization.
 	adapterCallbackPtr  uintptr
 	adapterCallbackOnce sync.Once
 )
