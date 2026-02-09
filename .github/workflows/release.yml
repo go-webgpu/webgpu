@@ -44,13 +44,13 @@ jobs:
           go build -v ./...
         fi
 
-    - name: Run tests
+    - name: Run tests (no GPU in CI)
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          go test -v ./wgpu/...
+          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
         else
-          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|Struct|Fuzz|Leak|Error|Init"
+          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
         fi
 
     - name: Run fuzz tests (seed corpus only)

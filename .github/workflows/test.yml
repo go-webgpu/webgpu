@@ -73,13 +73,13 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: go build -v ./examples/...
 
-    - name: Run math tests (no GPU required)
+    - name: Run tests (no GPU in CI)
       shell: bash
       run: |
         if [ "${{ matrix.os }}" != "windows-latest" ]; then
-          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3"
+          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
         else
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3"
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
         fi
 
     - name: Upload coverage to Codecov
