@@ -38,6 +38,7 @@ func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) *QuerySet {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "QuerySet")
 	return &QuerySet{handle: handle}
 }
 
@@ -52,6 +53,7 @@ func (qs *QuerySet) Destroy() {
 // Release releases the QuerySet reference.
 func (qs *QuerySet) Release() {
 	if qs.handle != 0 {
+		untrackResource(qs.handle)
 		procQuerySetRelease.Call(qs.handle) //nolint:errcheck
 		qs.handle = 0
 	}

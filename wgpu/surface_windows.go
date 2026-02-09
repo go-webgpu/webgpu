@@ -45,5 +45,6 @@ func (inst *Instance) CreateSurfaceFromWindowsHWND(hinstance, hwnd uintptr) (*Su
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
+	trackResource(handle, "Surface")
 	return &Surface{handle: handle}, nil
 }

@@ -21,12 +21,14 @@ func CreateInstance(desc *InstanceDescriptor) (*Instance, error) {
 		return nil, &WGPUError{Op: "CreateInstance", Message: "failed to create instance"}
 	}
 
+	trackResource(handle, "Instance")
 	return &Instance{handle: handle}, nil
 }
 
 // Release releases the instance resources.
 func (i *Instance) Release() {
 	if i.handle != 0 {
+		untrackResource(i.handle)
 		procInstanceRelease.Call(i.handle) //nolint:errcheck
 		i.handle = 0
 	}

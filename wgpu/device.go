@@ -63,6 +63,7 @@ func deviceCallbackHandler(status uintptr, device uintptr, message uintptr, user
 	if ok && req != nil {
 		req.status = RequestDeviceStatus(status)
 		if device != 0 {
+			trackResource(device, "Device")
 			req.device = &Device{handle: device}
 		}
 		req.message = msg
@@ -148,6 +149,7 @@ func (d *Device) GetQueue() *Queue {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Queue")
 	return &Queue{handle: handle}
 }
 
@@ -168,6 +170,7 @@ func (d *Device) Poll(wait bool) bool {
 // Release releases the device resources.
 func (d *Device) Release() {
 	if d.handle != 0 {
+		untrackResource(d.handle)
 		procDeviceRelease.Call(d.handle) //nolint:errcheck
 		d.handle = 0
 	}
@@ -176,6 +179,7 @@ func (d *Device) Release() {
 // Release releases the queue resources.
 func (q *Queue) Release() {
 	if q.handle != 0 {
+		untrackResource(q.handle)
 		procQueueRelease.Call(q.handle) //nolint:errcheck
 		q.handle = 0
 	}

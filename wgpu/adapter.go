@@ -92,6 +92,7 @@ func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, us
 	if ok && req != nil {
 		req.status = RequestAdapterStatus(status)
 		if adapter != 0 {
+			trackResource(adapter, "Adapter")
 			req.adapter = &Adapter{handle: adapter}
 		}
 		req.message = msg
@@ -174,6 +175,7 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 // Release releases the adapter resources.
 func (a *Adapter) Release() {
 	if a.handle != 0 {
+		untrackResource(a.handle)
 		procAdapterRelease.Call(a.handle) //nolint:errcheck
 		a.handle = 0
 	}

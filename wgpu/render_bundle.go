@@ -72,6 +72,7 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "RenderBundleEncoder")
 	return &RenderBundleEncoder{handle: handle}
 }
 
@@ -192,12 +193,14 @@ func (rbe *RenderBundleEncoder) Finish(desc *RenderBundleDescriptor) *RenderBund
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "RenderBundle")
 	return &RenderBundle{handle: handle}
 }
 
 // Release releases the render bundle encoder.
 func (rbe *RenderBundleEncoder) Release() {
 	if rbe.handle != 0 {
+		untrackResource(rbe.handle)
 		procRenderBundleEncoderRelease.Call(rbe.handle) //nolint:errcheck
 		rbe.handle = 0
 	}
@@ -209,6 +212,7 @@ func (rbe *RenderBundleEncoder) Handle() uintptr { return rbe.handle }
 // Release releases the render bundle.
 func (rb *RenderBundle) Release() {
 	if rb.handle != 0 {
+		untrackResource(rb.handle)
 		procRenderBundleRelease.Call(rb.handle) //nolint:errcheck
 		rb.handle = 0
 	}

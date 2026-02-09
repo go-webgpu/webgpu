@@ -114,6 +114,7 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Buffer")
 	return &Buffer{handle: handle}
 }
 
@@ -223,6 +224,7 @@ func (b *Buffer) Destroy() {
 // Release releases the buffer reference.
 func (b *Buffer) Release() {
 	if b.handle != 0 {
+		untrackResource(b.handle)
 		procBufferRelease.Call(b.handle) //nolint:errcheck
 		b.handle = 0
 	}

@@ -43,6 +43,7 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Sampler")
 	return &Sampler{handle: handle}
 }
 
@@ -81,6 +82,7 @@ func (d *Device) CreateNearestSampler() *Sampler {
 // Release releases the sampler reference.
 func (s *Sampler) Release() {
 	if s.handle != 0 {
+		untrackResource(s.handle)
 		procSamplerRelease.Call(s.handle) //nolint:errcheck
 		s.handle = 0
 	}

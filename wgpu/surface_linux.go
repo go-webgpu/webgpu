@@ -52,6 +52,7 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
+	trackResource(handle, "Surface")
 	return &Surface{handle: handle}, nil
 }
 
@@ -87,5 +88,6 @@ func (inst *Instance) CreateSurfaceFromWaylandSurface(display, surface uintptr) 
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
 
+	trackResource(handle, "Surface")
 	return &Surface{handle: handle}, nil
 }

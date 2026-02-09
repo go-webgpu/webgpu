@@ -163,6 +163,7 @@ func (s *Surface) Present() {
 // Release releases the surface.
 func (s *Surface) Release() {
 	if s.handle != 0 {
+		untrackResource(s.handle)
 		procSurfaceRelease.Call(s.handle) //nolint:errcheck
 		s.handle = 0
 	}

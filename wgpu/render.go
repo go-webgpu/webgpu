@@ -189,6 +189,7 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "RenderPassEncoder")
 	return &RenderPassEncoder{handle: handle}
 }
 
@@ -413,6 +414,7 @@ func (rpe *RenderPassEncoder) End() {
 // Release releases the render pass encoder.
 func (rpe *RenderPassEncoder) Release() {
 	if rpe.handle != 0 {
+		untrackResource(rpe.handle)
 		procRenderPassEncoderRelease.Call(rpe.handle) //nolint:errcheck
 		rpe.handle = 0
 	}
