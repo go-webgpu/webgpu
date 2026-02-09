@@ -12,8 +12,11 @@ import (
 type MapMode uint64
 
 const (
-	MapModeNone  MapMode = 0x0000000000000000
-	MapModeRead  MapMode = 0x0000000000000001
+	// MapModeNone indicates no mapping mode (default).
+	MapModeNone MapMode = 0x0000000000000000
+	// MapModeRead maps the buffer for reading via GetMappedRange.
+	MapModeRead MapMode = 0x0000000000000001
+	// MapModeWrite maps the buffer for writing via GetMappedRange.
 	MapModeWrite MapMode = 0x0000000000000002
 )
 
@@ -21,11 +24,16 @@ const (
 type MapAsyncStatus uint32
 
 const (
-	MapAsyncStatusSuccess         MapAsyncStatus = 0x00000001
+	// MapAsyncStatusSuccess indicates the buffer was successfully mapped.
+	MapAsyncStatusSuccess MapAsyncStatus = 0x00000001
+	// MapAsyncStatusInstanceDropped indicates the instance was dropped before completion.
 	MapAsyncStatusInstanceDropped MapAsyncStatus = 0x00000002
-	MapAsyncStatusError           MapAsyncStatus = 0x00000003
-	MapAsyncStatusAborted         MapAsyncStatus = 0x00000004
-	MapAsyncStatusUnknown         MapAsyncStatus = 0x00000005
+	// MapAsyncStatusError indicates a mapping error occurred.
+	MapAsyncStatusError MapAsyncStatus = 0x00000003
+	// MapAsyncStatusAborted indicates the mapping was aborted (e.g., buffer destroyed).
+	MapAsyncStatusAborted MapAsyncStatus = 0x00000004
+	// MapAsyncStatusUnknown indicates an unknown mapping error.
+	MapAsyncStatusUnknown MapAsyncStatus = 0x00000005
 )
 
 // BufferMapCallbackInfo holds callback configuration for MapAsync.

@@ -1,4 +1,5 @@
-// Package wgpu provides cross-platform library loading abstractions.
+// loader.go provides cross-platform library loading abstractions.
+
 package wgpu
 
 // Library represents a dynamically loaded library (DLL/SO/DYLIB).

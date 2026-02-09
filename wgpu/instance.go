@@ -70,6 +70,8 @@ type InstanceDescriptor struct {
 type Bool uint32
 
 const (
+	// False is the WebGPU boolean false value (0).
 	False Bool = 0
-	True  Bool = 1
+	// True is the WebGPU boolean true value (1).
+	True Bool = 1
 )

@@ -1,9 +1,10 @@
-// Package wgpu provides conversion functions between gputypes (webgpu.h spec)
+// convert.go provides conversion functions between gputypes (webgpu.h spec)
 // and wgpu-native internal values.
 //
 // Background: gputypes follows an older webgpu.h schema where enums start at 0.
 // wgpu-native v24+ uses a newer schema with BindingNotUsed=0, shifting other values by +1.
 // TextureFormat also differs due to removal of R16Unorm/R16Snorm from the spec.
+
 package wgpu
 
 import "github.com/gogpu/gputypes"

@@ -3,11 +3,21 @@ package wgpu
 import "fmt"
 
 // Sentinel errors for programmatic error handling via errors.Is().
+//
+// Usage:
+//
+//	if errors.Is(err, wgpu.ErrValidation) {
+//	    // handle validation error
+//	}
 var (
-	ErrValidation  = &WGPUError{Type: ErrorTypeValidation}
+	// ErrValidation matches any WebGPU validation error.
+	ErrValidation = &WGPUError{Type: ErrorTypeValidation}
+	// ErrOutOfMemory matches any WebGPU out-of-memory error.
 	ErrOutOfMemory = &WGPUError{Type: ErrorTypeOutOfMemory}
-	ErrInternal    = &WGPUError{Type: ErrorTypeInternal}
-	ErrDeviceLost  = &WGPUError{Type: ErrorTypeUnknown, Message: "device lost"}
+	// ErrInternal matches any WebGPU internal error.
+	ErrInternal = &WGPUError{Type: ErrorTypeInternal}
+	// ErrDeviceLost matches device lost errors.
+	ErrDeviceLost = &WGPUError{Type: ErrorTypeUnknown, Message: "device lost"}
 )
 
 // WGPUError represents a WebGPU operation error with context.
@@ -21,6 +31,7 @@ type WGPUError struct {
 	Message string
 }
 
+// Error returns a formatted error string including the operation name and message.
 func (e *WGPUError) Error() string {
 	if e.Op != "" && e.Message != "" {
 		return fmt.Sprintf("wgpu: %s: %s", e.Op, e.Message)

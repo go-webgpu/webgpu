@@ -4,56 +4,75 @@ package wgpu
 type RequestAdapterStatus uint32
 
 const (
-	RequestAdapterStatusSuccess         RequestAdapterStatus = 0x00000001
+	// RequestAdapterStatusSuccess indicates the adapter was successfully obtained.
+	RequestAdapterStatusSuccess RequestAdapterStatus = 0x00000001
+	// RequestAdapterStatusInstanceDropped indicates the instance was dropped before completion.
 	RequestAdapterStatusInstanceDropped RequestAdapterStatus = 0x00000002
-	RequestAdapterStatusUnavailable     RequestAdapterStatus = 0x00000003
-	RequestAdapterStatusError           RequestAdapterStatus = 0x00000004
+	// RequestAdapterStatusUnavailable indicates no suitable adapter is available.
+	RequestAdapterStatusUnavailable RequestAdapterStatus = 0x00000003
+	// RequestAdapterStatusError indicates an error occurred during adapter request.
+	RequestAdapterStatusError RequestAdapterStatus = 0x00000004
 )
 
 // RequestDeviceStatus is the status returned by RequestDevice callback.
 type RequestDeviceStatus uint32
 
 const (
-	RequestDeviceStatusSuccess         RequestDeviceStatus = 0x00000001
+	// RequestDeviceStatusSuccess indicates the device was successfully obtained.
+	RequestDeviceStatusSuccess RequestDeviceStatus = 0x00000001
+	// RequestDeviceStatusInstanceDropped indicates the instance was dropped before completion.
 	RequestDeviceStatusInstanceDropped RequestDeviceStatus = 0x00000002
-	RequestDeviceStatusError           RequestDeviceStatus = 0x00000003
-	RequestDeviceStatusUnknown         RequestDeviceStatus = 0x00000004
+	// RequestDeviceStatusError indicates an error occurred during device request.
+	RequestDeviceStatusError RequestDeviceStatus = 0x00000003
+	// RequestDeviceStatusUnknown indicates an unknown error occurred.
+	RequestDeviceStatusUnknown RequestDeviceStatus = 0x00000004
 )
 
 // FeatureLevel indicates the WebGPU feature level.
 type FeatureLevel uint32
 
 const (
+	// FeatureLevelCompatibility indicates the compatibility feature level (WebGPU compat).
 	FeatureLevelCompatibility FeatureLevel = 0x00000001
-	FeatureLevelCore          FeatureLevel = 0x00000002
+	// FeatureLevelCore indicates the core feature level (full WebGPU).
+	FeatureLevelCore FeatureLevel = 0x00000002
 )
 
 // CallbackMode controls how callbacks are fired.
 type CallbackMode uint32
 
 const (
-	CallbackModeWaitAnyOnly        CallbackMode = 0x00000001
+	// CallbackModeWaitAnyOnly fires callbacks only during WaitAny calls.
+	CallbackModeWaitAnyOnly CallbackMode = 0x00000001
+	// CallbackModeAllowProcessEvents fires callbacks during ProcessEvents calls.
 	CallbackModeAllowProcessEvents CallbackMode = 0x00000002
-	CallbackModeAllowSpontaneous   CallbackMode = 0x00000003
+	// CallbackModeAllowSpontaneous allows callbacks to fire at any time.
+	CallbackModeAllowSpontaneous CallbackMode = 0x00000003
 )
 
 // SType identifies chained struct types.
 type SType uint32
 
 const (
-	// Standard WebGPU STypes
+	// STypeShaderSourceSPIRV identifies a SPIR-V shader source chained struct.
 	STypeShaderSourceSPIRV SType = 0x00000001
-	STypeShaderSourceWGSL  SType = 0x00000002
+	// STypeShaderSourceWGSL identifies a WGSL shader source chained struct.
+	STypeShaderSourceWGSL SType = 0x00000002
 
-	// Surface source STypes
-	STypeSurfaceSourceMetalLayer          SType = 0x00000004
-	STypeSurfaceSourceWindowsHWND         SType = 0x00000005
-	STypeSurfaceSourceXlibWindow          SType = 0x00000006
-	STypeSurfaceSourceWaylandSurface      SType = 0x00000007
+	// STypeSurfaceSourceMetalLayer identifies a Metal layer surface source (macOS/iOS).
+	STypeSurfaceSourceMetalLayer SType = 0x00000004
+	// STypeSurfaceSourceWindowsHWND identifies a Windows HWND surface source.
+	STypeSurfaceSourceWindowsHWND SType = 0x00000005
+	// STypeSurfaceSourceXlibWindow identifies an Xlib window surface source (Linux).
+	STypeSurfaceSourceXlibWindow SType = 0x00000006
+	// STypeSurfaceSourceWaylandSurface identifies a Wayland surface source (Linux).
+	STypeSurfaceSourceWaylandSurface SType = 0x00000007
+	// STypeSurfaceSourceAndroidNativeWindow identifies an Android native window surface source.
 	STypeSurfaceSourceAndroidNativeWindow SType = 0x00000008
-	STypeSurfaceSourceXCBWindow           SType = 0x00000009
+	// STypeSurfaceSourceXCBWindow identifies an XCB window surface source (Linux).
+	STypeSurfaceSourceXCBWindow SType = 0x00000009
 
-	// Native extension STypes (from wgpu.h)
+	// STypeInstanceExtras identifies wgpu-native instance extras chained struct.
 	STypeInstanceExtras SType = 0x00030006
 )
 
@@ -61,32 +80,47 @@ const (
 type SurfaceGetCurrentTextureStatus uint32
 
 const (
-	SurfaceGetCurrentTextureStatusSuccessOptimal    SurfaceGetCurrentTextureStatus = 0x01
+	// SurfaceGetCurrentTextureStatusSuccessOptimal indicates the texture was obtained optimally.
+	SurfaceGetCurrentTextureStatusSuccessOptimal SurfaceGetCurrentTextureStatus = 0x01
+	// SurfaceGetCurrentTextureStatusSuccessSuboptimal indicates the texture was obtained but may not be optimal.
 	SurfaceGetCurrentTextureStatusSuccessSuboptimal SurfaceGetCurrentTextureStatus = 0x02
-	SurfaceGetCurrentTextureStatusTimeout           SurfaceGetCurrentTextureStatus = 0x03
-	SurfaceGetCurrentTextureStatusOutdated          SurfaceGetCurrentTextureStatus = 0x04
-	SurfaceGetCurrentTextureStatusLost              SurfaceGetCurrentTextureStatus = 0x05
-	SurfaceGetCurrentTextureStatusOutOfMemory       SurfaceGetCurrentTextureStatus = 0x06
-	SurfaceGetCurrentTextureStatusDeviceLost        SurfaceGetCurrentTextureStatus = 0x07
-	SurfaceGetCurrentTextureStatusError             SurfaceGetCurrentTextureStatus = 0x08
+	// SurfaceGetCurrentTextureStatusTimeout indicates the operation timed out.
+	SurfaceGetCurrentTextureStatusTimeout SurfaceGetCurrentTextureStatus = 0x03
+	// SurfaceGetCurrentTextureStatusOutdated indicates the surface needs reconfiguration.
+	SurfaceGetCurrentTextureStatusOutdated SurfaceGetCurrentTextureStatus = 0x04
+	// SurfaceGetCurrentTextureStatusLost indicates the surface was lost and must be recreated.
+	SurfaceGetCurrentTextureStatusLost SurfaceGetCurrentTextureStatus = 0x05
+	// SurfaceGetCurrentTextureStatusOutOfMemory indicates GPU memory allocation failed.
+	SurfaceGetCurrentTextureStatusOutOfMemory SurfaceGetCurrentTextureStatus = 0x06
+	// SurfaceGetCurrentTextureStatusDeviceLost indicates the GPU device was lost.
+	SurfaceGetCurrentTextureStatusDeviceLost SurfaceGetCurrentTextureStatus = 0x07
+	// SurfaceGetCurrentTextureStatusError indicates an unspecified error occurred.
+	SurfaceGetCurrentTextureStatusError SurfaceGetCurrentTextureStatus = 0x08
 )
 
 // TextureAspect describes which aspect of a texture to access.
 type TextureAspect uint32
 
 const (
-	TextureAspectUndefined   TextureAspect = 0x00
-	TextureAspectAll         TextureAspect = 0x01
+	// TextureAspectUndefined leaves the texture aspect unspecified.
+	TextureAspectUndefined TextureAspect = 0x00
+	// TextureAspectAll accesses all aspects of the texture.
+	TextureAspectAll TextureAspect = 0x01
+	// TextureAspectStencilOnly accesses only the stencil aspect of a depth-stencil texture.
 	TextureAspectStencilOnly TextureAspect = 0x02
-	TextureAspectDepthOnly   TextureAspect = 0x03
+	// TextureAspectDepthOnly accesses only the depth aspect of a depth-stencil texture.
+	TextureAspectDepthOnly TextureAspect = 0x03
 )
 
 // OptionalBool is a tri-state boolean for WebGPU.
 type OptionalBool uint32
 
 const (
-	OptionalBoolFalse     OptionalBool = 0x00000000
-	OptionalBoolTrue      OptionalBool = 0x00000001
+	// OptionalBoolFalse represents an explicit false value.
+	OptionalBoolFalse OptionalBool = 0x00000000
+	// OptionalBoolTrue represents an explicit true value.
+	OptionalBoolTrue OptionalBool = 0x00000001
+	// OptionalBoolUndefined represents an unset/default value.
 	OptionalBoolUndefined OptionalBool = 0x00000002
 )
 
@@ -113,42 +147,60 @@ const (
 type WGPUStatus uint32
 
 const (
+	// WGPUStatusSuccess indicates the operation completed successfully.
 	WGPUStatusSuccess WGPUStatus = 0x00000000
-	WGPUStatusError   WGPUStatus = 0x00000001
+	// WGPUStatusError indicates the operation failed.
+	WGPUStatusError WGPUStatus = 0x00000001
 )
 
 // BufferMapState describes the mapping state of a buffer.
 type BufferMapState uint32
 
 const (
+	// BufferMapStateUnmapped indicates the buffer is not mapped.
 	BufferMapStateUnmapped BufferMapState = 0x00000001
-	BufferMapStatePending  BufferMapState = 0x00000002
-	BufferMapStateMapped   BufferMapState = 0x00000003
+	// BufferMapStatePending indicates a map operation is in progress.
+	BufferMapStatePending BufferMapState = 0x00000002
+	// BufferMapStateMapped indicates the buffer is currently mapped and accessible.
+	BufferMapStateMapped BufferMapState = 0x00000003
 )
 
 // BackendType describes the graphics backend being used.
 type BackendType uint32
 
 const (
+	// BackendTypeUndefined indicates no backend is specified.
 	BackendTypeUndefined BackendType = 0x00000000
-	BackendTypeNull      BackendType = 0x00000001
-	BackendTypeWebGPU    BackendType = 0x00000002
-	BackendTypeD3D11     BackendType = 0x00000003
-	BackendTypeD3D12     BackendType = 0x00000004
-	BackendTypeMetal     BackendType = 0x00000005
-	BackendTypeVulkan    BackendType = 0x00000006
-	BackendTypeOpenGL    BackendType = 0x00000007
-	BackendTypeOpenGLES  BackendType = 0x00000008
+	// BackendTypeNull indicates a null/mock backend (for testing).
+	BackendTypeNull BackendType = 0x00000001
+	// BackendTypeWebGPU indicates the native WebGPU backend.
+	BackendTypeWebGPU BackendType = 0x00000002
+	// BackendTypeD3D11 indicates the Direct3D 11 backend (Windows).
+	BackendTypeD3D11 BackendType = 0x00000003
+	// BackendTypeD3D12 indicates the Direct3D 12 backend (Windows).
+	BackendTypeD3D12 BackendType = 0x00000004
+	// BackendTypeMetal indicates the Metal backend (macOS/iOS).
+	BackendTypeMetal BackendType = 0x00000005
+	// BackendTypeVulkan indicates the Vulkan backend (cross-platform).
+	BackendTypeVulkan BackendType = 0x00000006
+	// BackendTypeOpenGL indicates the OpenGL backend.
+	BackendTypeOpenGL BackendType = 0x00000007
+	// BackendTypeOpenGLES indicates the OpenGL ES backend (mobile/embedded).
+	BackendTypeOpenGLES BackendType = 0x00000008
 )
 
 // AdapterType describes the type of GPU adapter.
 type AdapterType uint32
 
 const (
-	AdapterTypeDiscreteGPU   AdapterType = 0x00000001
+	// AdapterTypeDiscreteGPU indicates a dedicated/discrete GPU (best performance).
+	AdapterTypeDiscreteGPU AdapterType = 0x00000001
+	// AdapterTypeIntegratedGPU indicates an integrated GPU (shared with CPU).
 	AdapterTypeIntegratedGPU AdapterType = 0x00000002
-	AdapterTypeCPU           AdapterType = 0x00000003
-	AdapterTypeUnknown       AdapterType = 0x00000004
+	// AdapterTypeCPU indicates a software/CPU-based renderer.
+	AdapterTypeCPU AdapterType = 0x00000003
+	// AdapterTypeUnknown indicates the adapter type could not be determined.
+	AdapterTypeUnknown AdapterType = 0x00000004
 )
 
 // ErrorFilter filters error types in error scopes.
