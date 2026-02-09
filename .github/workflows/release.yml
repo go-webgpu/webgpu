@@ -1,0 +1,221 @@
+name: Release
+
+# Automated release workflow — triggers on version tags.
+# Creates a GitHub Release with auto-generated release notes
+# after full validation passes.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # Full validation before release
+  validate:
+    name: Validate Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.25']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: true
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Build library
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          CGO_ENABLED=0 go build -v ./wgpu/...
+        else
+          go build -v ./...
+        fi
+
+    - name: Run tests
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          go test -v ./wgpu/...
+        else
+          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|Struct|Fuzz|Leak|Error|Init"
+        fi
+
+    - name: Run fuzz tests (seed corpus only)
+      if: matrix.os == 'ubuntu-latest'
+      run: CGO_ENABLED=0 go test -v ./wgpu/... -run "Fuzz"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        cache: true
+    - uses: golangci/golangci-lint-action@v8
+      env:
+        CGO_ENABLED: 0
+      with:
+        version: latest
+        args: --timeout=5m ./wgpu/...
+
+  # Validate release metadata
+  check-release:
+    name: Check Release Metadata
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Validate tag format
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+          echo "ERROR: Tag '$TAG' does not match semver format (vX.Y.Z)"
+          exit 1
+        fi
+        echo "Tag format OK: $TAG"
+
+    - name: Check CHANGELOG has entry
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        VERSION=${TAG#v}
+        if ! grep -q "\[$VERSION\]" CHANGELOG.md; then
+          echo "WARNING: No CHANGELOG entry for version $VERSION"
+          echo "Consider adding a changelog entry before the next release"
+        else
+          echo "CHANGELOG entry found for $VERSION"
+        fi
+
+    - name: Check required files
+      run: |
+        for f in README.md CHANGELOG.md STABILITY.md LICENSE; do
+          if [ ! -f "$f" ]; then
+            echo "ERROR: Missing required file: $f"
+            exit 1
+          fi
+        done
+        echo "All required files present"
+
+  # Create GitHub Release
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, lint, check-release]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for release notes
+
+    - name: Extract version info
+      id: version
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        VERSION=${TAG#v}
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+        # Determine if pre-release
+        if echo "$VERSION" | grep -qE '-(alpha|beta|rc)'; then
+          echo "prerelease=true" >> $GITHUB_OUTPUT
+        else
+          echo "prerelease=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate release notes
+      id: notes
+      run: |
+        TAG=${{ steps.version.outputs.tag }}
+
+        # Find previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || echo "")
+
+        if [ -n "$PREV_TAG" ]; then
+          echo "Generating notes from $PREV_TAG to $TAG"
+          RANGE="$PREV_TAG..$TAG"
+        else
+          echo "First release, using all commits"
+          RANGE="$TAG"
+        fi
+
+        # Generate categorized release notes
+        {
+          echo "## What's Changed"
+          echo ""
+
+          # Features
+          FEATS=$(git log "$RANGE" --pretty=format:"%s" | grep "^feat:" | sed 's/^feat: //' || true)
+          if [ -n "$FEATS" ]; then
+            echo "### Features"
+            echo "$FEATS" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          # Fixes
+          FIXES=$(git log "$RANGE" --pretty=format:"%s" | grep "^fix:" | sed 's/^fix: //' || true)
+          if [ -n "$FIXES" ]; then
+            echo "### Bug Fixes"
+            echo "$FIXES" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          # Docs
+          DOCS=$(git log "$RANGE" --pretty=format:"%s" | grep "^docs:" | sed 's/^docs: //' || true)
+          if [ -n "$DOCS" ]; then
+            echo "### Documentation"
+            echo "$DOCS" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          # Tests
+          TESTS=$(git log "$RANGE" --pretty=format:"%s" | grep "^test:" | sed 's/^test: //' || true)
+          if [ -n "$TESTS" ]; then
+            echo "### Tests"
+            echo "$TESTS" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          # Dependencies
+          DEPS=$(git log "$RANGE" --pretty=format:"%s" | grep "^deps:" | sed 's/^deps: //' || true)
+          if [ -n "$DEPS" ]; then
+            echo "### Dependencies"
+            echo "$DEPS" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          # Other
+          OTHER=$(git log "$RANGE" --pretty=format:"%s" | grep -vE "^(feat|fix|docs|test|deps|chore|refactor|style):" || true)
+          if [ -n "$OTHER" ]; then
+            echo "### Other"
+            echo "$OTHER" | while read -r line; do echo "- $line"; done
+            echo ""
+          fi
+
+          echo "---"
+          echo ""
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-initial}...$TAG"
+        } > /tmp/release_notes.md
+
+        cat /tmp/release_notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: ${{ steps.version.outputs.tag }}
+        body_path: /tmp/release_notes.md
+        prerelease: ${{ steps.version.outputs.prerelease }}
+        generate_release_notes: false
