@@ -39,6 +39,7 @@ func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEn
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "CommandEncoder")
 	return &CommandEncoder{handle: handle}
 }
 
@@ -56,6 +57,7 @@ func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) *Comput
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "ComputePassEncoder")
 	return &ComputePassEncoder{handle: handle}
 }
 
@@ -189,12 +191,14 @@ func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) *CommandBuffer 
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "CommandBuffer")
 	return &CommandBuffer{handle: handle}
 }
 
 // Release releases the command encoder.
 func (enc *CommandEncoder) Release() {
 	if enc.handle != 0 {
+		untrackResource(enc.handle)
 		procCommandEncoderRelease.Call(enc.handle) //nolint:errcheck
 		enc.handle = 0
 	}
@@ -290,6 +294,7 @@ func (cpe *ComputePassEncoder) End() {
 // Release releases the compute pass encoder.
 func (cpe *ComputePassEncoder) Release() {
 	if cpe.handle != 0 {
+		untrackResource(cpe.handle)
 		procComputePassEncoderRelease.Call(cpe.handle) //nolint:errcheck
 		cpe.handle = 0
 	}
@@ -318,6 +323,7 @@ func (q *Queue) Submit(commands ...*CommandBuffer) {
 // Release releases the command buffer.
 func (cb *CommandBuffer) Release() {
 	if cb.handle != 0 {
+		untrackResource(cb.handle)
 		procCommandBufferRelease.Call(cb.handle) //nolint:errcheck
 		cb.handle = 0
 	}

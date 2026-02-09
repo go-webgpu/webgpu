@@ -217,30 +217,47 @@ golangci-lint config verify
 webgpu/
 ├── .github/              # GitHub workflows and templates
 │   ├── CODEOWNERS       # Code ownership
-│   └── workflows/       # CI/CD pipelines
-├── wgpu/                 # WebGPU bindings (PUBLIC)
-│   ├── adapter.go       # GPU adapter
-│   ├── buffer.go        # Buffer management
-│   ├── command.go       # Command encoder/buffer
-│   ├── device.go        # GPU device
+│   └── workflows/       # CI/CD pipelines (test.yml, release.yml)
+├── wgpu/                 # WebGPU bindings (PUBLIC API)
+│   ├── doc.go           # Package-level documentation (godoc)
+│   ├── types.go         # Core WebGPU handle types (Instance, Device, Buffer, ...)
+│   ├── enums.go         # WebGPU enum types and constants
+│   ├── wgpu.go          # Library initialization (Init, mustInit, checkInit)
+│   ├── wgpu_errors.go   # Typed error system (WGPUError, sentinel errors)
+│   ├── convert.go       # gputypes ↔ wgpu-native enum conversion
+│   ├── loader.go        # Cross-platform library loading abstraction
+│   ├── loader_*.go      # Platform-specific loaders (Windows/Unix)
+│   ├── debug.go         # Resource leak detection (SetDebugMode, ReportLeaks)
+│   ├── math.go          # 3D math helpers (Mat4, Vec3)
 │   ├── instance.go      # WebGPU instance
-│   ├── loader_*.go      # Platform-specific loaders
-│   ├── pipeline.go      # Compute/render pipelines
-│   ├── render.go        # Render pass
-│   ├── surface_*.go     # Platform-specific surfaces
-│   ├── texture.go       # Texture management
+│   ├── adapter.go       # GPU adapter (StringView, Limits, SupportedLimits)
+│   ├── device.go        # GPU device (RequestDevice, GetQueue, GetLimits)
+│   ├── buffer.go        # Buffer management (MapAsync, WriteBuffer)
+│   ├── texture.go       # Texture management (CreateTexture, WriteTexture)
+│   ├── shader.go        # Shader module (CreateShaderModuleWGSL)
+│   ├── pipeline.go      # Compute pipeline, pipeline layout
+│   ├── render_pipeline.go # Render pipeline
+│   ├── bindgroup.go     # Bind groups and layouts
+│   ├── command.go       # Command encoder/buffer, compute pass
+│   ├── render.go        # Render pass encoder
+│   ├── render_bundle.go # Render bundle encoder
+│   ├── sampler.go       # Texture sampler
+│   ├── queryset.go      # Query set (occlusion, timestamp)
+│   ├── surface.go       # Surface (Configure, GetCurrentTexture, Present)
+│   ├── surface_*.go     # Platform-specific surfaces (Windows/Linux/macOS)
+│   ├── errors.go        # Error scope API (PushErrorScope, PopErrorScope)
+│   ├── fuzz_test.go     # Fuzz tests for FFI boundary
 │   └── *_test.go        # Tests
 ├── examples/             # Usage examples
 │   ├── triangle/        # Basic rendering
 │   ├── compute/         # Compute shaders
 │   ├── cube/            # 3D with depth buffer
 │   └── ...              # More examples
-├── include/              # WebGPU C headers (reference)
 ├── scripts/              # Development scripts
 │   ├── download-wgpu-native.sh
 │   └── pre-release-check.sh
-├── docs/                 # Documentation
 ├── CHANGELOG.md          # Version history
+├── STABILITY.md          # API stability & deprecation policy
 ├── LICENSE               # MIT License
 └── README.md             # Main documentation
 ```
@@ -301,10 +318,19 @@ type CStruct struct {
 
 ### Error Handling
 
-- Always check and handle errors
-- Use descriptive error messages with context
-- Return errors immediately, don't wrap unnecessarily
+- Use `WGPUError` for all WebGPU errors (supports `errors.Is()`/`errors.As()`)
+- Match against sentinel errors: `ErrValidation`, `ErrOutOfMemory`, `ErrInternal`
+- Use `checkInit()` (returns error) for functions that return errors
+- Use `mustInit()` (panics) only for void functions
 - Validate inputs before FFI calls
+
+### Resource Lifecycle
+
+Every `Create*()` function must:
+1. Call `trackResource(handle, "TypeName")` after successful creation
+2. Have a corresponding `Release()` method that calls `untrackResource(handle)`
+
+Use `SetDebugMode(true)` + `ReportLeaks()` during development to catch leaks.
 
 ### Testing
 
@@ -313,6 +339,28 @@ type CStruct struct {
 - Test on all supported platforms
 - Add examples for new features
 - Compare with wgpu-native C examples for correctness
+
+### Fuzz Testing
+
+The FFI boundary is fuzz-tested via Go native fuzzing. When adding new conversion
+functions, add corresponding fuzz targets in `fuzz_test.go`:
+
+```bash
+# Run fuzz tests on seed corpus (fast, part of normal test suite)
+go test ./wgpu/... -run Fuzz
+
+# Run actual fuzzing for a specific target
+go test ./wgpu/ -fuzz=FuzzToWGPUTextureFormat -fuzztime=60s
+```
+
+### API Stability
+
+See [STABILITY.md](STABILITY.md) for the API stability policy. When deprecating a function:
+
+```go
+// Deprecated: Use NewFunction instead.
+func OldFunction() { ... }
+```
 
 ## Platform-Specific Notes
 

@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"sync"
 	"unsafe"
 
@@ -53,12 +52,14 @@ type adapterRequest struct {
 }
 
 var (
-	// Global registry for pending adapter requests
+	// adapterRequests is the global registry for pending adapter requests.
+	// Protected by adapterRequestsMu for concurrent access.
 	adapterRequests   = make(map[uintptr]*adapterRequest)
 	adapterRequestsMu sync.Mutex
 	adapterRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// adapterCallbackPtr is the callback function pointer (created once).
+	// Protected by adapterCallbackOnce for concurrent initialization.
 	adapterCallbackPtr  uintptr
 	adapterCallbackOnce sync.Once
 )
@@ -91,6 +92,7 @@ func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, us
 	if ok && req != nil {
 		req.status = RequestAdapterStatus(status)
 		if adapter != 0 {
+			trackResource(adapter, "Adapter")
 			req.adapter = &Adapter{handle: adapter}
 		}
 		req.message = msg
@@ -108,7 +110,9 @@ func initAdapterCallback() {
 // RequestAdapter requests a GPU adapter from the instance.
 // This is a synchronous wrapper that blocks until the adapter is available.
 func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Initialize callback once
 	adapterCallbackOnce.Do(initAdapterCallback)
@@ -158,7 +162,7 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 				if msg == "" {
 					msg = "adapter request failed"
 				}
-				return nil, errors.New("wgpu: " + msg)
+				return nil, &WGPUError{Op: "RequestAdapter", Message: msg}
 			}
 			return req.adapter, nil
 		default:
@@ -171,13 +175,15 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 // Release releases the adapter resources.
 func (a *Adapter) Release() {
 	if a.handle != 0 {
+		untrackResource(a.handle)
 		procAdapterRelease.Call(a.handle) //nolint:errcheck
 		a.handle = 0
 	}
 }
 
 // Limits describes resource limits for an adapter or device.
-// This contains the most commonly used limits. WebGPU spec defines ~50 limits total.
+// This corresponds to WGPULimits in webgpu.h (no nextInChain field).
+// Used inside SupportedLimits which wraps it with nextInChain for FFI calls.
 type Limits struct {
 	MaxTextureDimension1D                     uint32
 	MaxTextureDimension2D                     uint32
@@ -218,6 +224,13 @@ type SupportedLimits struct {
 	Limits      Limits
 }
 
+// SupportedFeatures contains features supported by adapter or device.
+// This is the wire format for wgpuAdapterGetFeatures/wgpuDeviceGetFeatures.
+type SupportedFeatures struct {
+	FeatureCount uintptr // size_t
+	Features     uintptr // *FeatureName
+}
+
 // AdapterInfo contains information about the adapter.
 type AdapterInfo struct {
 	NextInChain  uintptr // *ChainedStructOut
@@ -246,9 +259,11 @@ type AdapterInfoGo struct {
 // GetLimits retrieves the limits of this adapter.
 // Returns nil if the adapter is nil or if the operation fails.
 func (a *Adapter) GetLimits() (*SupportedLimits, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if a == nil || a.handle == 0 {
-		return nil, errors.New("wgpu: adapter is nil")
+		return nil, &WGPUError{Op: "Adapter.GetLimits", Message: "adapter is nil"}
 	}
 
 	limits := &SupportedLimits{}
@@ -258,7 +273,7 @@ func (a *Adapter) GetLimits() (*SupportedLimits, error) {
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, errors.New("wgpu: failed to get adapter limits")
+		return nil, &WGPUError{Op: "Adapter.GetLimits", Message: "operation failed"}
 	}
 
 	return limits, nil
@@ -311,9 +326,11 @@ func (a *Adapter) HasFeature(feature FeatureName) bool {
 // The returned AdapterInfoGo contains Go strings copied from C memory.
 // Returns nil if the adapter is nil or if the operation fails.
 func (a *Adapter) GetInfo() (*AdapterInfoGo, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if a == nil || a.handle == 0 {
-		return nil, errors.New("wgpu: adapter is nil")
+		return nil, &WGPUError{Op: "Adapter.GetInfo", Message: "adapter is nil"}
 	}
 
 	// Get native adapter info
@@ -324,7 +341,7 @@ func (a *Adapter) GetInfo() (*AdapterInfoGo, error) {
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, errors.New("wgpu: failed to get adapter info")
+		return nil, &WGPUError{Op: "Adapter.GetInfo", Message: "operation failed"}
 	}
 
 	// Convert StringViews to Go strings

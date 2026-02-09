@@ -3,6 +3,29 @@
 // This package wraps wgpu-native (Rust WebGPU implementation) using pure Go FFI
 // via syscall on Windows and dlopen on Unix. No CGO is required.
 //
+// # Thread Safety
+//
+// The following operations are safe for concurrent use:
+//   - [Init] and library initialization (protected by sync.Once)
+//   - [Instance.RequestAdapter] (callback registry protected by mutex)
+//   - [Adapter.RequestDevice] (callback registry protected by mutex)
+//   - [Device.PopErrorScopeAsync] (callback registry protected by mutex)
+//   - [Buffer.MapAsync] (callback registry protected by mutex)
+//   - Read-only queries: [Adapter.GetLimits], [Adapter.GetInfo], [Adapter.EnumerateFeatures], [Adapter.HasFeature]
+//   - Read-only queries: [Device.GetLimits], [Device.GetFeatures], [Device.HasFeature]
+//   - Read-only queries: [Surface.GetCapabilities]
+//
+// The following operations are NOT safe for concurrent use on the same object:
+//   - [Surface.Configure], [Surface.GetCurrentTexture], [Surface.Present]
+//     (must be called from a single goroutine, typically the render loop)
+//   - [CommandEncoder] methods (single encoder should not be shared between goroutines)
+//   - [RenderPassEncoder] and [ComputePassEncoder] methods
+//   - [Buffer.GetMappedRange] and [Buffer.Unmap]
+//
+// General rule: different GPU objects can be used from different goroutines,
+// but a single object should not be accessed concurrently.
+// This matches the WebGPU spec threading model.
+//
 // # Quick Start
 //
 //	// Initialize the library

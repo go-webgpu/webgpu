@@ -1,13 +1,7 @@
-// Package wgpu provides Go bindings to wgpu-native WebGPU implementation.
-//
-// This package uses cross-platform FFI for calling wgpu-native library.
-// On Windows: syscall.LazyDLL is used directly.
-// On Linux/macOS: goffi is used for dynamic library loading.
-// For callbacks, goffi's NewCallback is used on all platforms.
-// No C compiler required for building or running.
 package wgpu
 
 import (
+	"errors"
 	"runtime"
 	"sync"
 )
@@ -39,6 +33,9 @@ var (
 	procDevicePoll           Proc // wgpu-native extension
 	procDevicePushErrorScope Proc
 	procDevicePopErrorScope  Proc
+	procDeviceGetFeatures    Proc
+	procDeviceHasFeature     Proc
+	procDeviceGetLimits      Proc
 
 	// Function pointers - Queue
 	procQueueRelease     Proc
@@ -226,6 +223,9 @@ func initSymbols() {
 	procDevicePoll = wgpuLib.NewProc("wgpuDevicePoll") // wgpu-native extension
 	procDevicePushErrorScope = wgpuLib.NewProc("wgpuDevicePushErrorScope")
 	procDevicePopErrorScope = wgpuLib.NewProc("wgpuDevicePopErrorScope")
+	procDeviceGetFeatures = wgpuLib.NewProc("wgpuDeviceGetFeatures")
+	procDeviceHasFeature = wgpuLib.NewProc("wgpuDeviceHasFeature")
+	procDeviceGetLimits = wgpuLib.NewProc("wgpuDeviceGetLimits")
 
 	// Queue
 	procQueueRelease = wgpuLib.NewProc("wgpuQueueRelease")
@@ -365,6 +365,17 @@ func initSymbols() {
 	procRenderBundleEncoderRelease = wgpuLib.NewProc("wgpuRenderBundleEncoderRelease")
 	procRenderBundleRelease = wgpuLib.NewProc("wgpuRenderBundleRelease")
 	procRenderPassEncoderExecuteBundles = wgpuLib.NewProc("wgpuRenderPassEncoderExecuteBundles")
+}
+
+// ErrLibraryNotLoaded is returned when wgpu-native library is not loaded or failed to initialize.
+var ErrLibraryNotLoaded = errors.New("wgpu: native library not loaded or failed to initialize")
+
+// checkInit checks that the library is initialized, returning error if not.
+func checkInit() error {
+	if err := Init(); err != nil {
+		return ErrLibraryNotLoaded
+	}
+	return nil
 }
 
 func mustInit() {

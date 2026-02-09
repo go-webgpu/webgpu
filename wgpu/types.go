@@ -1,71 +1,94 @@
 package wgpu
 
-// Handle types - opaque pointers to WebGPU objects
+// Handle types — opaque wrappers around wgpu-native object pointers.
+// Each type must be explicitly released via its Release method when no longer needed.
 
-// Instance represents a WebGPU instance.
+// Instance is the entry point to the WebGPU API.
+// Create with [CreateInstance], release with [Instance.Release].
 type Instance struct{ handle uintptr }
 
-// Adapter represents a WebGPU adapter (GPU).
+// Adapter represents a physical GPU and its capabilities.
+// Obtained via [Instance.RequestAdapter], release with [Adapter.Release].
 type Adapter struct{ handle uintptr }
 
-// Device represents a WebGPU device.
+// Device is the logical connection to a GPU, used to create all other resources.
+// Obtained via [Adapter.RequestDevice], release with [Device.Release].
 type Device struct{ handle uintptr }
 
-// Queue represents a WebGPU command queue.
+// Queue is used to submit command buffers and write data to buffers/textures.
+// Obtained via [Device.GetQueue], release with [Queue.Release].
 type Queue struct{ handle uintptr }
 
-// Buffer represents a WebGPU buffer.
+// Buffer represents a block of GPU-accessible memory.
+// Create with [Device.CreateBuffer], release with [Buffer.Release].
 type Buffer struct{ handle uintptr }
 
-// Texture represents a WebGPU texture.
+// Texture represents a GPU texture resource (1D, 2D, or 3D).
+// Create with [Device.CreateTexture], release with [Texture.Release].
 type Texture struct{ handle uintptr }
 
-// TextureView represents a view into a WebGPU texture.
+// TextureView is a view into a subset of a [Texture], used in bind groups and render passes.
+// Create with [Texture.CreateView], release with [TextureView.Release].
 type TextureView struct{ handle uintptr }
 
-// Sampler represents a WebGPU sampler.
+// Sampler defines how a shader samples a [Texture].
+// Create with [Device.CreateSampler], release with [Sampler.Release].
 type Sampler struct{ handle uintptr }
 
-// ShaderModule represents a compiled shader.
+// ShaderModule holds compiled shader code (WGSL or SPIR-V).
+// Create with [Device.CreateShaderModuleWGSL], release with [ShaderModule.Release].
 type ShaderModule struct{ handle uintptr }
 
-// BindGroupLayout represents a bind group layout.
+// BindGroupLayout defines the layout of resource bindings for a shader stage.
+// Create with [Device.CreateBindGroupLayout], release with [BindGroupLayout.Release].
 type BindGroupLayout struct{ handle uintptr }
 
-// BindGroup represents a bind group.
+// BindGroup binds actual GPU resources (buffers, textures, samplers) to shader slots.
+// Create with [Device.CreateBindGroup], release with [BindGroup.Release].
 type BindGroup struct{ handle uintptr }
 
-// PipelineLayout represents a pipeline layout.
+// PipelineLayout defines the bind group layouts used by a pipeline.
+// Create with [Device.CreatePipelineLayout], release with [PipelineLayout.Release].
 type PipelineLayout struct{ handle uintptr }
 
-// RenderPipeline represents a render pipeline.
+// RenderPipeline is a compiled render pipeline configuration (shaders, vertex layout, blend state).
+// Create with [Device.CreateRenderPipeline], release with [RenderPipeline.Release].
 type RenderPipeline struct{ handle uintptr }
 
-// ComputePipeline represents a compute pipeline.
+// ComputePipeline is a compiled compute pipeline configuration.
+// Create with [Device.CreateComputePipeline], release with [ComputePipeline.Release].
 type ComputePipeline struct{ handle uintptr }
 
-// CommandEncoder represents a command encoder.
+// CommandEncoder records GPU commands into a [CommandBuffer].
+// Create with [Device.CreateCommandEncoder], finalize with [CommandEncoder.Finish].
 type CommandEncoder struct{ handle uintptr }
 
-// CommandBuffer represents an encoded command buffer.
+// CommandBuffer holds encoded GPU commands ready for submission via [Queue.Submit].
+// Obtained from [CommandEncoder.Finish], release with [CommandBuffer.Release].
 type CommandBuffer struct{ handle uintptr }
 
-// RenderPassEncoder represents a render pass encoder.
+// RenderPassEncoder records draw commands within a render pass.
+// Begin with [CommandEncoder.BeginRenderPass], end with [RenderPassEncoder.End].
 type RenderPassEncoder struct{ handle uintptr }
 
-// ComputePassEncoder represents a compute pass encoder.
+// ComputePassEncoder records dispatch commands within a compute pass.
+// Begin with [CommandEncoder.BeginComputePass], end with [ComputePassEncoder.End].
 type ComputePassEncoder struct{ handle uintptr }
 
-// Surface represents a surface for presenting rendered images.
+// Surface represents a platform window surface for presenting rendered frames.
+// Create with platform-specific CreateSurface, release with [Surface.Release].
 type Surface struct{ handle uintptr }
 
-// QuerySet represents a query set.
+// QuerySet holds a set of GPU queries (occlusion or timestamp).
+// Create with [Device.CreateQuerySet], release with [QuerySet.Release].
 type QuerySet struct{ handle uintptr }
 
-// RenderBundle represents a pre-recorded bundle of render commands.
+// RenderBundle is a pre-recorded set of render commands for efficient replay.
+// Obtained from [RenderBundleEncoder.Finish], release with [RenderBundle.Release].
 type RenderBundle struct{ handle uintptr }
 
-// RenderBundleEncoder represents a render bundle encoder.
+// RenderBundleEncoder records render commands into a [RenderBundle].
+// Create with [Device.CreateRenderBundleEncoder], finalize with [RenderBundleEncoder.Finish].
 type RenderBundleEncoder struct{ handle uintptr }
 
 // DrawIndirectArgs contains arguments for indirect (GPU-driven) draw calls.

@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"sync"
 	"unsafe"
 
@@ -27,12 +26,14 @@ type deviceRequest struct {
 }
 
 var (
-	// Global registry for pending device requests
+	// deviceRequests is the global registry for pending device requests.
+	// Protected by deviceRequestsMu for concurrent access.
 	deviceRequests   = make(map[uintptr]*deviceRequest)
 	deviceRequestsMu sync.Mutex
 	deviceRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// deviceCallbackPtr is the callback function pointer (created once).
+	// Protected by deviceCallbackOnce for concurrent initialization.
 	deviceCallbackPtr  uintptr
 	deviceCallbackOnce sync.Once
 )
@@ -62,6 +63,7 @@ func deviceCallbackHandler(status uintptr, device uintptr, message uintptr, user
 	if ok && req != nil {
 		req.status = RequestDeviceStatus(status)
 		if device != 0 {
+			trackResource(device, "Device")
 			req.device = &Device{handle: device}
 		}
 		req.message = msg
@@ -78,7 +80,9 @@ func initDeviceCallback() {
 // RequestDevice requests a GPU device from the adapter.
 // This is a synchronous wrapper that blocks until the device is available.
 func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 
 	// Initialize callback once
 	deviceCallbackOnce.Do(initDeviceCallback)
@@ -128,7 +132,7 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 				if msg == "" {
 					msg = "device request failed"
 				}
-				return nil, errors.New("wgpu: " + msg)
+				return nil, &WGPUError{Op: "RequestDevice", Message: msg}
 			}
 			return req.device, nil
 		default:
@@ -145,6 +149,7 @@ func (d *Device) GetQueue() *Queue {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Queue")
 	return &Queue{handle: handle}
 }
 
@@ -165,6 +170,7 @@ func (d *Device) Poll(wait bool) bool {
 // Release releases the device resources.
 func (d *Device) Release() {
 	if d.handle != 0 {
+		untrackResource(d.handle)
 		procDeviceRelease.Call(d.handle) //nolint:errcheck
 		d.handle = 0
 	}
@@ -173,6 +179,7 @@ func (d *Device) Release() {
 // Release releases the queue resources.
 func (q *Queue) Release() {
 	if q.handle != 0 {
+		untrackResource(q.handle)
 		procQueueRelease.Call(q.handle) //nolint:errcheck
 		q.handle = 0
 	}
@@ -204,4 +211,74 @@ func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.Textur
 	}
 
 	return d.CreateTexture(&desc)
+}
+
+// GetLimits retrieves the limits of this device.
+// Returns the same Limits struct format as Adapter.GetLimits().
+// The FFI call uses SupportedLimits (which wraps Limits with nextInChain).
+func (d *Device) GetLimits() (*SupportedLimits, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "Device.GetLimits", Message: "device is nil"}
+	}
+
+	limits := &SupportedLimits{}
+	status, _, _ := procDeviceGetLimits.Call(
+		d.handle,
+		uintptr(unsafe.Pointer(limits)),
+	)
+
+	if WGPUStatus(status) != WGPUStatusSuccess {
+		return nil, &WGPUError{Op: "Device.GetLimits", Message: "operation failed"}
+	}
+
+	return limits, nil
+}
+
+// GetFeatures retrieves all features enabled on this device.
+// Returns a slice of FeatureName values.
+func (d *Device) GetFeatures() []FeatureName {
+	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
+
+	// Call wgpuDeviceGetFeatures to populate SupportedFeatures struct
+	var supported SupportedFeatures
+	procDeviceGetFeatures.Call( //nolint:errcheck
+		d.handle,
+		uintptr(unsafe.Pointer(&supported)),
+	)
+
+	if supported.FeatureCount == 0 || supported.Features == 0 {
+		return nil
+	}
+
+	// Convert C array to Go slice
+	// nolint:govet // supported.Features is uintptr from C memory - GC safe
+	featuresPtr := (*FeatureName)(unsafe.Pointer(supported.Features))
+	features := unsafe.Slice(featuresPtr, supported.FeatureCount)
+
+	// Copy to new slice (don't keep pointer to C memory)
+	result := make([]FeatureName, supported.FeatureCount)
+	copy(result, features)
+
+	return result
+}
+
+// HasFeature checks if the device has a specific feature enabled.
+func (d *Device) HasFeature(feature FeatureName) bool {
+	mustInit()
+	if d == nil || d.handle == 0 {
+		return false
+	}
+
+	result, _, _ := procDeviceHasFeature.Call(
+		d.handle,
+		uintptr(feature),
+	)
+
+	return Bool(result) == True
 }

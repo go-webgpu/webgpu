@@ -355,7 +355,7 @@ echo ""
 # 12. Check critical documentation files
 log_info "Checking documentation..."
 DOCS_MISSING=0
-REQUIRED_DOCS="README.md CHANGELOG.md LICENSE"
+REQUIRED_DOCS="README.md CHANGELOG.md STABILITY.md LICENSE"
 
 for doc in $REQUIRED_DOCS; do
     if [ ! -f "$doc" ]; then

@@ -72,3 +72,22 @@ func TestInstanceRelease(t *testing.T) {
 	}
 	t.Log("Instance released successfully")
 }
+
+func TestCheckInitAfterLoad(t *testing.T) {
+	// After library is loaded (which happens in TestInit), checkInit should return nil
+	err := checkInit()
+	if err != nil {
+		t.Fatalf("checkInit() failed after successful library load: %v", err)
+	}
+	t.Log("checkInit() passed after library initialization")
+}
+
+func TestCreateInstanceReturnsErrLibraryNotLoaded(t *testing.T) {
+	// This test documents the expected error type, but cannot test the actual
+	// uninitialized state due to sync.Once - the library is already loaded.
+	// The error value is defined and will be returned if Init() fails.
+	if ErrLibraryNotLoaded == nil {
+		t.Fatal("ErrLibraryNotLoaded should be defined")
+	}
+	t.Logf("ErrLibraryNotLoaded is defined: %v", ErrLibraryNotLoaded)
+}

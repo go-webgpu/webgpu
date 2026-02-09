@@ -1,5 +1,5 @@
-// Package wgpu provides WebGPU bindings for Go.
-// This file contains 3D math helpers optimized for WebGPU/WGSL compatibility.
+// math.go contains 3D math helpers optimized for WebGPU/WGSL compatibility.
+
 package wgpu
 
 import "math"

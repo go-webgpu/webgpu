@@ -400,6 +400,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 		return nil
 	}
 
+	trackResource(handle, "RenderPipeline")
 	return &RenderPipeline{handle: handle}
 }
 
@@ -448,12 +449,14 @@ func (rp *RenderPipeline) GetBindGroupLayout(groupIndex uint32) *BindGroupLayout
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "BindGroupLayout")
 	return &BindGroupLayout{handle: handle}
 }
 
 // Release releases the render pipeline.
 func (rp *RenderPipeline) Release() {
 	if rp.handle != 0 {
+		untrackResource(rp.handle)
 		procRenderPipelineRelease.Call(rp.handle) //nolint:errcheck
 		rp.handle = 0
 	}

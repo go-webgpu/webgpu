@@ -46,6 +46,7 @@ func (d *Device) CreateShaderModuleWGSL(code string) *ShaderModule {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "ShaderModule")
 	return &ShaderModule{handle: handle}
 }
 
@@ -63,12 +64,14 @@ func (d *Device) CreateShaderModule(desc *ShaderModuleDescriptor) *ShaderModule 
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "ShaderModule")
 	return &ShaderModule{handle: handle}
 }
 
 // Release releases the shader module resources.
 func (s *ShaderModule) Release() {
 	if s.handle != 0 {
+		untrackResource(s.handle)
 		procShaderModuleRelease.Call(s.handle) //nolint:errcheck
 		s.handle = 0
 	}

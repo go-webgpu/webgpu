@@ -97,6 +97,7 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "TextureView")
 	return &TextureView{handle: handle}
 }
 
@@ -111,6 +112,7 @@ func (t *Texture) Destroy() {
 // Release releases the texture reference.
 func (t *Texture) Release() {
 	if t.handle != 0 {
+		untrackResource(t.handle)
 		procTextureRelease.Call(t.handle) //nolint:errcheck
 		t.handle = 0
 	}
@@ -174,6 +176,7 @@ func (t *Texture) GetFormat() gputypes.TextureFormat {
 // Release releases the texture view reference.
 func (tv *TextureView) Release() {
 	if tv.handle != 0 {
+		untrackResource(tv.handle)
 		procTextureViewRelease.Call(tv.handle) //nolint:errcheck
 		tv.handle = 0
 	}
@@ -221,6 +224,7 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Texture")
 	return &Texture{handle: handle}
 }
 

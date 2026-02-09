@@ -1,7 +1,6 @@
 package wgpu
 
 import (
-	"errors"
 	"sync"
 	"unsafe"
 
@@ -13,8 +12,11 @@ import (
 type MapMode uint64
 
 const (
-	MapModeNone  MapMode = 0x0000000000000000
-	MapModeRead  MapMode = 0x0000000000000001
+	// MapModeNone indicates no mapping mode (default).
+	MapModeNone MapMode = 0x0000000000000000
+	// MapModeRead maps the buffer for reading via GetMappedRange.
+	MapModeRead MapMode = 0x0000000000000001
+	// MapModeWrite maps the buffer for writing via GetMappedRange.
 	MapModeWrite MapMode = 0x0000000000000002
 )
 
@@ -22,11 +24,16 @@ const (
 type MapAsyncStatus uint32
 
 const (
-	MapAsyncStatusSuccess         MapAsyncStatus = 0x00000001
+	// MapAsyncStatusSuccess indicates the buffer was successfully mapped.
+	MapAsyncStatusSuccess MapAsyncStatus = 0x00000001
+	// MapAsyncStatusInstanceDropped indicates the instance was dropped before completion.
 	MapAsyncStatusInstanceDropped MapAsyncStatus = 0x00000002
-	MapAsyncStatusError           MapAsyncStatus = 0x00000003
-	MapAsyncStatusAborted         MapAsyncStatus = 0x00000004
-	MapAsyncStatusUnknown         MapAsyncStatus = 0x00000005
+	// MapAsyncStatusError indicates a mapping error occurred.
+	MapAsyncStatusError MapAsyncStatus = 0x00000003
+	// MapAsyncStatusAborted indicates the mapping was aborted (e.g., buffer destroyed).
+	MapAsyncStatusAborted MapAsyncStatus = 0x00000004
+	// MapAsyncStatusUnknown indicates an unknown mapping error.
+	MapAsyncStatusUnknown MapAsyncStatus = 0x00000005
 )
 
 // BufferMapCallbackInfo holds callback configuration for MapAsync.
@@ -46,12 +53,14 @@ type mapRequest struct {
 }
 
 var (
-	// Global registry for pending map requests
+	// mapRequests is the global registry for pending map requests.
+	// Protected by mapRequestsMu for concurrent access.
 	mapRequests   = make(map[uintptr]*mapRequest)
 	mapRequestsMu sync.Mutex
 	mapRequestID  uintptr
 
-	// Callback function pointer (created once)
+	// mapCallbackPtr is the callback function pointer (created once).
+	// Protected by mapCallbackOnce for concurrent initialization.
 	mapCallbackPtr  uintptr
 	mapCallbackOnce sync.Once
 )
@@ -113,6 +122,7 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "Buffer")
 	return &Buffer{handle: handle}
 }
 
@@ -154,7 +164,9 @@ func (b *Buffer) GetSize() uint64 {
 // After MapAsync succeeds, use GetMappedRange to access the data.
 // Call Unmap when done to release the mapping.
 func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) error {
-	mustInit()
+	if err := checkInit(); err != nil {
+		return err
+	}
 
 	// Initialize callback once
 	mapCallbackOnce.Do(initMapCallback)
@@ -199,7 +211,7 @@ func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) err
 				if msg == "" {
 					msg = "buffer map failed"
 				}
-				return errors.New("wgpu: " + msg)
+				return &WGPUError{Op: "Buffer.MapAsync", Message: msg}
 			}
 			return nil
 		default:
@@ -220,6 +232,7 @@ func (b *Buffer) Destroy() {
 // Release releases the buffer reference.
 func (b *Buffer) Release() {
 	if b.handle != 0 {
+		untrackResource(b.handle)
 		procBufferRelease.Call(b.handle) //nolint:errcheck
 		b.handle = 0
 	}

@@ -42,6 +42,7 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) *PipelineL
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "PipelineLayout")
 	return &PipelineLayout{handle: handle}
 }
 
@@ -73,6 +74,7 @@ func (d *Device) CreatePipelineLayoutSimple(layouts []*BindGroupLayout) *Pipelin
 // Release releases the pipeline layout.
 func (pl *PipelineLayout) Release() {
 	if pl.handle != 0 {
+		untrackResource(pl.handle)
 		procPipelineLayoutRelease.Call(pl.handle) //nolint:errcheck
 		pl.handle = 0
 	}
@@ -94,6 +96,7 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) *Compute
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "ComputePipeline")
 	return &ComputePipeline{handle: handle}
 }
 
@@ -132,12 +135,14 @@ func (cp *ComputePipeline) GetBindGroupLayout(groupIndex uint32) *BindGroupLayou
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "BindGroupLayout")
 	return &BindGroupLayout{handle: handle}
 }
 
 // Release releases the compute pipeline.
 func (cp *ComputePipeline) Release() {
 	if cp.handle != 0 {
+		untrackResource(cp.handle)
 		procComputePipelineRelease.Call(cp.handle) //nolint:errcheck
 		cp.handle = 0
 	}

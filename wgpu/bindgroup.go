@@ -199,6 +199,7 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGro
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "BindGroupLayout")
 	return &BindGroupLayout{handle: handle}
 }
 
@@ -228,12 +229,14 @@ func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) *Bi
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "BindGroupLayout")
 	return &BindGroupLayout{handle: handle}
 }
 
 // Release releases the bind group layout.
 func (bgl *BindGroupLayout) Release() {
 	if bgl.handle != 0 {
+		untrackResource(bgl.handle)
 		procBindGroupLayoutRelease.Call(bgl.handle) //nolint:errcheck
 		bgl.handle = 0
 	}
@@ -255,6 +258,7 @@ func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) *BindGroup {
 	if handle == 0 {
 		return nil
 	}
+	trackResource(handle, "BindGroup")
 	return &BindGroup{handle: handle}
 }
 
@@ -276,6 +280,7 @@ func (d *Device) CreateBindGroupSimple(layout *BindGroupLayout, entries []BindGr
 // Release releases the bind group.
 func (bg *BindGroup) Release() {
 	if bg.handle != 0 {
+		untrackResource(bg.handle)
 		procBindGroupRelease.Call(bg.handle) //nolint:errcheck
 		bg.handle = 0
 	}
