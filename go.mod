@@ -2,7 +2,7 @@ module github.com/go-webgpu/webgpu
 
 go 1.25
 
-require github.com/go-webgpu/goffi v0.3.8
+require github.com/go-webgpu/goffi v0.3.9
 
 require golang.org/x/sys v0.40.0
 
