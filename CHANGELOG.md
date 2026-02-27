@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `loadLibrary` now returns `(Library, error)` — proper error propagation on init failure
 - Windows: eager DLL loading via `dll.Load()` — errors at `Init()` instead of first FFI call
 - `Init()` returns descriptive error messages with library path and override hint
-- CI test filters updated to include `NullGuard` tests
+- CI: wgpu-native binary downloaded in all workflows — tests run against real library, no skips
+- CI: removed `-unsafeptr=false` go vet workaround — all warnings properly fixed
 
 ### Fixed
 

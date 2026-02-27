@@ -8,9 +8,6 @@ import (
 
 // TestNullGuard_Device_Creation tests nil device guards on creation methods.
 func TestNullGuard_Device_Creation(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
 
 	var d *Device
 
@@ -115,10 +112,6 @@ func TestNullGuard_Device_Creation(t *testing.T) {
 
 // TestNullGuard_Device_Void tests nil device guards on void methods.
 func TestNullGuard_Device_Void(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var d *Device
 
 	t.Run("Poll", func(t *testing.T) {
@@ -132,10 +125,6 @@ func TestNullGuard_Device_Void(t *testing.T) {
 
 // TestNullGuard_Device_ZeroHandle tests zero-handle device guards.
 func TestNullGuard_Device_ZeroHandle(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	d := &Device{handle: 0}
 
 	t.Run("CreateCommandEncoder", func(t *testing.T) {
@@ -167,10 +156,6 @@ func TestNullGuard_Device_ZeroHandle(t *testing.T) {
 
 // TestNullGuard_Instance tests nil instance guards.
 func TestNullGuard_Instance(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var i *Instance
 
 	t.Run("RequestAdapter", func(t *testing.T) {
@@ -190,10 +175,6 @@ func TestNullGuard_Instance(t *testing.T) {
 
 // TestNullGuard_Adapter tests nil adapter guards.
 func TestNullGuard_Adapter(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var a *Adapter
 
 	t.Run("RequestDevice", func(t *testing.T) {
@@ -209,10 +190,6 @@ func TestNullGuard_Adapter(t *testing.T) {
 
 // TestNullGuard_CommandEncoder tests nil command encoder guards.
 func TestNullGuard_CommandEncoder(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var enc *CommandEncoder
 
 	t.Run("BeginComputePass", func(t *testing.T) {
@@ -278,10 +255,6 @@ func TestNullGuard_CommandEncoder(t *testing.T) {
 
 // TestNullGuard_ComputePassEncoder tests nil compute pass encoder guards.
 func TestNullGuard_ComputePassEncoder(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var cpe *ComputePassEncoder
 
 	t.Run("SetPipeline", func(t *testing.T) {
@@ -307,10 +280,6 @@ func TestNullGuard_ComputePassEncoder(t *testing.T) {
 
 // TestNullGuard_RenderPassEncoder tests nil render pass encoder guards.
 func TestNullGuard_RenderPassEncoder(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var rpe *RenderPassEncoder
 
 	t.Run("SetPipeline", func(t *testing.T) {
@@ -384,10 +353,6 @@ func TestNullGuard_RenderPassEncoder(t *testing.T) {
 
 // TestNullGuard_RenderBundleEncoder tests nil render bundle encoder guards.
 func TestNullGuard_RenderBundleEncoder(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var rbe *RenderBundleEncoder
 
 	t.Run("SetPipeline", func(t *testing.T) {
@@ -431,10 +396,6 @@ func TestNullGuard_RenderBundleEncoder(t *testing.T) {
 
 // TestNullGuard_Buffer tests nil buffer guards.
 func TestNullGuard_Buffer(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var buf *Buffer
 
 	t.Run("GetMappedRange", func(t *testing.T) {
@@ -456,10 +417,6 @@ func TestNullGuard_Buffer(t *testing.T) {
 
 // TestNullGuard_Texture tests nil texture guards.
 func TestNullGuard_Texture(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var tex *Texture
 
 	t.Run("CreateView", func(t *testing.T) {
@@ -471,10 +428,6 @@ func TestNullGuard_Texture(t *testing.T) {
 
 // TestNullGuard_QuerySet tests nil queryset guards.
 func TestNullGuard_QuerySet(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var qs *QuerySet
 
 	t.Run("Destroy", func(t *testing.T) {
@@ -484,10 +437,6 @@ func TestNullGuard_QuerySet(t *testing.T) {
 
 // TestNullGuard_Queue tests nil queue guards.
 func TestNullGuard_Queue(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var q *Queue
 
 	t.Run("Submit", func(t *testing.T) {
@@ -505,10 +454,6 @@ func TestNullGuard_Queue(t *testing.T) {
 
 // TestNullGuard_Surface tests nil surface guards.
 func TestNullGuard_Surface(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var s *Surface
 
 	t.Run("Configure", func(t *testing.T) {
@@ -533,10 +478,6 @@ func TestNullGuard_Surface(t *testing.T) {
 
 // TestNullGuard_ComputePipeline tests nil compute pipeline guards.
 func TestNullGuard_ComputePipeline(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var cp *ComputePipeline
 
 	t.Run("GetBindGroupLayout", func(t *testing.T) {
@@ -548,10 +489,6 @@ func TestNullGuard_ComputePipeline(t *testing.T) {
 
 // TestNullGuard_RenderPipeline tests nil render pipeline guards.
 func TestNullGuard_RenderPipeline(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	var rp *RenderPipeline
 
 	t.Run("GetBindGroupLayout", func(t *testing.T) {
@@ -564,7 +501,7 @@ func TestNullGuard_RenderPipeline(t *testing.T) {
 // TestNullGuard_PopErrorScopeAsync tests nil device in PopErrorScopeAsync.
 func TestNullGuard_PopErrorScopeAsync(t *testing.T) {
 	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
+		t.Fatalf("wgpu-native not available: %v", err)
 	}
 
 	var d *Device
@@ -588,10 +525,6 @@ func TestNullGuard_PopErrorScopeAsync(t *testing.T) {
 
 // TestNullGuard_NilDesc tests nil descriptor guards on creation methods.
 func TestNullGuard_NilDesc(t *testing.T) {
-	if err := Init(); err != nil {
-		t.Fatalf("Init failed: %v", err)
-	}
-
 	// Use zero-handle device to test desc-nil paths that guard before FFI
 	d := &Device{handle: 1} // fake non-zero handle
 
