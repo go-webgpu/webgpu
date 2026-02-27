@@ -44,11 +44,9 @@ func deviceCallbackHandler(status uintptr, device uintptr, message uintptr, user
 	// Extract message string (message is pointer to StringView on Windows)
 	var msg string
 	if message != 0 {
-		// nolint:govet // message is uintptr from FFI callback - GC safe
-		sv := (*StringView)(unsafe.Pointer(message))
+		sv := (*StringView)(ptrFromUintptr(message))
 		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			// nolint:govet // sv.Data is uintptr from C memory - GC safe
-			msg = unsafe.String((*byte)(unsafe.Pointer(sv.Data)), int(sv.Length))
+			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
 		}
 	}
 
@@ -82,6 +80,9 @@ func initDeviceCallback() {
 func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
+	}
+	if a == nil || a.handle == 0 {
+		return nil, &WGPUError{Op: "RequestDevice", Message: "adapter is nil or released"}
 	}
 
 	// Initialize callback once
@@ -145,6 +146,9 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 // GetQueue returns the default queue for the device.
 func (d *Device) GetQueue() *Queue {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
 	handle, _, _ := procDeviceGetQueue.Call(d.handle)
 	if handle == 0 {
 		return nil
@@ -159,6 +163,9 @@ func (d *Device) GetQueue() *Queue {
 // This is a wgpu-native extension.
 func (d *Device) Poll(wait bool) bool {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return true
+	}
 	var waitArg uintptr
 	if wait {
 		waitArg = 1
@@ -196,6 +203,9 @@ type DeviceDescriptor struct {
 // This is a convenience function for creating depth buffers for render passes.
 func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.TextureFormat) *Texture {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
 
 	desc := TextureDescriptor{
 		NextInChain:     0,
@@ -257,8 +267,7 @@ func (d *Device) GetFeatures() []FeatureName {
 	}
 
 	// Convert C array to Go slice
-	// nolint:govet // supported.Features is uintptr from C memory - GC safe
-	featuresPtr := (*FeatureName)(unsafe.Pointer(supported.Features))
+	featuresPtr := (*FeatureName)(ptrFromUintptr(supported.Features))
 	features := unsafe.Slice(featuresPtr, supported.FeatureCount)
 
 	// Copy to new slice (don't keep pointer to C memory)

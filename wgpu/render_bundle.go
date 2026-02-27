@@ -28,8 +28,7 @@ type RenderBundleDescriptor struct {
 // multiple times, which is useful for static geometry.
 func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) *RenderBundleEncoder {
 	mustInit()
-
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 
@@ -92,12 +91,18 @@ func (d *Device) CreateRenderBundleEncoderSimple(colorFormats []gputypes.Texture
 // SetPipeline sets the render pipeline for subsequent draw calls.
 func (rbe *RenderBundleEncoder) SetPipeline(pipeline *RenderPipeline) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || pipeline == nil || pipeline.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderSetPipeline.Call(rbe.handle, pipeline.handle) //nolint:errcheck
 }
 
 // SetBindGroup sets a bind group at the given index.
 func (rbe *RenderBundleEncoder) SetBindGroup(groupIndex uint32, group *BindGroup, dynamicOffsets []uint32) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || group == nil || group.handle == 0 {
+		return
+	}
 	var offsetsPtr uintptr
 	if len(dynamicOffsets) > 0 {
 		offsetsPtr = uintptr(unsafe.Pointer(&dynamicOffsets[0]))
@@ -114,6 +119,9 @@ func (rbe *RenderBundleEncoder) SetBindGroup(groupIndex uint32, group *BindGroup
 // SetVertexBuffer sets a vertex buffer at the given slot.
 func (rbe *RenderBundleEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, offset, size uint64) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || buffer == nil || buffer.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderSetVertexBuffer.Call( //nolint:errcheck
 		rbe.handle,
 		uintptr(slot),
@@ -126,6 +134,9 @@ func (rbe *RenderBundleEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, off
 // SetIndexBuffer sets the index buffer.
 func (rbe *RenderBundleEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.IndexFormat, offset, size uint64) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || buffer == nil || buffer.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderSetIndexBuffer.Call( //nolint:errcheck
 		rbe.handle,
 		buffer.handle,
@@ -138,6 +149,9 @@ func (rbe *RenderBundleEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.I
 // Draw records a non-indexed draw call.
 func (rbe *RenderBundleEncoder) Draw(vertexCount, instanceCount, firstVertex, firstInstance uint32) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderDraw.Call( //nolint:errcheck
 		rbe.handle,
 		uintptr(vertexCount),
@@ -150,6 +164,9 @@ func (rbe *RenderBundleEncoder) Draw(vertexCount, instanceCount, firstVertex, fi
 // DrawIndexed records an indexed draw call.
 func (rbe *RenderBundleEncoder) DrawIndexed(indexCount, instanceCount, firstIndex uint32, baseVertex int32, firstInstance uint32) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderDrawIndexed.Call( //nolint:errcheck
 		rbe.handle,
 		uintptr(indexCount),
@@ -163,6 +180,9 @@ func (rbe *RenderBundleEncoder) DrawIndexed(indexCount, instanceCount, firstInde
 // DrawIndirect records an indirect draw call.
 func (rbe *RenderBundleEncoder) DrawIndirect(indirectBuffer *Buffer, indirectOffset uint64) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || indirectBuffer == nil || indirectBuffer.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderDrawIndirect.Call( //nolint:errcheck
 		rbe.handle,
 		indirectBuffer.handle,
@@ -173,6 +193,9 @@ func (rbe *RenderBundleEncoder) DrawIndirect(indirectBuffer *Buffer, indirectOff
 // DrawIndexedIndirect records an indirect indexed draw call.
 func (rbe *RenderBundleEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indirectOffset uint64) {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 || indirectBuffer == nil || indirectBuffer.handle == 0 {
+		return
+	}
 	procRenderBundleEncoderDrawIndexedIndirect.Call( //nolint:errcheck
 		rbe.handle,
 		indirectBuffer.handle,
@@ -183,6 +206,9 @@ func (rbe *RenderBundleEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indi
 // Finish completes recording and returns the render bundle.
 func (rbe *RenderBundleEncoder) Finish(desc *RenderBundleDescriptor) *RenderBundle {
 	mustInit()
+	if rbe == nil || rbe.handle == 0 {
+		return nil
+	}
 
 	var descPtr uintptr
 	if desc != nil {
@@ -225,7 +251,7 @@ func (rb *RenderBundle) Handle() uintptr { return rb.handle }
 // This is useful for replaying static geometry without re-recording commands.
 func (rpe *RenderPassEncoder) ExecuteBundles(bundles []*RenderBundle) {
 	mustInit()
-	if len(bundles) == 0 {
+	if rpe == nil || rpe.handle == 0 || len(bundles) == 0 {
 		return
 	}
 

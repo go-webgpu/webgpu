@@ -20,7 +20,7 @@ type QuerySetDescriptor struct {
 // CreateQuerySet creates a new QuerySet for GPU profiling/timestamps.
 func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) *QuerySet {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 
@@ -45,9 +45,10 @@ func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) *QuerySet {
 // Destroy destroys the QuerySet, making it invalid.
 func (qs *QuerySet) Destroy() {
 	mustInit()
-	if qs.handle != 0 {
-		procQuerySetDestroy.Call(qs.handle) //nolint:errcheck
+	if qs == nil || qs.handle == 0 {
+		return
 	}
+	procQuerySetDestroy.Call(qs.handle) //nolint:errcheck
 }
 
 // Release releases the QuerySet reference.

@@ -28,22 +28,17 @@ type unixProc struct {
 }
 
 // loadLibrary loads a shared library using goffi.LoadLibrary.
-// Returns a Library interface that can be used to get procedures.
-func loadLibrary(name string) Library {
+// Returns a Library interface and an error if the library cannot be found.
+func loadLibrary(name string) (Library, error) {
 	handle, err := ffi.LoadLibrary(name)
 	if err != nil {
-		// Return a library that will fail on any NewProc call
-		// This maintains compatibility with Windows LazyDLL behavior
-		return &unixLibrary{
-			handle: nil,
-			name:   name,
-		}
+		return nil, fmt.Errorf("dlopen %s: %w", name, err)
 	}
 
 	return &unixLibrary{
 		handle: handle,
 		name:   name,
-	}
+	}, nil
 }
 
 // NewProc retrieves a procedure from the Unix shared library.

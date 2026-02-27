@@ -19,6 +19,9 @@ type ShaderSourceWGSL struct {
 // CreateShaderModuleWGSL creates a shader module from WGSL source code.
 func (d *Device) CreateShaderModuleWGSL(code string) *ShaderModule {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
 
 	// Create WGSL source with embedded string data
 	codeBytes := []byte(code)
@@ -54,7 +57,7 @@ func (d *Device) CreateShaderModuleWGSL(code string) *ShaderModule {
 // For WGSL shaders, use CreateShaderModuleWGSL instead.
 func (d *Device) CreateShaderModule(desc *ShaderModuleDescriptor) *ShaderModule {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 	handle, _, _ := procDeviceCreateShaderModule.Call(

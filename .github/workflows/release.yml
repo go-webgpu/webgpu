@@ -48,9 +48,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         else
-          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         fi
 
     - name: Run fuzz tests (seed corpus only)

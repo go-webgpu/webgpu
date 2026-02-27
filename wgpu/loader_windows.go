@@ -18,10 +18,14 @@ type windowsProc struct {
 
 // loadLibrary loads a DLL using Windows syscall.NewLazyDLL.
 // Returns a Library interface that can be used to get procedures.
-func loadLibrary(name string) Library {
-	return &windowsLibrary{
-		dll: syscall.NewLazyDLL(name),
+// The DLL is eagerly loaded to report errors immediately.
+func loadLibrary(name string) (Library, error) {
+	dll := syscall.NewLazyDLL(name)
+	// Force eager load to detect missing DLL immediately.
+	if err := dll.Load(); err != nil {
+		return nil, err
 	}
+	return &windowsLibrary{dll: dll}, nil
 }
 
 // NewProc retrieves a procedure from the Windows DLL.

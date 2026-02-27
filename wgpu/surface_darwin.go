@@ -18,6 +18,9 @@ func (inst *Instance) CreateSurfaceFromMetalLayer(layer uintptr) (*Surface, erro
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
+	if inst == nil || inst.handle == 0 {
+		return nil, &WGPUError{Op: "CreateSurface", Message: "instance is nil or released"}
+	}
 
 	// Build WGPUSurfaceSourceMetalLayer
 	source := surfaceSourceMetalLayer{

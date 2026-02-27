@@ -48,6 +48,11 @@ go get github.com/go-webgpu/webgpu
 
 Download wgpu-native and place `wgpu_native.dll` (Windows) or `libwgpu_native.so` (Linux) in your project directory or system PATH.
 
+To use a custom library location:
+```bash
+export WGPU_NATIVE_PATH=/path/to/libwgpu_native.so
+```
+
 ## Type System
 
 This library uses [gputypes](https://github.com/gogpu/gputypes) for WebGPU type definitions, ensuring compatibility with the [gogpu ecosystem](https://github.com/gogpu) and webgpu.h specification.

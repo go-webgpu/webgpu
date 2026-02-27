@@ -77,9 +77,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" != "windows-latest" ]; then
-          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         else
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         fi
 
     - name: Upload coverage to Codecov
