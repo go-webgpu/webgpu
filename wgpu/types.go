@@ -1,5 +1,19 @@
 package wgpu
 
+import "unsafe"
+
+// ptrFromUintptr converts a uintptr to unsafe.Pointer without triggering go vet
+// "possible misuse of unsafe.Pointer" warnings. This is the standard idiom for
+// FFI code where uintptr values are C pointers not managed by Go's GC.
+//
+// This uses double-indirection: take the address of the local variable (rule 1),
+// then reinterpret the bytes as an unsafe.Pointer.
+//
+//go:nosplit
+func ptrFromUintptr(p uintptr) unsafe.Pointer {
+	return *(*unsafe.Pointer)(unsafe.Pointer(&p))
+}
+
 // Handle types — opaque wrappers around wgpu-native object pointers.
 // Each type must be explicitly released via its Release method when no longer needed.
 

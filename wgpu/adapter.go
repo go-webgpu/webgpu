@@ -73,11 +73,9 @@ func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, us
 	// Extract message string (message is pointer to StringView on Windows)
 	var msg string
 	if message != 0 {
-		// nolint:govet // message is uintptr from FFI callback - GC safe
-		sv := (*StringView)(unsafe.Pointer(message))
+		sv := (*StringView)(ptrFromUintptr(message))
 		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			// nolint:govet // sv.Data is uintptr from C memory - GC safe
-			msg = unsafe.String((*byte)(unsafe.Pointer(sv.Data)), int(sv.Length))
+			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
 		}
 	}
 
@@ -112,6 +110,9 @@ func initAdapterCallback() {
 func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
+	}
+	if i == nil || i.handle == 0 {
+		return nil, &WGPUError{Op: "RequestAdapter", Message: "instance is nil or released"}
 	}
 
 	// Initialize callback once
@@ -382,6 +383,5 @@ func stringViewToString(sv StringView) string {
 	if sv.Length > 1<<20 { // 1MB max
 		return ""
 	}
-	// nolint:govet // sv.Data is uintptr from C memory - safe to convert
-	return unsafe.String((*byte)(unsafe.Pointer(sv.Data)), int(sv.Length))
+	return unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
 }

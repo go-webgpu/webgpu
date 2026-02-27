@@ -71,11 +71,9 @@ func mapCallbackHandler(status uintptr, message uintptr, userdata1, userdata2 ui
 	// Extract message string
 	var msg string
 	if message != 0 {
-		// nolint:govet // message is uintptr from FFI callback - GC safe
-		sv := (*StringView)(unsafe.Pointer(message))
+		sv := (*StringView)(ptrFromUintptr(message))
 		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			// nolint:govet // sv.Data is uintptr from C memory - GC safe
-			msg = unsafe.String((*byte)(unsafe.Pointer(sv.Data)), int(sv.Length))
+			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
 		}
 	}
 
@@ -112,7 +110,7 @@ type BufferDescriptor struct {
 // CreateBuffer creates a new GPU buffer.
 func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 	handle, _, _ := procDeviceCreateBuffer.Call(
@@ -132,6 +130,9 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
 // Returns nil if the buffer is not mapped or the range is invalid.
 func (b *Buffer) GetMappedRange(offset, size uint64) unsafe.Pointer {
 	mustInit()
+	if b == nil || b.handle == 0 {
+		return nil
+	}
 	ptr, _, _ := procBufferGetMappedRange.Call(
 		b.handle,
 		uintptr(offset),
@@ -140,20 +141,25 @@ func (b *Buffer) GetMappedRange(offset, size uint64) unsafe.Pointer {
 	if ptr == 0 {
 		return nil
 	}
-	// nolint:govet // ptr is uintptr from FFI call - returned immediately, GC safe
-	return unsafe.Pointer(ptr)
+	return ptrFromUintptr(ptr)
 }
 
 // Unmap unmaps the buffer, making the mapped memory inaccessible.
 // For buffers created with MappedAtCreation, this commits the data to the GPU.
 func (b *Buffer) Unmap() {
 	mustInit()
+	if b == nil || b.handle == 0 {
+		return
+	}
 	procBufferUnmap.Call(b.handle) //nolint:errcheck
 }
 
 // GetSize returns the size of the buffer in bytes.
 func (b *Buffer) GetSize() uint64 {
 	mustInit()
+	if b == nil || b.handle == 0 {
+		return 0
+	}
 	size, _, _ := procBufferGetSize.Call(b.handle)
 	return uint64(size)
 }
@@ -166,6 +172,12 @@ func (b *Buffer) GetSize() uint64 {
 func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) error {
 	if err := checkInit(); err != nil {
 		return err
+	}
+	if b == nil || b.handle == 0 {
+		return &WGPUError{Op: "Buffer.MapAsync", Message: "buffer is nil or released"}
+	}
+	if device == nil || device.handle == 0 {
+		return &WGPUError{Op: "Buffer.MapAsync", Message: "device is nil or released"}
 	}
 
 	// Initialize callback once
@@ -242,7 +254,7 @@ func (b *Buffer) Release() {
 // This is a convenience method that stages data for upload to the GPU.
 func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
 	mustInit()
-	if len(data) == 0 {
+	if q == nil || q.handle == 0 || buffer == nil || buffer.handle == 0 || len(data) == 0 {
 		return
 	}
 	procQueueWriteBuffer.Call( //nolint:errcheck
@@ -258,7 +270,7 @@ func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
 // The data pointer should point to the first element, size is total byte size.
 func (q *Queue) WriteBufferRaw(buffer *Buffer, offset uint64, data unsafe.Pointer, size uint64) {
 	mustInit()
-	if size == 0 {
+	if q == nil || q.handle == 0 || buffer == nil || buffer.handle == 0 || size == 0 {
 		return
 	}
 	procQueueWriteBuffer.Call( //nolint:errcheck

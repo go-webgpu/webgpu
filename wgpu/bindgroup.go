@@ -172,7 +172,7 @@ type BindGroupDescriptor struct {
 // Entries are converted from gputypes to wgpu-native enum values before FFI call.
 func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGroupLayout {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 
@@ -184,7 +184,7 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGro
 
 	if desc.EntryCount > 0 && desc.Entries != 0 {
 		// Convert entries to wire format
-		entries := unsafe.Slice((*BindGroupLayoutEntry)(unsafe.Pointer(desc.Entries)), desc.EntryCount)
+		entries := unsafe.Slice((*BindGroupLayoutEntry)(ptrFromUintptr(desc.Entries)), desc.EntryCount)
 		wireEntries := make([]bindGroupLayoutEntryWire, len(entries))
 		for i := range entries {
 			wireEntries[i] = entries[i].toWire()
@@ -206,7 +206,7 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGro
 // CreateBindGroupLayoutSimple creates a bind group layout with the given entries.
 func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) *BindGroupLayout {
 	mustInit()
-	if len(entries) == 0 {
+	if d == nil || d.handle == 0 || len(entries) == 0 {
 		return nil
 	}
 
@@ -248,7 +248,7 @@ func (bgl *BindGroupLayout) Handle() uintptr { return bgl.handle }
 // CreateBindGroup creates a bind group.
 func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) *BindGroup {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 	handle, _, _ := procDeviceCreateBindGroup.Call(
@@ -265,7 +265,7 @@ func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) *BindGroup {
 // CreateBindGroupSimple creates a bind group with buffer entries.
 func (d *Device) CreateBindGroupSimple(layout *BindGroupLayout, entries []BindGroupEntry) *BindGroup {
 	mustInit()
-	if layout == nil || len(entries) == 0 {
+	if d == nil || d.handle == 0 || layout == nil || len(entries) == 0 {
 		return nil
 	}
 	desc := BindGroupDescriptor{

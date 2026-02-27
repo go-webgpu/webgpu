@@ -20,6 +20,9 @@ func (inst *Instance) CreateSurfaceFromWindowsHWND(hinstance, hwnd uintptr) (*Su
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
+	if inst == nil || inst.handle == 0 {
+		return nil, &WGPUError{Op: "CreateSurface", Message: "instance is nil or released"}
+	}
 
 	// Build WGPUSurfaceSourceWindowsHWND
 	source := surfaceSourceWindowsHWND{

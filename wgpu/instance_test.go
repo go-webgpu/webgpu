@@ -74,7 +74,10 @@ func TestInstanceRelease(t *testing.T) {
 }
 
 func TestCheckInitAfterLoad(t *testing.T) {
-	// After library is loaded (which happens in TestInit), checkInit should return nil
+	// After library is loaded (which happens in TestInit), checkInit should return nil.
+	if err := Init(); err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
 	err := checkInit()
 	if err != nil {
 		t.Fatalf("checkInit() failed after successful library load: %v", err)

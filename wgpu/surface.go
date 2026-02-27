@@ -90,6 +90,9 @@ var (
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (s *Surface) Configure(config *SurfaceConfiguration) {
 	mustInit()
+	if s == nil || s.handle == 0 || config == nil || config.Device == nil || config.Device.handle == 0 {
+		return
+	}
 
 	nativeConfig := surfaceConfigurationWire{
 		nextInChain:     0,
@@ -113,6 +116,9 @@ func (s *Surface) Configure(config *SurfaceConfiguration) {
 // Unconfigure removes the surface configuration.
 func (s *Surface) Unconfigure() {
 	mustInit()
+	if s == nil || s.handle == 0 {
+		return
+	}
 	procSurfaceUnconfigure.Call(s.handle) //nolint:errcheck
 }
 
@@ -121,6 +127,9 @@ func (s *Surface) Unconfigure() {
 func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
+	}
+	if s == nil || s.handle == 0 {
+		return nil, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface is nil or released"}
 	}
 
 	var surfTex surfaceTexture
@@ -157,6 +166,9 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
 // Present presents the current frame to the surface.
 func (s *Surface) Present() {
 	mustInit()
+	if s == nil || s.handle == 0 {
+		return
+	}
 	procSurfacePresent.Call(s.handle) //nolint:errcheck
 }
 
@@ -202,7 +214,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 
 	// Convert formats array
 	if wire.formatCount > 0 && wire.formats != 0 {
-		rawFormats := unsafe.Slice((*uint32)(unsafe.Pointer(wire.formats)), wire.formatCount)
+		rawFormats := unsafe.Slice((*uint32)(ptrFromUintptr(wire.formats)), wire.formatCount)
 		caps.Formats = make([]gputypes.TextureFormat, len(rawFormats))
 		for i, f := range rawFormats {
 			caps.Formats[i] = fromWGPUTextureFormat(f)
@@ -211,7 +223,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 
 	// Convert present modes array
 	if wire.presentModeCount > 0 && wire.presentModes != 0 {
-		rawPresentModes := unsafe.Slice((*uint32)(unsafe.Pointer(wire.presentModes)), wire.presentModeCount)
+		rawPresentModes := unsafe.Slice((*uint32)(ptrFromUintptr(wire.presentModes)), wire.presentModeCount)
 		caps.PresentModes = make([]gputypes.PresentMode, len(rawPresentModes))
 		for i, pm := range rawPresentModes {
 			caps.PresentModes[i] = gputypes.PresentMode(pm)
@@ -220,7 +232,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 
 	// Convert alpha modes array
 	if wire.alphaModeCount > 0 && wire.alphaModes != 0 {
-		rawAlphaModes := unsafe.Slice((*uint32)(unsafe.Pointer(wire.alphaModes)), wire.alphaModeCount)
+		rawAlphaModes := unsafe.Slice((*uint32)(ptrFromUintptr(wire.alphaModes)), wire.alphaModeCount)
 		caps.AlphaModes = make([]gputypes.CompositeAlphaMode, len(rawAlphaModes))
 		for i, am := range rawAlphaModes {
 			caps.AlphaModes[i] = gputypes.CompositeAlphaMode(am)

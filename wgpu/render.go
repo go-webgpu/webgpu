@@ -104,8 +104,7 @@ type RenderPassDescriptor struct {
 // BeginRenderPass begins a render pass.
 func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPassEncoder {
 	mustInit()
-
-	if desc == nil || len(desc.ColorAttachments) == 0 {
+	if enc == nil || enc.handle == 0 || desc == nil || len(desc.ColorAttachments) == 0 {
 		return nil
 	}
 
@@ -196,12 +195,18 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 // SetPipeline sets the render pipeline for this pass.
 func (rpe *RenderPassEncoder) SetPipeline(pipeline *RenderPipeline) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || pipeline == nil || pipeline.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetPipeline.Call(rpe.handle, pipeline.handle) //nolint:errcheck
 }
 
 // SetBindGroup sets a bind group for this pass.
 func (rpe *RenderPassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup, dynamicOffsets []uint32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || group == nil || group.handle == 0 {
+		return
+	}
 
 	var offsetsPtr uintptr
 	offsetCount := uintptr(0)
@@ -222,6 +227,9 @@ func (rpe *RenderPassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup, 
 // SetVertexBuffer sets a vertex buffer for this pass.
 func (rpe *RenderPassEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, offset, size uint64) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || buffer == nil || buffer.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetVertexBuffer.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(slot),
@@ -234,6 +242,9 @@ func (rpe *RenderPassEncoder) SetVertexBuffer(slot uint32, buffer *Buffer, offse
 // SetIndexBuffer sets the index buffer for this pass.
 func (rpe *RenderPassEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.IndexFormat, offset, size uint64) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || buffer == nil || buffer.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetIndexBuffer.Call( //nolint:errcheck
 		rpe.handle,
 		buffer.handle,
@@ -246,6 +257,9 @@ func (rpe *RenderPassEncoder) SetIndexBuffer(buffer *Buffer, format gputypes.Ind
 // Draw draws primitives.
 func (rpe *RenderPassEncoder) Draw(vertexCount, instanceCount, firstVertex, firstInstance uint32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderDraw.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(vertexCount),
@@ -258,6 +272,9 @@ func (rpe *RenderPassEncoder) Draw(vertexCount, instanceCount, firstVertex, firs
 // DrawIndexed draws indexed primitives.
 func (rpe *RenderPassEncoder) DrawIndexed(indexCount, instanceCount, firstIndex uint32, baseVertex int32, firstInstance uint32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderDrawIndexed.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(indexCount),
@@ -276,6 +293,9 @@ func (rpe *RenderPassEncoder) DrawIndexed(indexCount, instanceCount, firstIndex 
 //   - firstInstance (uint32)
 func (rpe *RenderPassEncoder) DrawIndirect(indirectBuffer *Buffer, indirectOffset uint64) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || indirectBuffer == nil || indirectBuffer.handle == 0 {
+		return
+	}
 	procRenderPassEncoderDrawIndirect.Call( //nolint:errcheck
 		rpe.handle,
 		indirectBuffer.handle,
@@ -292,6 +312,9 @@ func (rpe *RenderPassEncoder) DrawIndirect(indirectBuffer *Buffer, indirectOffse
 //   - firstInstance (uint32)
 func (rpe *RenderPassEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indirectOffset uint64) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 || indirectBuffer == nil || indirectBuffer.handle == 0 {
+		return
+	}
 	procRenderPassEncoderDrawIndexedIndirect.Call( //nolint:errcheck
 		rpe.handle,
 		indirectBuffer.handle,
@@ -305,6 +328,9 @@ func (rpe *RenderPassEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indire
 // minDepth, maxDepth: depth range for the viewport (typically 0.0 to 1.0)
 func (rpe *RenderPassEncoder) SetViewport(x, y, width, height, minDepth, maxDepth float32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetViewport.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(math.Float32bits(x)),
@@ -322,6 +348,9 @@ func (rpe *RenderPassEncoder) SetViewport(x, y, width, height, minDepth, maxDept
 // width, height: dimensions of the scissor rectangle in pixels
 func (rpe *RenderPassEncoder) SetScissorRect(x, y, width, height uint32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetScissorRect.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(x),
@@ -335,7 +364,7 @@ func (rpe *RenderPassEncoder) SetScissorRect(x, y, width, height uint32) {
 // Errors are reported via Device error scopes.
 func (rpe *RenderPassEncoder) SetBlendConstant(color *Color) {
 	mustInit()
-	if color == nil {
+	if rpe == nil || rpe.handle == 0 || color == nil {
 		return
 	}
 	procRenderPassEncoderSetBlendConstant.Call( //nolint:errcheck
@@ -347,6 +376,9 @@ func (rpe *RenderPassEncoder) SetBlendConstant(color *Color) {
 // SetStencilReference sets the stencil reference value used by stencil operations.
 func (rpe *RenderPassEncoder) SetStencilReference(reference uint32) {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderSetStencilReference.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(reference),
@@ -408,6 +440,9 @@ func (rpe *RenderPassEncoder) PopDebugGroup() {
 // End ends the render pass.
 func (rpe *RenderPassEncoder) End() {
 	mustInit()
+	if rpe == nil || rpe.handle == 0 {
+		return
+	}
 	procRenderPassEncoderEnd.Call(rpe.handle) //nolint:errcheck
 }
 

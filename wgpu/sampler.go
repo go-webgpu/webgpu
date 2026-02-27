@@ -26,7 +26,7 @@ type SamplerDescriptor struct {
 // CreateSampler creates a sampler with the specified descriptor.
 func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 

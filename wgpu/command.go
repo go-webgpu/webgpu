@@ -28,6 +28,9 @@ type ComputePassDescriptor struct {
 // CreateCommandEncoder creates a command encoder.
 func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEncoder {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
 	var descPtr uintptr
 	if desc != nil {
 		descPtr = uintptr(unsafe.Pointer(desc))
@@ -46,6 +49,9 @@ func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEn
 // BeginComputePass begins a compute pass.
 func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) *ComputePassEncoder {
 	mustInit()
+	if enc == nil || enc.handle == 0 {
+		return nil
+	}
 	var descPtr uintptr
 	if desc != nil {
 		descPtr = uintptr(unsafe.Pointer(desc))
@@ -64,6 +70,9 @@ func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) *Comput
 // CopyBufferToBuffer copies data between buffers.
 func (enc *CommandEncoder) CopyBufferToBuffer(src *Buffer, srcOffset uint64, dst *Buffer, dstOffset uint64, size uint64) {
 	mustInit()
+	if enc == nil || enc.handle == 0 || src == nil || src.handle == 0 || dst == nil || dst.handle == 0 {
+		return
+	}
 	procCommandEncoderCopyBufferToBuffer.Call( //nolint:errcheck
 		enc.handle,
 		src.handle,
@@ -78,7 +87,7 @@ func (enc *CommandEncoder) CopyBufferToBuffer(src *Buffer, srcOffset uint64, dst
 // size = 0 means clear from offset to end of buffer.
 func (enc *CommandEncoder) ClearBuffer(buffer *Buffer, offset, size uint64) {
 	mustInit()
-	if buffer == nil {
+	if enc == nil || enc.handle == 0 || buffer == nil || buffer.handle == 0 {
 		return
 	}
 	procCommandEncoderClearBuffer.Call( //nolint:errcheck
@@ -93,6 +102,9 @@ func (enc *CommandEncoder) ClearBuffer(buffer *Buffer, offset, size uint64) {
 // This is useful for GPU debugging tools to identify specific command points.
 func (enc *CommandEncoder) InsertDebugMarker(markerLabel string) {
 	mustInit()
+	if enc == nil || enc.handle == 0 {
+		return
+	}
 	labelBytes := []byte(markerLabel)
 	if len(labelBytes) == 0 {
 		return
@@ -111,6 +123,9 @@ func (enc *CommandEncoder) InsertDebugMarker(markerLabel string) {
 // Use PopDebugGroup to end the group. Groups can be nested.
 func (enc *CommandEncoder) PushDebugGroup(groupLabel string) {
 	mustInit()
+	if enc == nil || enc.handle == 0 {
+		return
+	}
 	labelBytes := []byte(groupLabel)
 	if len(labelBytes) == 0 {
 		return
@@ -129,6 +144,9 @@ func (enc *CommandEncoder) PushDebugGroup(groupLabel string) {
 // Must match a preceding PushDebugGroup call.
 func (enc *CommandEncoder) PopDebugGroup() {
 	mustInit()
+	if enc == nil || enc.handle == 0 {
+		return
+	}
 	procCommandEncoderPopDebugGroup.Call(enc.handle) //nolint:errcheck
 }
 
@@ -136,7 +154,7 @@ func (enc *CommandEncoder) PopDebugGroup() {
 // Errors are reported via Device error scopes, not as return values.
 func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
-	if source == nil || destination == nil || copySize == nil {
+	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
 	}
 	procCommandEncoderCopyBufferToTexture.Call( //nolint:errcheck
@@ -151,7 +169,7 @@ func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, dest
 // Errors are reported via Device error scopes, not as return values.
 func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
 	mustInit()
-	if source == nil || destination == nil || copySize == nil {
+	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
 	}
 	procCommandEncoderCopyTextureToBuffer.Call( //nolint:errcheck
@@ -166,7 +184,7 @@ func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, des
 // Errors are reported via Device error scopes, not as return values.
 func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
-	if source == nil || destination == nil || copySize == nil {
+	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
 	}
 	procCommandEncoderCopyTextureToTexture.Call( //nolint:errcheck
@@ -180,6 +198,9 @@ func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, de
 // Finish finishes recording and returns a command buffer.
 func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) *CommandBuffer {
 	mustInit()
+	if enc == nil || enc.handle == 0 {
+		return nil
+	}
 	var descPtr uintptr
 	if desc != nil {
 		descPtr = uintptr(unsafe.Pointer(desc))
@@ -209,6 +230,9 @@ func (enc *CommandEncoder) Release() {
 // via RenderPassTimestampWrites or ComputePassTimestampWrites when possible.
 func (enc *CommandEncoder) WriteTimestamp(querySet *QuerySet, queryIndex uint32) {
 	mustInit()
+	if enc == nil || enc.handle == 0 || querySet == nil || querySet.handle == 0 {
+		return
+	}
 	procCommandEncoderWriteTimestamp.Call( //nolint:errcheck
 		enc.handle,
 		querySet.handle,
@@ -220,6 +244,9 @@ func (enc *CommandEncoder) WriteTimestamp(querySet *QuerySet, queryIndex uint32)
 // The buffer must have BufferUsageQueryResolve usage.
 func (enc *CommandEncoder) ResolveQuerySet(querySet *QuerySet, firstQuery, queryCount uint32, destination *Buffer, destinationOffset uint64) {
 	mustInit()
+	if enc == nil || enc.handle == 0 || querySet == nil || querySet.handle == 0 || destination == nil || destination.handle == 0 {
+		return
+	}
 	procCommandEncoderResolveQuerySet.Call( //nolint:errcheck
 		enc.handle,
 		querySet.handle,
@@ -236,6 +263,9 @@ func (enc *CommandEncoder) Handle() uintptr { return enc.handle }
 // SetPipeline sets the compute pipeline.
 func (cpe *ComputePassEncoder) SetPipeline(pipeline *ComputePipeline) {
 	mustInit()
+	if cpe == nil || cpe.handle == 0 || pipeline == nil || pipeline.handle == 0 {
+		return
+	}
 	procComputePassEncoderSetPipeline.Call( //nolint:errcheck
 		cpe.handle,
 		pipeline.handle,
@@ -245,6 +275,9 @@ func (cpe *ComputePassEncoder) SetPipeline(pipeline *ComputePipeline) {
 // SetBindGroup sets a bind group.
 func (cpe *ComputePassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup, dynamicOffsets []uint32) {
 	mustInit()
+	if cpe == nil || cpe.handle == 0 || group == nil || group.handle == 0 {
+		return
+	}
 	var offsetsPtr uintptr
 	offsetCount := uintptr(0)
 	if len(dynamicOffsets) > 0 {
@@ -263,6 +296,9 @@ func (cpe *ComputePassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup,
 // DispatchWorkgroups dispatches compute work.
 func (cpe *ComputePassEncoder) DispatchWorkgroups(x, y, z uint32) {
 	mustInit()
+	if cpe == nil || cpe.handle == 0 {
+		return
+	}
 	procComputePassEncoderDispatchWorkgroups.Call( //nolint:errcheck
 		cpe.handle,
 		uintptr(x),
@@ -278,6 +314,9 @@ func (cpe *ComputePassEncoder) DispatchWorkgroups(x, y, z uint32) {
 //   - workgroupCountZ (uint32)
 func (cpe *ComputePassEncoder) DispatchWorkgroupsIndirect(indirectBuffer *Buffer, indirectOffset uint64) {
 	mustInit()
+	if cpe == nil || cpe.handle == 0 || indirectBuffer == nil || indirectBuffer.handle == 0 {
+		return
+	}
 	procComputePassEncoderDispatchWorkgroupsIndirect.Call( //nolint:errcheck
 		cpe.handle,
 		indirectBuffer.handle,
@@ -288,6 +327,9 @@ func (cpe *ComputePassEncoder) DispatchWorkgroupsIndirect(indirectBuffer *Buffer
 // End ends the compute pass.
 func (cpe *ComputePassEncoder) End() {
 	mustInit()
+	if cpe == nil || cpe.handle == 0 {
+		return
+	}
 	procComputePassEncoderEnd.Call(cpe.handle) //nolint:errcheck
 }
 
@@ -306,7 +348,7 @@ func (cpe *ComputePassEncoder) Handle() uintptr { return cpe.handle }
 // Submit submits command buffers for execution.
 func (q *Queue) Submit(commands ...*CommandBuffer) {
 	mustInit()
-	if len(commands) == 0 {
+	if q == nil || q.handle == 0 || len(commands) == 0 {
 		return
 	}
 	handles := make([]uintptr, len(commands))

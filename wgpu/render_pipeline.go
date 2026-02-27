@@ -208,8 +208,7 @@ type RenderPipelineDescriptor struct {
 // CreateRenderPipeline creates a render pipeline.
 func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPipeline {
 	mustInit()
-
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 
@@ -442,6 +441,9 @@ func (d *Device) CreateRenderPipelineSimple(
 // GetBindGroupLayout returns the bind group layout for the given index.
 func (rp *RenderPipeline) GetBindGroupLayout(groupIndex uint32) *BindGroupLayout {
 	mustInit()
+	if rp == nil || rp.handle == 0 {
+		return nil
+	}
 	handle, _, _ := procRenderPipelineGetBindGroupLayout.Call(
 		rp.handle,
 		uintptr(groupIndex),

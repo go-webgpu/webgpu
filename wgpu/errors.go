@@ -26,6 +26,9 @@ import (
 //	}
 func (d *Device) PushErrorScope(filter ErrorFilter) {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return
+	}
 	// nolint:errcheck // PushErrorScope has no meaningful return value to check
 	procDevicePushErrorScope.Call(d.handle, uintptr(filter))
 }
@@ -68,11 +71,9 @@ func errorScopeCallbackHandler(status uintptr, errType uintptr, message uintptr,
 	// Extract message string (message is pointer to StringView)
 	var msg string
 	if message != 0 {
-		// nolint:govet,gosec // message is uintptr from FFI callback - GC safe
-		sv := (*StringView)(unsafe.Pointer(message))
+		sv := (*StringView)(ptrFromUintptr(message))
 		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			// nolint:govet,gosec // sv.Data is uintptr from C memory - GC safe
-			msg = unsafe.String((*byte)(unsafe.Pointer(sv.Data)), int(sv.Length))
+			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
 		}
 	}
 
@@ -135,6 +136,10 @@ func (d *Device) PopErrorScope(instance *Instance) (ErrorType, string) {
 func (d *Device) PopErrorScopeAsync(instance *Instance) (ErrorType, string, error) {
 	if err := checkInit(); err != nil {
 		return ErrorTypeNoError, "", err
+	}
+
+	if d == nil || d.handle == 0 {
+		return ErrorTypeNoError, "", &WGPUError{Op: "PopErrorScopeAsync", Message: "device is nil or released"}
 	}
 
 	if instance == nil {

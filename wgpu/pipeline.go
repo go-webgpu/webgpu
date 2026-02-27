@@ -32,7 +32,7 @@ type ComputePipelineDescriptor struct {
 // CreatePipelineLayout creates a pipeline layout.
 func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) *PipelineLayout {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 	handle, _, _ := procDeviceCreatePipelineLayout.Call(
@@ -49,6 +49,9 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) *PipelineL
 // CreatePipelineLayoutSimple creates a pipeline layout with the given bind group layouts.
 func (d *Device) CreatePipelineLayoutSimple(layouts []*BindGroupLayout) *PipelineLayout {
 	mustInit()
+	if d == nil || d.handle == 0 {
+		return nil
+	}
 	if len(layouts) == 0 {
 		// Create empty pipeline layout
 		desc := PipelineLayoutDescriptor{
@@ -86,7 +89,7 @@ func (pl *PipelineLayout) Handle() uintptr { return pl.handle }
 // CreateComputePipeline creates a compute pipeline.
 func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) *ComputePipeline {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 	handle, _, _ := procDeviceCreateComputePipeline.Call(
@@ -104,7 +107,7 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) *Compute
 // If layout is nil, auto layout is used.
 func (d *Device) CreateComputePipelineSimple(layout *PipelineLayout, shader *ShaderModule, entryPoint string) *ComputePipeline {
 	mustInit()
-	if shader == nil {
+	if d == nil || d.handle == 0 || shader == nil {
 		return nil
 	}
 	entryBytes := []byte(entryPoint)
@@ -128,6 +131,9 @@ func (d *Device) CreateComputePipelineSimple(layout *PipelineLayout, shader *Sha
 // Useful for auto-layout pipelines.
 func (cp *ComputePipeline) GetBindGroupLayout(groupIndex uint32) *BindGroupLayout {
 	mustInit()
+	if cp == nil || cp.handle == 0 {
+		return nil
+	}
 	handle, _, _ := procComputePipelineGetBindGroupLayout.Call(
 		cp.handle,
 		uintptr(groupIndex),

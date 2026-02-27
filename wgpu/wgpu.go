@@ -2,6 +2,8 @@ package wgpu
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"runtime"
 	"sync"
 )
@@ -179,10 +181,22 @@ var (
 
 // Init initializes the wgpu library. Called automatically on first use.
 // Can be called explicitly to check for initialization errors early.
+//
+// The library is located using the following strategy (first match wins):
+//  1. WGPU_NATIVE_PATH environment variable (explicit full path)
+//  2. Platform default name (searched via OS library loader):
+//     - Windows: wgpu_native.dll
+//     - macOS: libwgpu_native.dylib
+//     - Linux: libwgpu_native.so
 func Init() error {
 	initOnce.Do(func() {
 		libPath := getLibraryPath()
-		wgpuLib = loadLibrary(libPath)
+		var err error
+		wgpuLib, err = loadLibrary(libPath)
+		if err != nil {
+			initErr = fmt.Errorf("wgpu: failed to load native library %q: %w (set WGPU_NATIVE_PATH to override)", libPath, err)
+			return
+		}
 
 		initSymbols()
 	})
@@ -190,6 +204,9 @@ func Init() error {
 }
 
 func getLibraryPath() string {
+	if path := os.Getenv("WGPU_NATIVE_PATH"); path != "" {
+		return path
+	}
 	switch runtime.GOOS {
 	case "windows":
 		return "wgpu_native.dll"

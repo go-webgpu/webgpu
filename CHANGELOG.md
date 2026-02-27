@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-27
+
+### Added
+
+- **Null handle guards** on all public FFI methods — prevents SIGSEGV when passing nil/released objects
+- **85 null guard tests** (`TestNullGuard_*`) — CI-safe, no GPU required
+- **`WGPU_NATIVE_PATH` env var** — override library path for custom wgpu-native locations
+- **`ptrFromUintptr` helper** — eliminates all `go vet` unsafe.Pointer warnings in FFI code
+
+### Changed
+
+- `loadLibrary` now returns `(Library, error)` — proper error propagation on init failure
+- Windows: eager DLL loading via `dll.Load()` — errors at `Init()` instead of first FFI call
+- `Init()` returns descriptive error messages with library path and override hint
+- CI: wgpu-native binary downloaded in all workflows — tests run against real library, no skips
+- CI: removed `-unsafeptr=false` go vet workaround — all warnings properly fixed
+
+### Fixed
+
+- **15 `go vet` warnings** — all `possible misuse of unsafe.Pointer` eliminated via `ptrFromUintptr`
+- Silent library loading failures — `Init()` now properly reports missing DLL/so/dylib
+
+---
+
 ## [0.3.2] - 2026-02-27
 
 ### Changed

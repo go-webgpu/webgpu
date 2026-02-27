@@ -36,6 +36,9 @@ func (i *Instance) Release() {
 
 // ProcessEvents processes pending async events.
 func (i *Instance) ProcessEvents() {
+	if i == nil || i.handle == 0 {
+		return
+	}
 	procInstanceProcessEvents.Call(i.handle) //nolint:errcheck
 }
 

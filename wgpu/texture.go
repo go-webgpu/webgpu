@@ -71,6 +71,9 @@ type textureViewDescriptorWire struct {
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 	mustInit()
+	if t == nil || t.handle == 0 {
+		return nil
+	}
 
 	var descPtr uintptr
 	if desc != nil {
@@ -189,7 +192,7 @@ func (tv *TextureView) Handle() uintptr { return tv.handle }
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
 func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 	mustInit()
-	if desc == nil {
+	if d == nil || d.handle == 0 || desc == nil {
 		return nil
 	}
 
@@ -252,7 +255,7 @@ type TexelCopyBufferInfo struct {
 // WriteTexture writes data to a texture.
 func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) {
 	mustInit()
-	if dest == nil || layout == nil || size == nil || len(data) == 0 {
+	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
 		return
 	}
 	procQueueWriteTexture.Call( //nolint:errcheck

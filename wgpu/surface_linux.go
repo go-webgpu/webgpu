@@ -27,6 +27,9 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
+	if inst == nil || inst.handle == 0 {
+		return nil, &WGPUError{Op: "CreateSurface", Message: "instance is nil or released"}
+	}
 
 	// Build WGPUSurfaceSourceXlibWindow
 	source := surfaceSourceXlibWindow{
@@ -62,6 +65,9 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 func (inst *Instance) CreateSurfaceFromWaylandSurface(display, surface uintptr) (*Surface, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
+	}
+	if inst == nil || inst.handle == 0 {
+		return nil, &WGPUError{Op: "CreateSurface", Message: "instance is nil or released"}
 	}
 
 	// Build WGPUSurfaceSourceWaylandSurface

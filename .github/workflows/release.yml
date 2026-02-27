@@ -32,6 +32,32 @@ jobs:
         go-version: ${{ matrix.go-version }}
         cache: true
 
+    - name: Download wgpu-native
+      shell: bash
+      env:
+        WGPU_VERSION: "v27.0.4.0"
+      run: |
+        set -e
+        case "${{ matrix.os }}" in
+          ubuntu-latest)
+            ASSET="wgpu-linux-x86_64-release.zip"
+            LIB_NAME="libwgpu_native.so"
+            ;;
+          macos-latest)
+            ASSET="wgpu-macos-aarch64-release.zip"
+            LIB_NAME="libwgpu_native.dylib"
+            ;;
+          windows-latest)
+            ASSET="wgpu-windows-x86_64-msvc-release.zip"
+            LIB_NAME="wgpu_native.dll"
+            ;;
+        esac
+        curl -fsSL "https://github.com/gfx-rs/wgpu-native/releases/download/${WGPU_VERSION}/${ASSET}" -o wgpu.zip
+        unzip -o wgpu.zip -d wgpu-native
+        find wgpu-native -name "${LIB_NAME}" -exec cp {} . \;
+        ls -la "${LIB_NAME}"
+        echo "WGPU_NATIVE_PATH=$PWD/${LIB_NAME}" >> $GITHUB_ENV
+
     - name: Verify dependencies
       run: go mod verify
 
@@ -48,9 +74,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         else
-          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz"
+          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         fi
 
     - name: Run fuzz tests (seed corpus only)
