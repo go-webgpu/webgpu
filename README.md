@@ -6,6 +6,7 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/go-webgpu/webgpu?style=flat-square&logo=go)](https://go.dev/dl/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/go-webgpu/webgpu.svg)](https://pkg.go.dev/github.com/go-webgpu/webgpu)
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/go-webgpu/webgpu/test.yml?branch=main&style=flat-square&logo=github-actions&label=CI)](https://github.com/go-webgpu/webgpu/actions)
+[![Codecov](https://img.shields.io/codecov/c/github/go-webgpu/webgpu?style=flat-square&logo=codecov)](https://app.codecov.io/gh/go-webgpu/webgpu)
 [![Go Report Card](https://goreportcard.com/badge/github.com/go-webgpu/webgpu?style=flat-square)](https://goreportcard.com/report/github.com/go-webgpu/webgpu)
 [![License](https://img.shields.io/github/license/go-webgpu/webgpu?style=flat-square)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/go-webgpu/webgpu?style=flat-square&logo=github)](https://github.com/go-webgpu/webgpu/stargazers)
