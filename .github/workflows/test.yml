@@ -35,6 +35,9 @@ jobs:
   unit-tests:
     name: Unit Tests - ${{ matrix.os }} - Go ${{ matrix.go-version }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write  # Required for Codecov OIDC tokenless upload
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]  # macos-latest = ARM64 (Apple Silicon)
@@ -111,12 +114,15 @@ jobs:
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25'
-      uses: codecov/codecov-action@v4
-      continue-on-error: true
+      uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.txt
+        use_oidc: true
+        slug: go-webgpu/webgpu
+        files: ./coverage.txt
         flags: unittests
-        name: codecov-unit
+        name: codecov-webgpu
+        fail_ci_if_error: false
+        verbose: true
 
   lint:
     name: Lint
