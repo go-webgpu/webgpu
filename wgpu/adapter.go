@@ -1,6 +1,8 @@
 package wgpu
 
 import (
+	"fmt"
+	"os"
 	"sync"
 	"unsafe"
 
@@ -70,6 +72,8 @@ var (
 // Note: On Windows x64 ABI, structs > 8 bytes are passed by pointer.
 // goffi v0.2.1+ requires all args to be uintptr and exactly one uintptr return.
 func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, userdata1, userdata2 uintptr) uintptr {
+	fmt.Fprintf(os.Stderr, "[wgpu-debug] adapterCallbackHandler FIRED: status=%d adapter=0x%x userdata1=%d\n", status, adapter, userdata1)
+
 	// Extract message string (message is pointer to StringView on Windows)
 	var msg string
 	if message != 0 {
@@ -147,11 +151,29 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 
 	// Call wgpuInstanceRequestAdapter
 	// Returns WGPUFuture (uint64) but we use callback mode
+	fmt.Fprintf(os.Stderr, "[wgpu-debug] calling wgpuInstanceRequestAdapter...\n")
 	procInstanceRequestAdapter.Call( //nolint:errcheck
 		i.handle,
 		optionsPtr,
 		uintptr(unsafe.Pointer(&callbackInfo)),
 	)
+	fmt.Fprintf(os.Stderr, "[wgpu-debug] wgpuInstanceRequestAdapter returned\n")
+
+	// Check if callback already fired (wgpu-native calls it synchronously)
+	select {
+	case <-req.done:
+		fmt.Fprintf(os.Stderr, "[wgpu-debug] callback fired synchronously (before loop)\n")
+		if req.status != RequestAdapterStatusSuccess {
+			msg := req.message
+			if msg == "" {
+				msg = "adapter request failed"
+			}
+			return nil, &WGPUError{Op: "RequestAdapter", Message: msg}
+		}
+		return req.adapter, nil
+	default:
+		fmt.Fprintf(os.Stderr, "[wgpu-debug] callback did NOT fire synchronously, entering ProcessEvents loop\n")
+	}
 
 	// Process events until callback fires
 	for {
