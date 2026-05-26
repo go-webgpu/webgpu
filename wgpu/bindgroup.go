@@ -55,14 +55,6 @@ type BindGroupLayoutDescriptor struct {
 	Entries []BindGroupLayoutEntry
 }
 
-// bindGroupLayoutDescriptorC is the old C-layout type kept only for internal use.
-// Callers must use BindGroupLayoutDescriptor (Go-idiomatic).
-type bindGroupLayoutDescriptorC struct {
-	NextInChain uintptr // *ChainedStruct
-	Label       StringView
-	EntryCount  uintptr // size_t
-	Entries     uintptr // *BindGroupLayoutEntry
-}
 
 // =============================================================================
 // Wire structs for FFI (with converted enum values and uint64 ShaderStage)

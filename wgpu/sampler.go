@@ -24,12 +24,6 @@ type SamplerDescriptor struct {
 }
 
 // MaxAnisotropy is deprecated. Use Anisotropy instead.
-//
-// Deprecated: renamed to Anisotropy for consistency with gogpu/wgpu API.
-func (d *SamplerDescriptor) withMaxAnisotropy(v uint16) *SamplerDescriptor {
-	d.Anisotropy = v
-	return d
-}
 
 // samplerDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
 // CRITICAL: layout must match WGPUSamplerDescriptor exactly.

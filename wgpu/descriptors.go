@@ -32,14 +32,6 @@ func boolToWGPU(b bool) Bool {
 	return False
 }
 
-// slicePtrOrZero returns the pointer to the first element of a non-empty
-// slice as uintptr, or 0 for an empty/nil slice.
-func slicePtrOrZero[T any](s []T) uintptr {
-	if len(s) == 0 {
-		return 0
-	}
-	return uintptr(unsafe.Pointer(&s[0]))
-}
 
 // =============================================================================
 // Shader descriptor
