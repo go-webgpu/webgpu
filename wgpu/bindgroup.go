@@ -49,6 +49,13 @@ type BindGroupLayoutEntry struct {
 
 // BindGroupLayoutDescriptor describes a bind group layout.
 type BindGroupLayoutDescriptor struct {
+	Label   string
+	Entries []BindGroupLayoutEntry
+}
+
+// bindGroupLayoutDescriptorC is the old C-layout type kept only for internal use.
+// Callers must use BindGroupLayoutDescriptor (Go-idiomatic).
+type bindGroupLayoutDescriptorC struct {
 	NextInChain uintptr // *ChainedStruct
 	Label       StringView
 	EntryCount  uintptr // size_t
@@ -149,9 +156,23 @@ type bindGroupLayoutDescriptorWire struct {
 }
 
 // BindGroupEntry describes a single binding in a bind group.
+// Exactly one of Buffer, Sampler, or TextureView must be non-nil.
 type BindGroupEntry struct {
+	Binding     uint32
+	Buffer      *Buffer      // For buffer bindings (nil if not used)
+	Offset      uint64       // Buffer offset (ignored for non-buffer bindings)
+	Size        uint64       // Buffer binding size; 0 = whole buffer
+	Sampler     *Sampler     // For sampler bindings (nil if not used)
+	TextureView *TextureView // For texture view bindings (nil if not used)
+}
+
+// bindGroupEntryWire is the FFI-compatible C-layout struct for wgpu-native.
+// CRITICAL: layout must match WGPUBindGroupEntry exactly.
+// nextInChain(8)+binding(4)+pad(4)+buffer(8)+offset(8)+size(8)+sampler(8)+textureView(8) = 56 bytes.
+type bindGroupEntryWire struct {
 	NextInChain uintptr // *ChainedStruct
 	Binding     uint32
+	_pad        [4]byte // padding for FFI alignment
 	Buffer      uintptr // WGPUBuffer (nullable)
 	Offset      uint64
 	Size        uint64
@@ -159,13 +180,39 @@ type BindGroupEntry struct {
 	TextureView uintptr // WGPUTextureView (nullable)
 }
 
+// toWire converts a BindGroupEntry to its FFI wire representation.
+func (e *BindGroupEntry) toWire() bindGroupEntryWire {
+	wire := bindGroupEntryWire{
+		Binding: e.Binding,
+		Offset:  e.Offset,
+		Size:    e.Size,
+	}
+	if e.Buffer != nil {
+		wire.Buffer = e.Buffer.handle
+	}
+	if e.Sampler != nil {
+		wire.Sampler = e.Sampler.handle
+	}
+	if e.TextureView != nil {
+		wire.TextureView = e.TextureView.handle
+	}
+	return wire
+}
+
 // BindGroupDescriptor describes a bind group.
 type BindGroupDescriptor struct {
+	Label   string
+	Layout  *BindGroupLayout
+	Entries []BindGroupEntry
+}
+
+// bindGroupDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+type bindGroupDescriptorWire struct {
 	NextInChain uintptr // *ChainedStruct
 	Label       StringView
 	Layout      uintptr // WGPUBindGroupLayout
 	EntryCount  uintptr // size_t
-	Entries     uintptr // *BindGroupEntry
+	Entries     uintptr // *bindGroupEntryWire
 }
 
 // CreateBindGroupLayout creates a bind group layout.
@@ -182,18 +229,15 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) (*BindGr
 		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "descriptor is nil"}
 	}
 
-	// If there are entries, we need to convert them to wire format
 	var wireDesc bindGroupLayoutDescriptorWire
-	wireDesc.NextInChain = desc.NextInChain
-	wireDesc.Label = desc.Label
-	wireDesc.EntryCount = desc.EntryCount
+	wireDesc.Label = stringToStringView(desc.Label)
+	wireDesc.EntryCount = uintptr(len(desc.Entries))
 
-	if desc.EntryCount > 0 && desc.Entries != 0 {
-		// Convert entries to wire format
-		entries := unsafe.Slice((*BindGroupLayoutEntry)(ptrFromUintptr(desc.Entries)), desc.EntryCount)
-		wireEntries := make([]bindGroupLayoutEntryWire, len(entries))
-		for i := range entries {
-			wireEntries[i] = entries[i].toWire()
+	var wireEntries []bindGroupLayoutEntryWire
+	if len(desc.Entries) > 0 {
+		wireEntries = make([]bindGroupLayoutEntryWire, len(desc.Entries))
+		for i := range desc.Entries {
+			wireEntries[i] = desc.Entries[i].toWire()
 		}
 		wireDesc.Entries = uintptr(unsafe.Pointer(&wireEntries[0]))
 	}
@@ -212,37 +256,9 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) (*BindGr
 // CreateBindGroupLayoutSimple creates a bind group layout with the given entries.
 // Returns an error if the FFI call fails or the device is nil.
 func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) (*BindGroupLayout, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
-	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "device is nil or released"}
-	}
-	if len(entries) == 0 {
-		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "entries slice is empty"}
-	}
-
-	// Convert entries to wire format
-	wireEntries := make([]bindGroupLayoutEntryWire, len(entries))
-	for i := range entries {
-		wireEntries[i] = entries[i].toWire()
-	}
-
-	wireDesc := bindGroupLayoutDescriptorWire{
-		Label:      EmptyStringView(),
-		EntryCount: uintptr(len(entries)),
-		Entries:    uintptr(unsafe.Pointer(&wireEntries[0])),
-	}
-
-	handle, _, _ := procDeviceCreateBindGroupLayout.Call(
-		d.handle,
-		uintptr(unsafe.Pointer(&wireDesc)),
-	)
-	if handle == 0 {
-		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "wgpu returned null handle"}
-	}
-	trackResource(handle, "BindGroupLayout")
-	return &BindGroupLayout{handle: handle}, nil
+	return d.CreateBindGroupLayout(&BindGroupLayoutDescriptor{
+		Entries: entries,
+	})
 }
 
 // Release releases the bind group layout.
@@ -269,9 +285,31 @@ func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) (*BindGroup, error) 
 	if desc == nil {
 		return nil, &WGPUError{Op: "CreateBindGroup", Message: "descriptor is nil"}
 	}
+	if desc.Layout == nil {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "layout is nil"}
+	}
+
+	// Convert Go-idiomatic entries to FFI wire entries
+	var wireEntries []bindGroupEntryWire
+	var wireEntriesPtr uintptr
+	if len(desc.Entries) > 0 {
+		wireEntries = make([]bindGroupEntryWire, len(desc.Entries))
+		for i := range desc.Entries {
+			wireEntries[i] = desc.Entries[i].toWire()
+		}
+		wireEntriesPtr = uintptr(unsafe.Pointer(&wireEntries[0]))
+	}
+
+	wire := bindGroupDescriptorWire{
+		Label:      stringToStringView(desc.Label),
+		Layout:     desc.Layout.handle,
+		EntryCount: uintptr(len(desc.Entries)),
+		Entries:    wireEntriesPtr,
+	}
+
 	handle, _, _ := procDeviceCreateBindGroup.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateBindGroup", Message: "wgpu returned null handle"}
@@ -280,28 +318,13 @@ func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) (*BindGroup, error) 
 	return &BindGroup{handle: handle}, nil
 }
 
-// CreateBindGroupSimple creates a bind group with buffer entries.
+// CreateBindGroupSimple creates a bind group with the given entries.
 // Returns an error if the FFI call fails or the device/layout is nil.
 func (d *Device) CreateBindGroupSimple(layout *BindGroupLayout, entries []BindGroupEntry) (*BindGroup, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
-	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "CreateBindGroup", Message: "device is nil or released"}
-	}
-	if layout == nil {
-		return nil, &WGPUError{Op: "CreateBindGroup", Message: "layout is nil"}
-	}
-	if len(entries) == 0 {
-		return nil, &WGPUError{Op: "CreateBindGroup", Message: "entries slice is empty"}
-	}
-	desc := BindGroupDescriptor{
-		Label:      EmptyStringView(),
-		Layout:     layout.handle,
-		EntryCount: uintptr(len(entries)),
-		Entries:    uintptr(unsafe.Pointer(&entries[0])),
-	}
-	return d.CreateBindGroup(&desc)
+	return d.CreateBindGroup(&BindGroupDescriptor{
+		Layout:  layout,
+		Entries: entries,
+	})
 }
 
 // Release releases the bind group.
@@ -320,7 +343,7 @@ func (bg *BindGroup) Handle() uintptr { return bg.handle }
 func BufferBindingEntry(binding uint32, buffer *Buffer, offset, size uint64) BindGroupEntry {
 	return BindGroupEntry{
 		Binding: binding,
-		Buffer:  buffer.handle,
+		Buffer:  buffer,
 		Offset:  offset,
 		Size:    size,
 	}
@@ -330,7 +353,7 @@ func BufferBindingEntry(binding uint32, buffer *Buffer, offset, size uint64) Bin
 func TextureBindingEntry(binding uint32, textureView *TextureView) BindGroupEntry {
 	return BindGroupEntry{
 		Binding:     binding,
-		TextureView: textureView.handle,
+		TextureView: textureView,
 	}
 }
 
@@ -338,6 +361,6 @@ func TextureBindingEntry(binding uint32, textureView *TextureView) BindGroupEntr
 func SamplerBindingEntry(binding uint32, sampler *Sampler) BindGroupEntry {
 	return BindGroupEntry{
 		Binding: binding,
-		Sampler: sampler.handle,
+		Sampler: sampler,
 	}
 }

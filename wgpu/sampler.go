@@ -8,8 +8,7 @@ import (
 
 // SamplerDescriptor describes a sampler to create.
 type SamplerDescriptor struct {
-	NextInChain   uintptr
-	Label         StringView
+	Label         string
 	AddressModeU  gputypes.AddressMode
 	AddressModeV  gputypes.AddressMode
 	AddressModeW  gputypes.AddressMode
@@ -20,7 +19,27 @@ type SamplerDescriptor struct {
 	LodMaxClamp   float32
 	Compare       gputypes.CompareFunction
 	MaxAnisotropy uint16
-	_pad          [2]byte
+}
+
+// samplerDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// CRITICAL: layout must match WGPUSamplerDescriptor exactly.
+// nextInChain(8)+label(16)+addressModeU(4)+addressModeV(4)+addressModeW(4)+
+// magFilter(4)+minFilter(4)+mipmapFilter(4)+lodMinClamp(4)+lodMaxClamp(4)+
+// compare(4)+maxAnisotropy(2)+pad(2) = 64 bytes.
+type samplerDescriptorWire struct {
+	NextInChain   uintptr              // 8 bytes
+	Label         StringView           // 16 bytes
+	AddressModeU  gputypes.AddressMode // 4 bytes
+	AddressModeV  gputypes.AddressMode // 4 bytes
+	AddressModeW  gputypes.AddressMode // 4 bytes
+	MagFilter     gputypes.FilterMode  // 4 bytes
+	MinFilter     gputypes.FilterMode  // 4 bytes
+	MipmapFilter  gputypes.MipmapFilterMode // 4 bytes
+	LodMinClamp   float32              // 4 bytes
+	LodMaxClamp   float32              // 4 bytes
+	Compare       gputypes.CompareFunction // 4 bytes
+	MaxAnisotropy uint16               // 2 bytes
+	_pad          [2]byte              //nolint:unused // padding to align to 4 bytes
 }
 
 // CreateSampler creates a sampler with the specified descriptor.
@@ -36,14 +55,28 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
 	}
 
 	// wgpu-native requires MaxAnisotropy >= 1
-	descCopy := *desc
-	if descCopy.MaxAnisotropy == 0 {
-		descCopy.MaxAnisotropy = 1
+	maxAnisotropy := desc.MaxAnisotropy
+	if maxAnisotropy == 0 {
+		maxAnisotropy = 1
+	}
+
+	wire := samplerDescriptorWire{
+		Label:         stringToStringView(desc.Label),
+		AddressModeU:  desc.AddressModeU,
+		AddressModeV:  desc.AddressModeV,
+		AddressModeW:  desc.AddressModeW,
+		MagFilter:     desc.MagFilter,
+		MinFilter:     desc.MinFilter,
+		MipmapFilter:  desc.MipmapFilter,
+		LodMinClamp:   desc.LodMinClamp,
+		LodMaxClamp:   desc.LodMaxClamp,
+		Compare:       desc.Compare,
+		MaxAnisotropy: maxAnisotropy,
 	}
 
 	handle, _, _ := procDeviceCreateSampler.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&descCopy)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateSampler", Message: "wgpu returned null handle"}
@@ -54,8 +87,7 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
 
 // CreateLinearSampler creates a sampler with linear filtering.
 func (d *Device) CreateLinearSampler() (*Sampler, error) {
-	desc := SamplerDescriptor{
-		Label:        EmptyStringView(),
+	return d.CreateSampler(&SamplerDescriptor{
 		AddressModeU: gputypes.AddressModeClampToEdge,
 		AddressModeV: gputypes.AddressModeClampToEdge,
 		AddressModeW: gputypes.AddressModeClampToEdge,
@@ -64,14 +96,12 @@ func (d *Device) CreateLinearSampler() (*Sampler, error) {
 		MipmapFilter: gputypes.MipmapFilterModeLinear,
 		LodMinClamp:  0.0,
 		LodMaxClamp:  32.0,
-	}
-	return d.CreateSampler(&desc)
+	})
 }
 
 // CreateNearestSampler creates a sampler with nearest filtering.
 func (d *Device) CreateNearestSampler() (*Sampler, error) {
-	desc := SamplerDescriptor{
-		Label:        EmptyStringView(),
+	return d.CreateSampler(&SamplerDescriptor{
 		AddressModeU: gputypes.AddressModeClampToEdge,
 		AddressModeV: gputypes.AddressModeClampToEdge,
 		AddressModeW: gputypes.AddressModeClampToEdge,
@@ -80,8 +110,7 @@ func (d *Device) CreateNearestSampler() (*Sampler, error) {
 		MipmapFilter: gputypes.MipmapFilterModeNearest,
 		LodMinClamp:  0.0,
 		LodMaxClamp:  1.0,
-	}
-	return d.CreateSampler(&desc)
+	})
 }
 
 // Release releases the sampler reference.

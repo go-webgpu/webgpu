@@ -28,10 +28,10 @@ func TestCommandEncoderClearBuffer(t *testing.T) {
 
 	// Create a buffer
 	bufferDesc := BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageCopySrc,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, err := device.CreateBuffer(&bufferDesc)
 	if err != nil {
@@ -147,7 +147,7 @@ func TestTextureQueryAPIs(t *testing.T) {
 
 	// Create a texture
 	textureDesc := TextureDescriptor{
-		Label: EmptyStringView(),
+		Label: "",
 		Usage: gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
 		Size: gputypes.Extent3D{
 			Width:              512,

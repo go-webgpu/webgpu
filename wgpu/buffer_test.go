@@ -28,10 +28,10 @@ func TestCreateBuffer(t *testing.T) {
 
 	t.Log("Creating buffer...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, err := device.CreateBuffer(desc)
 	if err != nil {
@@ -74,10 +74,10 @@ func TestBufferMappedAtCreation(t *testing.T) {
 
 	t.Log("Creating buffer with MappedAtCreation...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopySrc,
 		Size:             64,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	}
 	buffer, err := device.CreateBuffer(desc)
 	if err != nil {
@@ -131,10 +131,10 @@ func TestQueueWriteBuffer(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBuffer test...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, err := device.CreateBuffer(desc)
 	if err != nil {
@@ -180,10 +180,10 @@ func TestQueueWriteBufferRaw(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBufferRaw test...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, err := device.CreateBuffer(desc)
 	if err != nil {

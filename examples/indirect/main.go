@@ -344,7 +344,7 @@ func (app *App) createBuffers() error {
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             app.vertexBufSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.vertexBuffer == nil {
 		return fmt.Errorf("failed to create vertex buffer")
@@ -378,7 +378,7 @@ func (app *App) createBuffers() error {
 	app.indirectBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageIndirect | wgpu.BufferUsageCopyDst,
 		Size:             app.indirectBufSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.indirectBuffer == nil {
 		return fmt.Errorf("failed to create indirect buffer")

@@ -234,16 +234,12 @@ type QueueDescriptor struct {
 // Returns nil on error (use CreateTexture directly for full error handling).
 func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.TextureFormat) *Texture {
 	desc := TextureDescriptor{
-		NextInChain:     0,
-		Label:           EmptyStringView(),
-		Usage:           gputypes.TextureUsageRenderAttachment,
-		Dimension:       gputypes.TextureDimension2D,
-		Size:            gputypes.Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
-		Format:          format,
-		MipLevelCount:   1,
-		SampleCount:     1,
-		ViewFormatCount: 0,
-		ViewFormats:     0,
+		Usage:     gputypes.TextureUsageRenderAttachment,
+		Dimension: gputypes.TextureDimension2D,
+		Size:      gputypes.Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
+		Format:    format,
+		MipLevelCount: 1,
+		SampleCount:   1,
 	}
 
 	t, _ := d.CreateTexture(&desc)

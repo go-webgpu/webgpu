@@ -367,7 +367,7 @@ func (app *App) createTexture() error {
 
 	// Create texture
 	textureDesc := wgpu.TextureDescriptor{
-		Label:     wgpu.EmptyStringView(),
+		Label: "",
 		Usage:     wgpu.TextureUsageTextureBinding | wgpu.TextureUsageCopyDst,
 		Dimension: wgpu.TextureDimension2D,
 		Size: wgpu.Extent3D{
@@ -492,10 +492,10 @@ func (app *App) createBuffers() error {
 	// nolint:gosec // len(vertices) is 16, * 4 = 64 bytes - no overflow risk
 	vertexBufferSize := uint64(len(vertices) * 4)
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.EmptyStringView(),
+		Label: "",
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.vertexBuffer == nil {
 		return fmt.Errorf("failed to create vertex buffer")
@@ -515,10 +515,10 @@ func (app *App) createBuffers() error {
 	// nolint:gosec // len(indices) is 6, * 2 = 12 bytes - no overflow risk
 	indexBufferSize := uint64(len(indices) * 2)
 	app.indexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.EmptyStringView(),
+		Label: "",
 		Usage:            wgpu.BufferUsageIndex | wgpu.BufferUsageCopyDst,
 		Size:             indexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.indexBuffer == nil {
 		return fmt.Errorf("failed to create index buffer")

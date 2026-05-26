@@ -321,10 +321,10 @@ func (app *App) createVertexBuffer() error {
 
 	// Create buffer with MappedAtCreation = true for easy data upload
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.StringView{},
+		Label: "",
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 
 	if app.vertexBuffer == nil {

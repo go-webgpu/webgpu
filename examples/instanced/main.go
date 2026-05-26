@@ -132,7 +132,7 @@ func main() {
 	vertexBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		log.Fatalf("create vertex buffer: %v", err)
@@ -152,7 +152,7 @@ func main() {
 	instanceBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             instanceBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		log.Fatalf("create instance buffer: %v", err)

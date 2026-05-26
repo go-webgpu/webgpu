@@ -70,8 +70,8 @@ func TestABIStructSizes(t *testing.T) {
 		{"AdapterInfo", unsafe.Sizeof(AdapterInfo{}), 96},
 
 		// Buffer
-		// BufferDescriptor: nextInChain(8)+label(16)+usage(8)+size(8)+mappedAtCreation(4)+pad(4) = 48
-		{"BufferDescriptor", unsafe.Sizeof(BufferDescriptor{}), 48},
+		// bufferDescriptorWire: nextInChain(8)+label(16)+usage(8)+size(8)+mappedAtCreation(4)+pad(4) = 48
+		{"bufferDescriptorWire", unsafe.Sizeof(bufferDescriptorWire{}), 48},
 
 		// Device-level structs
 		// QueueDescriptor: nextInChain(8)+label(16) = 24
@@ -82,25 +82,25 @@ func TestABIStructSizes(t *testing.T) {
 		{"UncapturedErrorCallbackInfo", unsafe.Sizeof(UncapturedErrorCallbackInfo{}), 32},
 
 		// Texture
-		// SamplerDescriptor: nextInChain(8)+label(16)+addressModeU(4)+addressModeV(4)+
+		// samplerDescriptorWire: nextInChain(8)+label(16)+addressModeU(4)+addressModeV(4)+
 		//   addressModeW(4)+magFilter(4)+minFilter(4)+mipmapFilter(4)+
 		//   lodMinClamp(4)+lodMaxClamp(4)+compare(4)+maxAnisotropy(2)+pad(2) = 64
-		{"SamplerDescriptor", unsafe.Sizeof(SamplerDescriptor{}), 64},
+		{"samplerDescriptorWire", unsafe.Sizeof(samplerDescriptorWire{}), 64},
 
 		// Pipeline
-		// PipelineLayoutDescriptor: nextInChain(8)+label(16)+bindGroupLayoutCount(8)+
+		// pipelineLayoutDescriptorWire: nextInChain(8)+label(16)+bindGroupLayoutCount(8)+
 		//   bindGroupLayouts(8)+immediateSize(4)+pad(4) = 48
-		{"PipelineLayoutDescriptor", unsafe.Sizeof(PipelineLayoutDescriptor{}), 48},
+		{"pipelineLayoutDescriptorWire", unsafe.Sizeof(pipelineLayoutDescriptorWire{}), 48},
 		// ProgrammableStageDescriptor: nextInChain(8)+module(8)+entryPoint(16)+
 		//   constantCount(8)+constants(8) = 48
 		{"ProgrammableStageDescriptor", unsafe.Sizeof(ProgrammableStageDescriptor{}), 48},
-		// ComputePipelineDescriptor: nextInChain(8)+label(16)+layout(8)+compute(48) = 80
-		{"ComputePipelineDescriptor", unsafe.Sizeof(ComputePipelineDescriptor{}), 80},
+		// computePipelineDescriptorWire: nextInChain(8)+label(16)+layout(8)+compute(48) = 80
+		{"computePipelineDescriptorWire", unsafe.Sizeof(computePipelineDescriptorWire{}), 80},
 
 		// BindGroup types
-		// BindGroupEntry: nextInChain(8)+binding(4)+pad(4)+buffer(8)+offset(8)+size(8)+
+		// bindGroupEntryWire: nextInChain(8)+binding(4)+pad(4)+buffer(8)+offset(8)+size(8)+
 		//   sampler(8)+textureView(8) = 56
-		{"BindGroupEntry", unsafe.Sizeof(BindGroupEntry{}), 56},
+		{"bindGroupEntryWire", unsafe.Sizeof(bindGroupEntryWire{}), 56},
 
 		// Render pipeline types
 		// BlendComponent: operation(4)+srcFactor(4)+dstFactor(4) = 12
@@ -328,9 +328,9 @@ func TestABIStructFieldOffsets(t *testing.T) {
 		}
 	})
 
-	t.Run("BufferDescriptor", func(t *testing.T) {
+	t.Run("bufferDescriptorWire", func(t *testing.T) {
 		// nextInChain(0)+label(8)+usage(24)+size(32)+mappedAtCreation(40)+pad(44) = 48
-		var bd BufferDescriptor
+		var bd bufferDescriptorWire
 		offsets := []struct {
 			name     string
 			got      uintptr
@@ -346,7 +346,7 @@ func TestABIStructFieldOffsets(t *testing.T) {
 			o := o
 			t.Run(o.name, func(t *testing.T) {
 				if o.got != o.expected {
-					t.Errorf("offsetof(BufferDescriptor.%s) = %d, want %d",
+					t.Errorf("offsetof(bufferDescriptorWire.%s) = %d, want %d",
 						o.name, o.got, o.expected)
 				}
 			})

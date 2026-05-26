@@ -8,16 +8,14 @@ import (
 
 // TextureDescriptor describes a texture to create.
 type TextureDescriptor struct {
-	NextInChain     uintptr
-	Label           StringView
-	Usage           gputypes.TextureUsage
-	Dimension       gputypes.TextureDimension
-	Size            gputypes.Extent3D
-	Format          gputypes.TextureFormat
-	MipLevelCount   uint32
-	SampleCount     uint32
-	ViewFormatCount uintptr
-	ViewFormats     uintptr
+	Label         string
+	Usage         gputypes.TextureUsage
+	Dimension     gputypes.TextureDimension
+	Size          gputypes.Extent3D
+	Format        gputypes.TextureFormat
+	MipLevelCount uint32
+	SampleCount   uint32
+	ViewFormats   []gputypes.TextureFormat
 }
 
 // textureDescriptorWire is the FFI-compatible struct with wgpu-native enum values.
@@ -37,8 +35,7 @@ type textureDescriptorWire struct {
 
 // TextureViewDescriptor describes a texture view to create.
 type TextureViewDescriptor struct {
-	NextInChain     uintptr
-	Label           StringView
+	Label           string
 	Format          gputypes.TextureFormat
 	Dimension       gputypes.TextureViewDimension
 	BaseMipLevel    uint32
@@ -46,7 +43,6 @@ type TextureViewDescriptor struct {
 	BaseArrayLayer  uint32
 	ArrayLayerCount uint32
 	Aspect          TextureAspect
-	_pad            [4]byte //nolint:unused // padding for FFI alignment
 	Usage           gputypes.TextureUsage
 }
 
@@ -80,10 +76,9 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) (*TextureView, error) 
 
 	var descPtr uintptr
 	if desc != nil {
-		// Convert to wire format with wgpu-native enum values
+		// Convert Go-idiomatic descriptor to FFI wire format
 		wireDesc := textureViewDescriptorWire{
-			NextInChain:     desc.NextInChain,
-			Label:           desc.Label,
+			Label:           stringToStringView(desc.Label),
 			Format:          uint32(desc.Format),
 			Dimension:       uint32(desc.Dimension),
 			BaseMipLevel:    desc.BaseMipLevel,
@@ -214,18 +209,30 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
 		sampleCount = 1
 	}
 
+	// Convert []TextureFormat → []uint32 for FFI (values match, but wire struct needs uint32 pointer)
+	var viewFormatCount uintptr
+	var viewFormatsPtr uintptr
+	if len(desc.ViewFormats) > 0 {
+		// Convert to uint32 slice (gputypes values equal wgpu-native values)
+		wireFormats := make([]uint32, len(desc.ViewFormats))
+		for i, f := range desc.ViewFormats {
+			wireFormats[i] = uint32(f)
+		}
+		viewFormatCount = uintptr(len(wireFormats))
+		viewFormatsPtr = uintptr(unsafe.Pointer(&wireFormats[0]))
+	}
+
 	// Convert to wire format with wgpu-native enum values
 	wireDesc := textureDescriptorWire{
-		NextInChain:     desc.NextInChain,
-		Label:           desc.Label,
+		Label:           stringToStringView(desc.Label),
 		Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
 		Dimension:       uint32(desc.Dimension),
 		Size:            desc.Size,
 		Format:          uint32(desc.Format),
 		MipLevelCount:   mipLevelCount,
 		SampleCount:     sampleCount,
-		ViewFormatCount: desc.ViewFormatCount,
-		ViewFormats:     desc.ViewFormats,
+		ViewFormatCount: viewFormatCount,
+		ViewFormats:     viewFormatsPtr,
 	}
 
 	handle, _, _ := procDeviceCreateTexture.Call(

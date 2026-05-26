@@ -13,14 +13,24 @@ type ProgrammableStageDescriptor struct {
 	Constants     uintptr    // *ConstantEntry
 }
 
-// PipelineLayoutDescriptor describes a pipeline layout.
-// v29: Added ImmediateSize field for immediate data (push constants replacement).
+// PipelineLayoutDescriptor describes a pipeline layout to create.
+// BindGroupLayouts is a slice of *BindGroupLayout; nil for auto layout.
 type PipelineLayoutDescriptor struct {
+	Label            string
+	BindGroupLayouts []*BindGroupLayout
+}
+
+// pipelineLayoutDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// v29: Added ImmediateSize field for immediate data (push constants replacement).
+// CRITICAL: layout must match WGPUPipelineLayoutDescriptor exactly.
+// nextInChain(8)+label(16)+bindGroupLayoutCount(8)+bindGroupLayouts(8)+immediateSize(4)+pad(4) = 48 bytes.
+type pipelineLayoutDescriptorWire struct {
 	NextInChain          uintptr // *ChainedStruct
 	Label                StringView
 	BindGroupLayoutCount uintptr // size_t
 	BindGroupLayouts     uintptr // *WGPUBindGroupLayout
 	ImmediateSize        uint32  // NEW in v29: bytes of immediate data allocated for shaders (requires NativeFeatureImmediates)
+	_pad                 [4]byte //nolint:unused // padding for FFI alignment
 }
 
 // NativeLimits extends WGPULimits with wgpu-native specific limits.
@@ -42,8 +52,19 @@ type PipelineLayoutExtras struct {
 	ImmediateDataSize uint32        // bytes of immediate data for shaders (requires NativeFeatureImmediates)
 }
 
-// ComputePipelineDescriptor describes a compute pipeline.
+// ComputePipelineDescriptor describes a compute pipeline to create.
+// Layout is nil for auto layout.
 type ComputePipelineDescriptor struct {
+	Label      string
+	Layout     *PipelineLayout // nil for auto layout
+	Module     *ShaderModule
+	EntryPoint string
+}
+
+// computePipelineDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// CRITICAL: layout must match WGPUComputePipelineDescriptor exactly.
+// nextInChain(8)+label(16)+layout(8)+compute(48) = 80 bytes.
+type computePipelineDescriptorWire struct {
 	NextInChain uintptr // *ChainedStruct
 	Label       StringView
 	Layout      uintptr // WGPUPipelineLayout (nullable)
@@ -62,9 +83,29 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) (*Pipeline
 	if desc == nil {
 		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "descriptor is nil"}
 	}
+
+	// Convert []*BindGroupLayout → []uintptr handles
+	var layoutsPtr uintptr
+	var handles []uintptr
+	if len(desc.BindGroupLayouts) > 0 {
+		handles = make([]uintptr, len(desc.BindGroupLayouts))
+		for i, l := range desc.BindGroupLayouts {
+			if l != nil {
+				handles[i] = l.handle
+			}
+		}
+		layoutsPtr = uintptr(unsafe.Pointer(&handles[0]))
+	}
+
+	wire := pipelineLayoutDescriptorWire{
+		Label:                stringToStringView(desc.Label),
+		BindGroupLayoutCount: uintptr(len(desc.BindGroupLayouts)),
+		BindGroupLayouts:     layoutsPtr,
+	}
+
 	handle, _, _ := procDeviceCreatePipelineLayout.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "wgpu returned null handle"}
@@ -76,32 +117,9 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) (*Pipeline
 // CreatePipelineLayoutSimple creates a pipeline layout with the given bind group layouts.
 // Returns an error if the FFI call fails or the device is nil.
 func (d *Device) CreatePipelineLayoutSimple(layouts []*BindGroupLayout) (*PipelineLayout, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
-	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "device is nil or released"}
-	}
-	if len(layouts) == 0 {
-		// Create empty pipeline layout
-		desc := PipelineLayoutDescriptor{
-			Label:                EmptyStringView(),
-			BindGroupLayoutCount: 0,
-			BindGroupLayouts:     0,
-		}
-		return d.CreatePipelineLayout(&desc)
-	}
-	// Convert to handles
-	handles := make([]uintptr, len(layouts))
-	for i, l := range layouts {
-		handles[i] = l.handle
-	}
-	desc := PipelineLayoutDescriptor{
-		Label:                EmptyStringView(),
-		BindGroupLayoutCount: uintptr(len(handles)),
-		BindGroupLayouts:     uintptr(unsafe.Pointer(&handles[0])),
-	}
-	return d.CreatePipelineLayout(&desc)
+	return d.CreatePipelineLayout(&PipelineLayoutDescriptor{
+		BindGroupLayouts: layouts,
+	})
 }
 
 // Release releases the pipeline layout.
@@ -128,9 +146,38 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) (*Comput
 	if desc == nil {
 		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "descriptor is nil"}
 	}
+	if desc.Module == nil {
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "shader module is nil"}
+	}
+
+	entryPointBytes := []byte(desc.EntryPoint)
+
+	compute := ProgrammableStageDescriptor{
+		Module: desc.Module.handle,
+	}
+	if len(entryPointBytes) > 0 {
+		compute.EntryPoint = StringView{
+			Data:   uintptr(unsafe.Pointer(&entryPointBytes[0])),
+			Length: uintptr(len(entryPointBytes)),
+		}
+	} else {
+		compute.EntryPoint = EmptyStringView()
+	}
+
+	var layoutHandle uintptr
+	if desc.Layout != nil {
+		layoutHandle = desc.Layout.handle
+	}
+
+	wire := computePipelineDescriptorWire{
+		Label:   stringToStringView(desc.Label),
+		Layout:  layoutHandle,
+		Compute: compute,
+	}
+
 	handle, _, _ := procDeviceCreateComputePipeline.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "wgpu returned null handle"}
@@ -143,30 +190,11 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) (*Comput
 // If layout is nil, auto layout is used.
 // Returns an error if the FFI call fails or the device/shader is nil.
 func (d *Device) CreateComputePipelineSimple(layout *PipelineLayout, shader *ShaderModule, entryPoint string) (*ComputePipeline, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
-	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "device is nil or released"}
-	}
-	if shader == nil {
-		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "shader is nil"}
-	}
-	entryBytes := []byte(entryPoint)
-	desc := ComputePipelineDescriptor{
-		Label: EmptyStringView(),
-		Compute: ProgrammableStageDescriptor{
-			Module: shader.handle,
-			EntryPoint: StringView{
-				Data:   uintptr(unsafe.Pointer(&entryBytes[0])),
-				Length: uintptr(len(entryBytes)),
-			},
-		},
-	}
-	if layout != nil {
-		desc.Layout = layout.handle
-	}
-	return d.CreateComputePipeline(&desc)
+	return d.CreateComputePipeline(&ComputePipelineDescriptor{
+		Layout:     layout,
+		Module:     shader,
+		EntryPoint: entryPoint,
+	})
 }
 
 // GetBindGroupLayout returns the bind group layout at the given index.

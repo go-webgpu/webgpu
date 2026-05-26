@@ -183,7 +183,7 @@ func TestRenderBundleWithVertexBuffer(t *testing.T) {
 	vertexBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer: %v", err)

@@ -99,13 +99,24 @@ func initMapCallback() {
 	mapCallbackPtr = ffi.NewCallback(mapCallbackHandler)
 }
 
-// BufferDescriptor describes a buffer to create.
+// BufferDescriptor describes a GPU buffer to create.
 type BufferDescriptor struct {
+	Label            string               // Buffer label for debugging
+	Usage            gputypes.BufferUsage // How the buffer will be used
+	Size             uint64               // Size in bytes
+	MappedAtCreation bool                 // If true, buffer is mapped when created
+}
+
+// bufferDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// CRITICAL: layout must match WGPUBufferDescriptor exactly.
+// nextInChain(8)+label(16)+usage(8)+size(8)+mappedAtCreation(4)+pad(4) = 48 bytes.
+type bufferDescriptorWire struct {
 	NextInChain      uintptr              // *ChainedStruct
 	Label            StringView           // Buffer label for debugging
 	Usage            gputypes.BufferUsage // How the buffer will be used
 	Size             uint64               // Size in bytes
 	MappedAtCreation Bool                 // If true, buffer is mapped when created
+	_pad             [4]byte              //nolint:unused // padding for FFI alignment
 }
 
 // CreateBuffer creates a new GPU buffer.
@@ -120,9 +131,15 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) (*Buffer, error) {
 	if desc == nil {
 		return nil, &WGPUError{Op: "CreateBuffer", Message: "descriptor is nil"}
 	}
+	wire := bufferDescriptorWire{
+		Label:            stringToStringView(desc.Label),
+		Usage:            desc.Usage,
+		Size:             desc.Size,
+		MappedAtCreation: boolToWGPU(desc.MappedAtCreation),
+	}
 	handle, _, _ := procDeviceCreateBuffer.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateBuffer", Message: "wgpu returned null handle"}

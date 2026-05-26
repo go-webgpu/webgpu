@@ -70,10 +70,10 @@ func TestCreateBindGroup(t *testing.T) {
 
 	// Create buffer
 	bufferDesc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, err := device.CreateBuffer(bufferDesc)
 	if err != nil {
@@ -137,10 +137,10 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 
 	// Create buffers
 	inputBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (input) failed: %v", err)
@@ -148,10 +148,10 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 	defer inputBuffer.Release()
 
 	outputBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (output) failed: %v", err)

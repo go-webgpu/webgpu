@@ -64,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	storageBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer for storage failed: %v", err)
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	indirectBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer for indirect failed: %v", err)
@@ -235,7 +235,7 @@ func TestRenderBundleDrawIndirect(t *testing.T) {
 	indirectBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer for indirect failed: %v", err)

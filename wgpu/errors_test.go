@@ -88,11 +88,9 @@ func TestErrorScopeValidation(t *testing.T) {
 
 	// Try to create an invalid buffer (size 0 should be invalid)
 	desc := BufferDescriptor{
-		NextInChain:      0,
-		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             0, // Invalid: size must be > 0
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
 	buffer, _ := device.CreateBuffer(&desc)
 	if buffer != nil {

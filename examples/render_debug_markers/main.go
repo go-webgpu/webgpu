@@ -34,7 +34,7 @@ func main() {
 
 	// Create a simple texture for rendering
 	texture, err := device.CreateTexture(&wgpu.TextureDescriptor{
-		Label: wgpu.EmptyStringView(),
+		Label: "",
 		Size: wgpu.Extent3D{
 			Width:              800,
 			Height:             600,
@@ -60,7 +60,7 @@ func main() {
 
 	// Create command encoder
 	encoder, err := device.CreateCommandEncoder(&wgpu.CommandEncoderDescriptor{
-		Label: wgpu.EmptyStringView(),
+		Label: "",
 	})
 	if err != nil {
 		log.Fatalf("create command encoder: %v", err)

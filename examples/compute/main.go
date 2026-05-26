@@ -81,7 +81,7 @@ func main() {
 	storageBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageStorage | wgpu.BufferUsageCopySrc | wgpu.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		log.Fatalf("create storage buffer: %v", err)
@@ -100,7 +100,7 @@ func main() {
 	readbackBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: wgpu.False,
+		MappedAtCreation: false,
 	})
 	if err != nil {
 		log.Fatalf("create readback buffer: %v", err)

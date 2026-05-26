@@ -35,7 +35,7 @@ func main() {
 	// Create a storage buffer
 	bufferSize := uint64(1024 * 1024) // 1MB
 	buffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: wgpu.EmptyStringView(),
+		Label: "",
 		Usage: wgpu.BufferUsageStorage | wgpu.BufferUsageCopySrc | wgpu.BufferUsageCopyDst,
 		Size:  bufferSize,
 	})
@@ -62,10 +62,10 @@ func main() {
 	// Create a mappable buffer
 	fmt.Println("\n=== Mappable Buffer Example ===")
 	mappableBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.EmptyStringView(),
+		Label: "",
 		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:             1024,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		log.Fatalf("create mappable buffer: %v", err)

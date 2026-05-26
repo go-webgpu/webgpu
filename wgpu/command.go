@@ -6,10 +6,16 @@ import (
 	"github.com/gogpu/gputypes"
 )
 
-// CommandEncoderDescriptor describes a command encoder.
+// CommandEncoderDescriptor describes a command encoder to create.
 type CommandEncoderDescriptor struct {
-	NextInChain uintptr // *ChainedStruct
-	Label       StringView
+	Label string
+}
+
+// commandEncoderDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// nextInChain(8)+label(16) = 24 bytes.
+type commandEncoderDescriptorWire struct {
+	NextInChain uintptr    // *ChainedStruct
+	Label       StringView // 16 bytes
 }
 
 // CommandBufferDescriptor describes a command buffer.
@@ -47,7 +53,10 @@ func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) (*CommandE
 	}
 	var descPtr uintptr
 	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+		wire := commandEncoderDescriptorWire{
+			Label: stringToStringView(desc.Label),
+		}
+		descPtr = uintptr(unsafe.Pointer(&wire))
 	}
 	handle, _, _ := procDeviceCreateCommandEncoder.Call(
 		d.handle,

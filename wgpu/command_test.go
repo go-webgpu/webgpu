@@ -137,10 +137,10 @@ func TestComputePassDispatch(t *testing.T) {
 	bufferSize := uint64(numElements * 4) // 4 bytes per float32
 
 	buffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer failed: %v", err)
@@ -250,10 +250,10 @@ func TestFullComputeExample(t *testing.T) {
 	bufferSize := uint64(numElements * 4)
 
 	storageBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (storage) failed: %v", err)
@@ -270,10 +270,10 @@ func TestFullComputeExample(t *testing.T) {
 
 	// Create readback buffer
 	readbackBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (readback) failed: %v", err)
@@ -372,10 +372,10 @@ func TestCopyBufferToBuffer(t *testing.T) {
 
 	// Create source buffer with data
 	srcBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             256,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (src) failed: %v", err)
@@ -391,10 +391,10 @@ func TestCopyBufferToBuffer(t *testing.T) {
 
 	// Create destination buffer
 	dstBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label: "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	})
 	if err != nil {
 		t.Fatalf("CreateBuffer (dst) failed: %v", err)
