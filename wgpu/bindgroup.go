@@ -55,7 +55,6 @@ type BindGroupLayoutDescriptor struct {
 	Entries []BindGroupLayoutEntry
 }
 
-
 // =============================================================================
 // Wire structs for FFI (with converted enum values and uint64 ShaderStage)
 // wgpu-native uses uint64 for WGPUShaderStageFlags (via WGPUFlags typedef)
