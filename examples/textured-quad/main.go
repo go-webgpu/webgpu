@@ -318,8 +318,7 @@ func (app *App) initWebGPU() error {
 
 // configureSurface configures the surface for rendering.
 func (app *App) configureSurface() error {
-	app.surface.Configure(&wgpu.SurfaceConfiguration{
-		Device:      app.device,
+	_ = app.surface.Configure(app.device, &wgpu.SurfaceConfiguration{
 		Format:      wgpu.TextureFormatBGRA8Unorm,
 		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
@@ -409,7 +408,7 @@ func (app *App) createTexture() error {
 		DepthOrArrayLayers: 1,
 	}
 
-	app.queue.WriteTexture(&destInfo, textureData, &layout, &extent)
+	_ = app.queue.WriteTexture(&destInfo, textureData, &layout, &extent)
 
 	// Create texture view
 	app.textureView, _ = app.texture.CreateView(nil)
@@ -624,7 +623,7 @@ func (app *App) releasePreviousFrame() {
 
 // acquireSurfaceTexture gets the current surface texture.
 func (app *App) acquireSurfaceTexture() error {
-	surfaceTex, err := app.surface.GetCurrentTexture()
+	surfaceTex, _, err := app.surface.GetCurrentTexture()
 	if err != nil {
 		// Handle common surface errors
 		if err == wgpu.ErrSurfaceLost || err == wgpu.ErrSurfaceNeedsReconfigure {
@@ -704,15 +703,15 @@ func (app *App) render() error {
 	}
 
 	// Finish encoding
-	cmdBuffer, _ := encoder.Finish(nil)
+	cmdBuffer, _ := encoder.Finish()
 	if cmdBuffer == nil {
 		return fmt.Errorf("failed to finish command encoder")
 	}
 	defer cmdBuffer.Release()
 
 	// Submit commands and present
-	app.queue.Submit(cmdBuffer)
-	app.surface.Present()
+	_ = app.queue.Submit(cmdBuffer)
+	_ = app.surface.Present()
 
 	return nil
 }

@@ -268,10 +268,12 @@ type TexelCopyBufferInfo struct {
 }
 
 // WriteTexture writes data to a texture.
-func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) {
+// Returns nil on success. In this FFI implementation errors are surfaced through
+// the Device uncaptured-error callback; the signature matches gogpu/wgpu for API compatibility.
+func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) error {
 	mustInit()
 	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
-		return
+		return nil
 	}
 	procQueueWriteTexture.Call( //nolint:errcheck
 		q.handle,
@@ -281,4 +283,5 @@ func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *Te
 		uintptr(unsafe.Pointer(layout)),
 		uintptr(unsafe.Pointer(size)),
 	)
+	return nil
 }

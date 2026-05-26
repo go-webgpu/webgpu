@@ -31,7 +31,7 @@ func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) (*QuerySet, error) {
 
 	nativeDesc := querySetDescriptor{
 		nextInChain: 0,
-		label:       EmptyStringView(),
+		label:       stringToStringView(desc.Label),
 		queryType:   desc.Type,
 		count:       desc.Count,
 	}

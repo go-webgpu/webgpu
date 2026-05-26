@@ -246,8 +246,10 @@ func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, de
 }
 
 // Finish finishes recording and returns a command buffer.
+// The optional desc argument allows setting a label; pass nothing for defaults.
+// This variadic signature matches the gogpu/wgpu API for compatibility.
 // Returns an error if the FFI call fails or the encoder is nil.
-func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) (*CommandBuffer, error) {
+func (enc *CommandEncoder) Finish(desc ...*CommandBufferDescriptor) (*CommandBuffer, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
@@ -255,8 +257,8 @@ func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) (*CommandBuffer
 		return nil, &WGPUError{Op: "CommandEncoder.Finish", Message: "encoder is nil or released"}
 	}
 	var descPtr uintptr
-	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+	if len(desc) > 0 && desc[0] != nil {
+		descPtr = uintptr(unsafe.Pointer(desc[0]))
 	}
 	handle, _, _ := procCommandEncoderFinish.Call(
 		enc.handle,
@@ -399,10 +401,13 @@ func (cpe *ComputePassEncoder) Release() {
 func (cpe *ComputePassEncoder) Handle() uintptr { return cpe.handle }
 
 // Submit submits command buffers for execution.
-func (q *Queue) Submit(commands ...*CommandBuffer) {
+// Returns nil on success. In this FFI implementation errors are surfaced
+// through the Device uncaptured-error callback rather than as return values,
+// so nil is always returned — the signature matches gogpu/wgpu for API compatibility.
+func (q *Queue) Submit(commands ...*CommandBuffer) error {
 	mustInit()
 	if q == nil || q.handle == 0 || len(commands) == 0 {
-		return
+		return nil
 	}
 	handles := make([]uintptr, len(commands))
 	for i, cmd := range commands {
@@ -413,6 +418,7 @@ func (q *Queue) Submit(commands ...*CommandBuffer) {
 		uintptr(len(handles)),
 		uintptr(unsafe.Pointer(&handles[0])),
 	)
+	return nil
 }
 
 // Release releases the command buffer.

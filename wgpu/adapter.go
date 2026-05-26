@@ -25,9 +25,21 @@ type Future struct {
 }
 
 // RequestAdapterOptions configures adapter selection.
-// v29 BREAKING: CompatibilityMode was never in the C header and has been removed.
-// v29 ADDED: BackendType field.
+// Matches the gogpu/wgpu API for cross-project compatibility.
 type RequestAdapterOptions struct {
+	// PowerPreference indicates power consumption preference.
+	PowerPreference gputypes.PowerPreference
+	// ForceFallbackAdapter forces the use of a software adapter.
+	ForceFallbackAdapter bool
+	// CompatibleSurface, if non-nil, restricts adapter selection to those
+	// compatible with rendering to the given surface.
+	CompatibleSurface *Surface
+}
+
+// requestAdapterOptionsWire is the FFI-compatible C-layout struct for wgpuInstanceRequestAdapter.
+// v29 layout: nextInChain(8)+featureLevel(4)+powerPreference(4)+
+//   forceFallbackAdapter(4)+backendType(4)+compatibleSurface(8) = 32 bytes.
+type requestAdapterOptionsWire struct {
 	NextInChain          uintptr // *ChainedStruct
 	FeatureLevel         FeatureLevel
 	PowerPreference      gputypes.PowerPreference
@@ -132,10 +144,20 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 	adapterRequests[reqID] = req
 	adapterRequestsMu.Unlock()
 
-	// Prepare options
+	// Convert Go-idiomatic options to wire format.
 	var optionsPtr uintptr
 	if options != nil {
-		optionsPtr = uintptr(unsafe.Pointer(options))
+		var surfaceHandle uintptr
+		if options.CompatibleSurface != nil {
+			surfaceHandle = options.CompatibleSurface.handle
+		}
+		wire := requestAdapterOptionsWire{
+			FeatureLevel:         FeatureLevelCore,
+			PowerPreference:      options.PowerPreference,
+			ForceFallbackAdapter: boolToWGPU(options.ForceFallbackAdapter),
+			CompatibleSurface:    surfaceHandle,
+		}
+		optionsPtr = uintptr(unsafe.Pointer(&wire))
 	}
 
 	// Prepare callback info

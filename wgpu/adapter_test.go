@@ -35,7 +35,6 @@ func TestRequestAdapterWithOptions(t *testing.T) {
 	defer inst.Release()
 
 	options := &RequestAdapterOptions{
-		FeatureLevel:    FeatureLevelCore,
 		PowerPreference: gputypes.PowerPreferenceHighPerformance,
 	}
 

@@ -36,14 +36,8 @@ func TestCreateInstanceWithNil(t *testing.T) {
 }
 
 func TestCreateInstanceWithDescriptor(t *testing.T) {
-	// v29: InstanceDescriptor uses RequiredFeatureCount/RequiredFeatures/RequiredLimits,
-	// not InstanceCapabilities. Pass empty descriptor (all zeros = defaults).
-	desc := &InstanceDescriptor{
-		NextInChain:         0,
-		RequiredFeatureCount: 0,
-		RequiredFeatures:    0,
-		RequiredLimits:      0,
-	}
+	// Pass an explicit InstanceDescriptor with default (zero) values.
+	desc := &InstanceDescriptor{}
 
 	inst, err := CreateInstance(desc)
 	if err != nil {

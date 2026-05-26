@@ -148,12 +148,12 @@ func main() {
 	encoder.CopyBufferToBuffer(storageBuffer, 0, readbackBuffer, 0, bufferSize)
 
 	// Submit commands
-	cmdBuffer, err := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
 	if err != nil {
 		log.Fatalf("finish encoder: %v", err)
 	}
 	encoder.Release()
-	queue.Submit(cmdBuffer)
+	_ = queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
 	// Map readback buffer and read results

@@ -463,7 +463,7 @@ func TestNullGuard_Surface(t *testing.T) {
 	var s *Surface
 
 	t.Run("Configure", func(t *testing.T) {
-		s.Configure(nil) // should not panic
+		_ = s.Configure(nil, nil) // should not panic
 	})
 
 	t.Run("Unconfigure", func(t *testing.T) {
@@ -471,7 +471,7 @@ func TestNullGuard_Surface(t *testing.T) {
 	})
 
 	t.Run("GetCurrentTexture", func(t *testing.T) {
-		result, _ := s.GetCurrentTexture()
+		result, _, _ := s.GetCurrentTexture()
 		if result != nil {
 			t.Error("expected nil for nil surface")
 		}

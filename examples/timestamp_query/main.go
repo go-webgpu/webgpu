@@ -182,13 +182,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	// Copy to staging buffer
 	encoder.CopyBufferToBuffer(queryResultBuffer, 0, stagingBuffer, 0, queryResultSize)
 
-	cmdBuffer, err := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
 	if err != nil {
 		return fmt.Errorf("finish encoder: %w", err)
 	}
 	encoder.Release()
 
-	queue.Submit(cmdBuffer)
+	_ = queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
 	// Wait for GPU
@@ -307,13 +307,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	pass.End()
 	pass.Release()
 
-	cmdBuffer, err := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
 	if err != nil {
 		return fmt.Errorf("finish encoder: %w", err)
 	}
 	encoder.Release()
 
-	queue.Submit(cmdBuffer)
+	_ = queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
 	// Wait for GPU to complete

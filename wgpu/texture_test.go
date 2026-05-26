@@ -160,7 +160,7 @@ func TestCreateSampler(t *testing.T) {
 		MagFilter:     gputypes.FilterModeLinear,
 		MinFilter:     gputypes.FilterModeLinear,
 		MipmapFilter:  gputypes.MipmapFilterModeLinear,
-		MaxAnisotropy: 1,
+		Anisotropy: 1,
 	})
 	if err != nil {
 		t.Fatalf("CreateSampler: %v", err)
@@ -195,7 +195,7 @@ func TestCreateSamplerSimple(t *testing.T) {
 
 	t.Log("Creating sampler with minimal settings...")
 	sampler, err := device.CreateSampler(&SamplerDescriptor{
-		MaxAnisotropy: 1, // Required to be >= 1
+		Anisotropy: 1, // Required to be >= 1
 	})
 	if err != nil {
 		t.Fatalf("CreateSampler: %v", err)

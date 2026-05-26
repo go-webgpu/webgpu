@@ -190,7 +190,7 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) (*RenderP
 
 	nativeDesc := renderPassDescriptor{
 		nextInChain:            0,
-		label:                  EmptyStringView(),
+		label:                  stringToStringView(desc.Label),
 		colorAttachmentCount:   uintptr(len(nativeColorAttachments)),
 		colorAttachments:       uintptr(unsafe.Pointer(&nativeColorAttachments[0])),
 		depthStencilAttachment: depthStencilPtr,

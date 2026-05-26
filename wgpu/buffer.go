@@ -275,11 +275,12 @@ func (b *Buffer) Release() {
 }
 
 // WriteBuffer writes data to a buffer.
-// This is a convenience method that stages data for upload to the GPU.
-func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
+// Returns nil on success. In this FFI implementation errors are surfaced through
+// the Device uncaptured-error callback; the signature matches gogpu/wgpu for API compatibility.
+func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) error {
 	mustInit()
 	if q == nil || q.handle == 0 || buffer == nil || buffer.handle == 0 || len(data) == 0 {
-		return
+		return nil
 	}
 	procQueueWriteBuffer.Call( //nolint:errcheck
 		q.handle,
@@ -288,6 +289,7 @@ func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
 		uintptr(unsafe.Pointer(&data[0])),
 		uintptr(len(data)),
 	)
+	return nil
 }
 
 // WriteBufferTyped writes typed data to a buffer.

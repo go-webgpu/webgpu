@@ -48,12 +48,16 @@ func slicePtrOrZero[T any](s []T) uintptr {
 // ShaderDescriptor is the Go-idiomatic descriptor for creating a shader module.
 // Use WGSL to specify WGSL source, or SPIRV for SPIR-V bytecode.
 // If both are set, WGSL takes precedence.
-// Use Device.CreateShaderModuleFromDescriptor to create from this descriptor.
+// Use Device.CreateShaderModule or Device.CreateShaderModuleFromDescriptor to create from this.
 type ShaderDescriptor struct {
 	Label string
 	WGSL  string   // WGSL source code
 	SPIRV []uint32 // SPIR-V bytecode (alternative to WGSL)
 }
+
+// ShaderModuleDescriptorGo is an alias for ShaderDescriptor.
+// Use this name when matching the gogpu/wgpu naming convention.
+type ShaderModuleDescriptorGo = ShaderDescriptor
 
 // =============================================================================
 // Render bundle descriptor

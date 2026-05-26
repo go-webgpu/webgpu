@@ -275,13 +275,13 @@ func main() {
 	renderPass.Release()
 
 	// Submit
-	cmdBuffer, err := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
 	if err != nil {
 		log.Fatalf("finish encoder: %v", err)
 	}
 	encoder.Release()
 
-	queue.Submit(cmdBuffer)
+	_ = queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
 	fmt.Println("Instanced rendering complete!")

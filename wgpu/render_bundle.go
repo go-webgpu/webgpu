@@ -206,15 +206,16 @@ func (rbe *RenderBundleEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indi
 }
 
 // Finish completes recording and returns the render bundle.
-func (rbe *RenderBundleEncoder) Finish(desc *RenderBundleDescriptor) *RenderBundle {
+// The optional desc parameter allows specifying a label; if omitted, nil is used.
+func (rbe *RenderBundleEncoder) Finish(desc ...*RenderBundleDescriptor) *RenderBundle {
 	mustInit()
 	if rbe == nil || rbe.handle == 0 {
 		return nil
 	}
 
 	var descPtr uintptr
-	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+	if len(desc) > 0 && desc[0] != nil {
+		descPtr = uintptr(unsafe.Pointer(desc[0]))
 	}
 
 	handle, _, _ := procRenderBundleEncoderFinish.Call(rbe.handle, descPtr)

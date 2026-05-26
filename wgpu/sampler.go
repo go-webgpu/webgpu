@@ -8,17 +8,27 @@ import (
 
 // SamplerDescriptor describes a sampler to create.
 type SamplerDescriptor struct {
-	Label         string
-	AddressModeU  gputypes.AddressMode
-	AddressModeV  gputypes.AddressMode
-	AddressModeW  gputypes.AddressMode
-	MagFilter     gputypes.FilterMode
-	MinFilter     gputypes.FilterMode
-	MipmapFilter  gputypes.MipmapFilterMode
-	LodMinClamp   float32
-	LodMaxClamp   float32
-	Compare       gputypes.CompareFunction
-	MaxAnisotropy uint16
+	Label        string
+	AddressModeU gputypes.AddressMode
+	AddressModeV gputypes.AddressMode
+	AddressModeW gputypes.AddressMode
+	MagFilter    gputypes.FilterMode
+	MinFilter    gputypes.FilterMode
+	MipmapFilter gputypes.MipmapFilterMode
+	LodMinClamp  float32
+	LodMaxClamp  float32
+	Compare      gputypes.CompareFunction
+	// Anisotropy is the maximum anisotropy level for anisotropic filtering.
+	// wgpu-native requires a value >= 1; 0 is automatically clamped to 1.
+	Anisotropy uint16
+}
+
+// MaxAnisotropy is deprecated. Use Anisotropy instead.
+//
+// Deprecated: renamed to Anisotropy for consistency with gogpu/wgpu API.
+func (d *SamplerDescriptor) withMaxAnisotropy(v uint16) *SamplerDescriptor {
+	d.Anisotropy = v
+	return d
 }
 
 // samplerDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
@@ -54,10 +64,10 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
 		return nil, &WGPUError{Op: "CreateSampler", Message: "descriptor is nil"}
 	}
 
-	// wgpu-native requires MaxAnisotropy >= 1
-	maxAnisotropy := desc.MaxAnisotropy
-	if maxAnisotropy == 0 {
-		maxAnisotropy = 1
+	// wgpu-native requires Anisotropy >= 1
+	anisotropy := desc.Anisotropy
+	if anisotropy == 0 {
+		anisotropy = 1
 	}
 
 	wire := samplerDescriptorWire{
@@ -71,7 +81,7 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
 		LodMinClamp:   desc.LodMinClamp,
 		LodMaxClamp:   desc.LodMaxClamp,
 		Compare:       desc.Compare,
-		MaxAnisotropy: maxAnisotropy,
+		MaxAnisotropy: anisotropy,
 	}
 
 	handle, _, _ := procDeviceCreateSampler.Call(

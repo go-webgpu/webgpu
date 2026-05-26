@@ -50,7 +50,11 @@ type surfaceCapabilitiesWire struct {
 }
 
 // SurfaceConfiguration describes how to configure a surface.
+// Note: the Device field is deprecated — pass the device as a separate argument to Configure.
+// It remains here for backward compatibility; if non-nil it takes precedence over the explicit arg.
 type SurfaceConfiguration struct {
+	// Device is deprecated: pass the device to Configure() directly instead.
+	// Kept for backward compatibility. If non-nil, overrides the explicit device argument.
 	Device      *Device
 	Format      gputypes.TextureFormat
 	Usage       gputypes.TextureUsage
@@ -94,17 +98,30 @@ var (
 )
 
 // Configure configures the surface for rendering.
+// The device argument specifies which logical device to use for the surface.
+// If config.Device is also set (deprecated usage), it takes precedence over the device arg.
+// Returns nil on success. Errors are surfaced through the Device uncaptured-error callback
+// in this FFI implementation; the error return matches the gogpu/wgpu API signature.
 // This replaces the deprecated SwapChain API.
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
-func (s *Surface) Configure(config *SurfaceConfiguration) {
+func (s *Surface) Configure(device *Device, config *SurfaceConfiguration) error {
 	mustInit()
-	if s == nil || s.handle == 0 || config == nil || config.Device == nil || config.Device.handle == 0 {
-		return
+	if s == nil || s.handle == 0 || config == nil {
+		return nil
+	}
+
+	// config.Device takes precedence (backward compat) over the device argument.
+	dev := device
+	if config.Device != nil {
+		dev = config.Device
+	}
+	if dev == nil || dev.handle == 0 {
+		return nil
 	}
 
 	nativeConfig := surfaceConfigurationWire{
 		nextInChain:     0,
-		device:          config.Device.handle,
+		device:          dev.handle,
 		format:          uint32(config.Format),
 		usage:           uint64(config.Usage),
 		width:           config.Width,
@@ -119,6 +136,13 @@ func (s *Surface) Configure(config *SurfaceConfiguration) {
 		s.handle,
 		uintptr(unsafe.Pointer(&nativeConfig)),
 	)
+	return nil
+}
+
+// ConfigureLegacy configures the surface using only the config struct (legacy API).
+// Deprecated: use Configure(device, config) instead.
+func (s *Surface) ConfigureLegacy(config *SurfaceConfiguration) {
+	_ = s.Configure(nil, config)
 }
 
 // Unconfigure removes the surface configuration.
@@ -131,13 +155,14 @@ func (s *Surface) Unconfigure() {
 }
 
 // GetCurrentTexture gets the current texture to render to.
-// Returns the texture and its status. Check status before using the texture.
-func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
+// Returns the texture, a suboptimal flag (true if the surface needs reconfiguration
+// but is still usable this frame), and any error. This matches the gogpu/wgpu API.
+func (s *Surface) GetCurrentTexture() (*SurfaceTexture, bool, error) {
 	if err := checkInit(); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if s == nil || s.handle == 0 {
-		return nil, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface is nil or released"}
+		return nil, false, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface is nil or released"}
 	}
 
 	var surfTex surfaceTexture
@@ -153,33 +178,39 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
 	}
 
 	switch surfTex.status {
-	case SurfaceGetCurrentTextureStatusSuccessOptimal,
-		SurfaceGetCurrentTextureStatusSuccessSuboptimal:
-		return result, nil
+	case SurfaceGetCurrentTextureStatusSuccessOptimal:
+		return result, false, nil
+	case SurfaceGetCurrentTextureStatusSuccessSuboptimal:
+		// Surface still usable but caller should reconfigure soon.
+		return result, true, nil
 	case SurfaceGetCurrentTextureStatusOutdated:
-		return result, ErrSurfaceNeedsReconfigure
+		return result, false, ErrSurfaceNeedsReconfigure
 	case SurfaceGetCurrentTextureStatusLost:
-		return nil, ErrSurfaceLost
+		return nil, false, ErrSurfaceLost
 	case SurfaceGetCurrentTextureStatusTimeout:
-		return nil, ErrSurfaceTimeout
+		return nil, false, ErrSurfaceTimeout
 	case NativeSurfaceGetCurrentTextureStatusOccluded:
 		// wgpu-native v29: window is occluded/minimized (Metal backend only).
 		// No texture is returned; caller should skip this frame and try again.
-		return nil, ErrSurfaceOccluded
+		return nil, false, ErrSurfaceOccluded
 	default:
 		// v29: SurfaceGetCurrentTextureStatusError (0x06) covers all error cases
 		// including former OutOfMemory (0x06) and DeviceLost (0x07).
-		return nil, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
+		return nil, false, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
 	}
 }
 
 // Present presents the current frame to the surface.
-func (s *Surface) Present() {
+// The texture argument is accepted for API compatibility with gogpu/wgpu but
+// is unused in the FFI implementation (wgpuSurfacePresent takes no texture arg).
+// Returns nil on success.
+func (s *Surface) Present(texture ...*SurfaceTexture) error {
 	mustInit()
 	if s == nil || s.handle == 0 {
-		return
+		return nil
 	}
 	procSurfacePresent.Call(s.handle) //nolint:errcheck
+	return nil
 }
 
 // Release releases the surface.

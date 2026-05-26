@@ -86,7 +86,24 @@ func (d *Device) CreateShaderModule(desc *ShaderModuleDescriptor) (*ShaderModule
 // CreateShaderModuleFromDescriptor creates a shader module from a Go-idiomatic ShaderDescriptor.
 // If both WGSL and SPIRV are set, WGSL takes precedence.
 // Returns an error if the FFI call fails, the device is nil, or both sources are empty.
+//
+// Deprecated: use CreateShaderModule which has the same signature.
 func (d *Device) CreateShaderModuleFromDescriptor(desc *ShaderDescriptor) (*ShaderModule, error) {
+	return d.createShaderModuleFromDesc(desc)
+}
+
+// CreateShaderModule creates a shader module from a Go-idiomatic ShaderDescriptor.
+// This is the preferred method name matching the gogpu/wgpu API.
+// If both WGSL and SPIRV are set, WGSL takes precedence.
+// Returns an error if the FFI call fails, the device is nil, or both sources are empty.
+//
+// Note: there is also a lower-level CreateShaderModule(*ShaderModuleDescriptor) that accepts
+// the wire-level descriptor with a chained struct for direct FFI use.
+func (d *Device) CreateShaderModuleFromDesc(desc *ShaderDescriptor) (*ShaderModule, error) {
+	return d.createShaderModuleFromDesc(desc)
+}
+
+func (d *Device) createShaderModuleFromDesc(desc *ShaderDescriptor) (*ShaderModule, error) {
 	if desc == nil {
 		return nil, &WGPUError{Op: "CreateShaderModule", Message: "descriptor is nil"}
 	}

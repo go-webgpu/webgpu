@@ -49,15 +49,15 @@ func TestABIStructSizes(t *testing.T) {
 		{"gputypes.Origin3D", unsafe.Sizeof(gputypes.Origin3D{}), 12},
 
 		// Instance-level structs
-		// InstanceDescriptor: nextInChain(8)+reqFeatureCount(8)+reqFeatures(8)+reqLimits(8) = 32
-		{"InstanceDescriptor", unsafe.Sizeof(InstanceDescriptor{}), 32},
+		// instanceDescriptorWire: nextInChain(8)+reqFeatureCount(8)+reqFeatures(8)+reqLimits(8) = 32
+		{"instanceDescriptorWire", unsafe.Sizeof(instanceDescriptorWire{}), 32},
 		// InstanceLimits: nextInChain(8)+timedWaitAnyMaxCount(8) = 16
 		{"InstanceLimits", unsafe.Sizeof(InstanceLimits{}), 16},
 
 		// Adapter-level structs
-		// RequestAdapterOptions: nextInChain(8)+featureLevel(4)+powerPreference(4)+
+		// requestAdapterOptionsWire: nextInChain(8)+featureLevel(4)+powerPreference(4)+
 		//   forceFallbackAdapter(4)+backendType(4)+compatibleSurface(8) = 32
-		{"RequestAdapterOptions", unsafe.Sizeof(RequestAdapterOptions{}), 32},
+		{"requestAdapterOptionsWire", unsafe.Sizeof(requestAdapterOptionsWire{}), 32},
 
 		// Limits: nextInChain(8) + 14×uint32(56) + 2×uint64(16) + 2×uint32(8) +
 		//   uint32+uint64+9×uint32 + maxImmediateSize(4) = 152
@@ -244,9 +244,9 @@ func TestABIStructFieldOffsets(t *testing.T) {
 		}
 	})
 
-	t.Run("InstanceDescriptor", func(t *testing.T) {
+	t.Run("instanceDescriptorWire", func(t *testing.T) {
 		// nextInChain(0)+requiredFeatureCount(8)+requiredFeatures(16)+requiredLimits(24)
-		var d InstanceDescriptor
+		var d instanceDescriptorWire
 		offsets := []struct {
 			name     string
 			got      uintptr
@@ -261,17 +261,17 @@ func TestABIStructFieldOffsets(t *testing.T) {
 			o := o
 			t.Run(o.name, func(t *testing.T) {
 				if o.got != o.expected {
-					t.Errorf("offsetof(InstanceDescriptor.%s) = %d, want %d",
+					t.Errorf("offsetof(instanceDescriptorWire.%s) = %d, want %d",
 						o.name, o.got, o.expected)
 				}
 			})
 		}
 	})
 
-	t.Run("RequestAdapterOptions", func(t *testing.T) {
+	t.Run("requestAdapterOptionsWire", func(t *testing.T) {
 		// nextInChain(0)+featureLevel(8)+powerPreference(12)+
 		// forceFallbackAdapter(16)+backendType(20)+compatibleSurface(24) = 32
-		var o RequestAdapterOptions
+		var o requestAdapterOptionsWire
 		offsets := []struct {
 			name     string
 			got      uintptr
@@ -288,7 +288,7 @@ func TestABIStructFieldOffsets(t *testing.T) {
 			of := of
 			t.Run(of.name, func(t *testing.T) {
 				if of.got != of.expected {
-					t.Errorf("offsetof(RequestAdapterOptions.%s) = %d, want %d",
+					t.Errorf("offsetof(requestAdapterOptionsWire.%s) = %d, want %d",
 						of.name, of.got, of.expected)
 				}
 			})

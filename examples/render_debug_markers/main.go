@@ -159,7 +159,7 @@ func main() {
 	fmt.Println("\nRender pass ended")
 
 	// Finish encoding
-	commandBuffer, err := encoder.Finish(nil)
+	commandBuffer, err := encoder.Finish()
 	if err != nil {
 		log.Fatalf("finish encoder: %v", err)
 	}
@@ -168,7 +168,7 @@ func main() {
 	// Submit commands
 	queue := device.Queue()
 	defer queue.Release()
-	queue.Submit(commandBuffer)
+	_ = queue.Submit(commandBuffer)
 
 	fmt.Println("Commands submitted")
 	fmt.Println("\n=== Debug Marker Hierarchy ===")

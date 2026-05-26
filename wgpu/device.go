@@ -100,10 +100,20 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	deviceRequests[reqID] = req
 	deviceRequestsMu.Unlock()
 
-	// Prepare options
+	// Convert Go-idiomatic descriptor to wire format.
 	var optionsPtr uintptr
 	if options != nil {
-		optionsPtr = uintptr(unsafe.Pointer(options))
+		wire := deviceDescriptorWire{
+			Label: stringToStringView(options.Label),
+		}
+		if len(options.RequiredFeatures) > 0 {
+			wire.RequiredFeatureCount = uintptr(len(options.RequiredFeatures))
+			wire.RequiredFeatures = uintptr(unsafe.Pointer(&options.RequiredFeatures[0]))
+		}
+		if options.RequiredLimits != nil {
+			wire.RequiredLimits = uintptr(unsafe.Pointer(options.RequiredLimits))
+		}
+		optionsPtr = uintptr(unsafe.Pointer(&wire))
 	}
 
 	// Prepare callback info
@@ -210,9 +220,21 @@ type UncapturedErrorCallbackInfo struct {
 }
 
 // DeviceDescriptor configures device creation.
+// Matches the gogpu/wgpu API for cross-project compatibility.
+type DeviceDescriptor struct {
+	// Label is an optional debug label for the device.
+	Label string
+	// RequiredFeatures lists GPU features that the device must support.
+	RequiredFeatures []FeatureName
+	// RequiredLimits, if non-nil, specifies minimum resource limits the device must meet.
+	// Pass nil to use the adapter's default limits.
+	RequiredLimits *Limits
+}
+
+// deviceDescriptorWire is the FFI-compatible C-layout struct for wgpuAdapterRequestDevice.
 // v29: Added Label, RequiredFeatureCount, RequiredFeatures, RequiredLimits,
 // DefaultQueue, DeviceLostCallbackInfo, UncapturedErrorCallbackInfo fields.
-type DeviceDescriptor struct {
+type deviceDescriptorWire struct {
 	NextInChain                 uintptr // *ChainedStruct
 	Label                       StringView
 	RequiredFeatureCount        uintptr // size_t
