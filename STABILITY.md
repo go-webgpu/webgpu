@@ -26,10 +26,10 @@ These APIs are unlikely to change and will follow the deprecation policy below:
 | Category | Examples |
 |----------|---------|
 | **Instance lifecycle** | `CreateInstance`, `Instance.Release`, `Instance.ProcessEvents` |
-| **Adapter** | `Instance.RequestAdapter`, `Adapter.GetLimits`, `Adapter.GetInfo`, `Adapter.Release` |
-| **Device** | `Adapter.RequestDevice`, `Device.GetQueue`, `Device.Release` |
-| **Buffer** | `Device.CreateBuffer`, `Buffer.MapAsync`, `Buffer.GetMappedRange`, `Buffer.Unmap`, `Buffer.Release` |
-| **Texture** | `Device.CreateTexture`, `Texture.CreateView`, `Texture.Release`, `TextureView.Release` |
+| **Adapter** | `Instance.RequestAdapter`, `Adapter.Limits`, `Adapter.Info`, `Adapter.Features`, `Adapter.Release` |
+| **Device** | `Adapter.RequestDevice`, `Device.Queue`, `Device.Limits`, `Device.Release` |
+| **Buffer** | `Device.CreateBuffer`, `Buffer.MapAsync`, `Buffer.GetMappedRange`, `Buffer.Size`, `Buffer.Unmap`, `Buffer.Release` |
+| **Texture** | `Device.CreateTexture`, `Texture.CreateView`, `Texture.Width`, `Texture.Height`, `Texture.Format`, `Texture.Release`, `TextureView.Release` |
 | **Shader** | `Device.CreateShaderModuleWGSL`, `ShaderModule.Release` |
 | **Pipeline** | `Device.CreateRenderPipeline`, `Device.CreateComputePipeline`, `*Pipeline.Release` |
 | **Bind Group** | `Device.CreateBindGroup`, `Device.CreateBindGroupLayout`, `*.Release` |
@@ -47,8 +47,8 @@ These APIs may change in minor versions:
 
 | API | Reason | Stability target |
 |-----|--------|-----------------|
-| `Device.GetLimits` | Returns error on some wgpu-native versions | v1.0 |
-| `Device.GetFeatures` | Uses newer wgpuDeviceGetFeatures API | v1.0 |
+| `Device.Limits` | Returns error on some wgpu-native versions | v1.0 |
+| `Device.Features` | Uses newer wgpuDeviceGetFeatures API | v1.0 |
 | `Surface.GetCapabilities` | New in v0.3 | v1.0 |
 | `*Simple` convenience methods | May be renamed or adjusted | v1.0 |
 | Math helpers (`Mat4`, `Vec3`) | May move to separate package | v1.0 |
@@ -93,4 +93,10 @@ This library tracks wgpu-native releases. When wgpu-native makes breaking change
 2. If user-facing API must change, it follows the deprecation policy above.
 3. The supported wgpu-native version is documented in `go.mod` and README.
 
-Current: **wgpu-native v24.0.3.1** (v27 API)
+Current: **wgpu-native v29.0.0.0** (stable webgpu-headers)
+
+## v0.5.0: Major Breaking Release
+
+v0.5.0 is a significant milestone: it upgrades from wgpu-native v27 to v29 (stable webgpu-headers), introduces error returns on all `Create*` methods, removes the `Get` prefix from accessor methods, and re-exports gputypes as type aliases for single-import ergonomics.
+
+For a complete migration guide, see [MIGRATION.md](MIGRATION.md).

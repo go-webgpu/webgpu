@@ -43,9 +43,9 @@ Enable **GPU-accelerated graphics and compute in pure Go** — no CGO, no comple
 
 | Component | Version | Role |
 |-----------|---------|------|
-| [wgpu-native](https://github.com/gfx-rs/wgpu-native) | v27.0.4.0 | WebGPU implementation (Rust) |
-| [goffi](https://github.com/go-webgpu/goffi) | v0.3.7 | Zero-CGO FFI layer |
-| [gputypes](https://github.com/gogpu/gputypes) | latest | WebGPU type definitions |
+| [wgpu-native](https://github.com/gfx-rs/wgpu-native) | v29.0.0.0 | WebGPU implementation (Rust) |
+| [goffi](https://github.com/go-webgpu/goffi) | v0.5.0 | Zero-CGO FFI layer |
+| [gputypes](https://github.com/gogpu/gputypes) | v0.3.0 | WebGPU type definitions |
 
 ---
 
@@ -69,24 +69,32 @@ We use GitHub labels to track feature progress:
 
 | Feature | Status | Issue |
 |---------|--------|-------|
-| gputypes integration | `stable` | — |
-| wgpu-native v27 compatibility | `stable` | — |
-| All 11 examples working | `stable` | — |
-| Enum conversion layer | `stable` | — |
+| gputypes integration | ✅ `stable` | — |
+| wgpu-native v27 compatibility | ✅ `stable` | — |
+| wgpu-native v29 migration (stable webgpu-headers) | ✅ `stable` | [#3](https://github.com/go-webgpu/webgpu/issues/3) |
+| webgpu-headers upgrade | ✅ `stable` | [#3](https://github.com/go-webgpu/webgpu/issues/3) |
+| All 11 examples working | ✅ `stable` | — |
+| Enum conversion layer (convert.go) | ✅ `stable` | — |
+| Error returns on all Create* methods | ✅ `stable` | — |
+| gputypes type aliases (single-import) | ✅ `stable` | — |
+| 271 ABI verification tests | ✅ `stable` | — |
 
 ---
 
 ## Next: Advanced Features
 
-**Focus**: Complete WebGPU API coverage.
+**Focus**: Complete WebGPU API coverage and gogpu/wgpu API parity.
 
 | Feature | Status | Issue |
 |---------|--------|-------|
-| Storage textures | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
-| Texture arrays | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
-| Occlusion queries | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
-| Pipeline statistics | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
-| Multi-draw indirect | `exploring` | [#TBD](https://github.com/go-webgpu/webgpu/issues) |
+| Full gogpu/wgpu API parity | `design` | — |
+| wgpu-native extensions: logging (`wgpuSetLogCallback`) | `exploring` | — |
+| wgpu-native extensions: backend selection (`WGPUInstanceExtras`) | `exploring` | — |
+| Storage textures | `exploring` | — |
+| Texture arrays | `exploring` | — |
+| Occlusion queries | `exploring` | — |
+| Pipeline statistics | `exploring` | — |
+| Multi-draw indirect | `exploring` | — |
 
 ---
 
@@ -191,6 +199,14 @@ We track these projects for updates:
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v0.5.0** | Unreleased | wgpu-native v29, error returns, method renames, gputypes aliases, 271 ABI tests |
+| **v0.4.3** | 2026-03-29 | goffi v0.5.0 (Windows ARM64/Snapdragon X, FreeBSD amd64) |
+| v0.4.2 | 2026-03-04 | goffi v0.4.2 (purego nofakecgo fix) |
+| v0.4.1 | 2026-03-02 | goffi v0.4.1 (ABI compliance hotfix) |
+| v0.4.0 | 2026-02-27 | Null handle guards, 85 null guard tests, WGPU_NATIVE_PATH env var |
+| v0.3.2 | 2026-02-27 | goffi v0.4.0 (crosscall2 integration) |
+| v0.3.1 | 2026-02-18 | goffi v0.3.9 (ARM64 callback fix) |
+| v0.3.0 | 2026-02-09 | Error scopes, typed errors, resource leak detection, fuzz testing, API stability policy |
 | **v0.2.0** | 2026-01-29 | gputypes integration, wgpu-native v27, all examples fixed |
 | v0.1.4 | 2026-01-03 | goffi v0.3.7 (ARM64 Darwin) |
 | v0.1.3 | 2025-12-29 | goffi v0.3.6 (ARM64 HFA fix) |
