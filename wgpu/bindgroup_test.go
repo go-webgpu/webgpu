@@ -30,7 +30,7 @@ func TestCreateBindGroupLayout(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
@@ -86,7 +86,7 @@ func TestCreateBindGroup(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
@@ -163,7 +163,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeReadOnlyStorage,
 				MinBindingSize: 0,
 			},
@@ -171,7 +171,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 		{
 			Binding:    1,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},

@@ -41,11 +41,8 @@ func main() {
 	fmt.Printf("Vendor ID:    0x%04X\n", info.VendorID)
 	fmt.Printf("Device ID:    0x%04X\n", info.DeviceID)
 
-	// Get adapter limits
-	limits, err := adapter.Limits()
-	if err != nil {
-		log.Fatalf("Failed to get adapter limits: %v", err)
-	}
+	// Get adapter limits (cached at creation, no FFI call)
+	limits := adapter.Limits()
 
 	fmt.Println("\n=== Key Adapter Limits ===")
 	fmt.Printf("Max Texture 2D:              %d x %d\n", limits.MaxTextureDimension2D, limits.MaxTextureDimension2D)

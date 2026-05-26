@@ -479,10 +479,9 @@ func (app *App) createBindGroupLayout() error {
 		{
 			Binding:    0,
 			Visibility: wgpu.ShaderStageVertex,
-			Buffer: wgpu.BufferBindingLayout{
-				Type:             wgpu.BufferBindingTypeUniform,
-				HasDynamicOffset: wgpu.False,
-				MinBindingSize:   64, // mat4x4f = 64 bytes
+			Buffer: &wgpu.BufferBindingLayout{
+				Type:           wgpu.BufferBindingTypeUniform,
+				MinBindingSize: 64, // mat4x4f = 64 bytes
 			},
 		},
 	}

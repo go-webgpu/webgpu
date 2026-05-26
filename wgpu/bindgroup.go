@@ -7,44 +7,46 @@ import (
 )
 
 // BufferBindingLayout describes buffer binding properties.
-type BufferBindingLayout struct {
-	NextInChain      uintptr // *ChainedStruct
-	Type             gputypes.BufferBindingType
-	HasDynamicOffset Bool
-	MinBindingSize   uint64
-}
+//
+// This type matches gputypes.BufferBindingLayout for cross-project compatibility.
+// Used as a pointer field in BindGroupLayoutEntry; nil means "not a buffer binding".
+type BufferBindingLayout = gputypes.BufferBindingLayout
 
 // SamplerBindingLayout describes sampler binding properties.
-type SamplerBindingLayout struct {
-	NextInChain uintptr // *ChainedStruct
-	Type        gputypes.SamplerBindingType
-}
+//
+// This type matches gputypes.SamplerBindingLayout for cross-project compatibility.
+// Used as a pointer field in BindGroupLayoutEntry; nil means "not a sampler binding".
+type SamplerBindingLayout = gputypes.SamplerBindingLayout
 
 // TextureBindingLayout describes texture binding properties.
-type TextureBindingLayout struct {
-	NextInChain   uintptr // *ChainedStruct
-	SampleType    gputypes.TextureSampleType
-	ViewDimension gputypes.TextureViewDimension
-	Multisampled  Bool
-}
+//
+// This type matches gputypes.TextureBindingLayout for cross-project compatibility.
+// Used as a pointer field in BindGroupLayoutEntry; nil means "not a texture binding".
+type TextureBindingLayout = gputypes.TextureBindingLayout
 
 // StorageTextureBindingLayout describes storage texture binding properties.
-type StorageTextureBindingLayout struct {
-	NextInChain   uintptr // *ChainedStruct
-	Access        gputypes.StorageTextureAccess
-	Format        gputypes.TextureFormat
-	ViewDimension gputypes.TextureViewDimension
-}
+//
+// This type matches gputypes.StorageTextureBindingLayout for cross-project compatibility.
+// Used as a pointer field in BindGroupLayoutEntry; nil means "not a storage texture binding".
+type StorageTextureBindingLayout = gputypes.StorageTextureBindingLayout
 
 // BindGroupLayoutEntry describes a single binding in a bind group layout.
+//
+// Exactly one of Buffer, Sampler, Texture, or StorageTexture must be non-nil.
+// This matches the gogpu/wgpu API for cross-project compatibility.
 type BindGroupLayoutEntry struct {
-	NextInChain    uintptr // *ChainedStruct
-	Binding        uint32
-	Visibility     gputypes.ShaderStage
-	Buffer         BufferBindingLayout
-	Sampler        SamplerBindingLayout
-	Texture        TextureBindingLayout
-	StorageTexture StorageTextureBindingLayout
+	// Binding is the binding number (must match @binding in shader).
+	Binding uint32
+	// Visibility specifies which shader stages can access this binding.
+	Visibility gputypes.ShaderStage
+	// Buffer describes a buffer binding (nil if not a buffer binding).
+	Buffer *BufferBindingLayout
+	// Sampler describes a sampler binding (nil if not a sampler binding).
+	Sampler *SamplerBindingLayout
+	// Texture describes a texture binding (nil if not a texture binding).
+	Texture *TextureBindingLayout
+	// StorageTexture describes a storage texture binding (nil if not a storage texture binding).
+	StorageTexture *StorageTextureBindingLayout
 }
 
 // BindGroupLayoutDescriptor describes a bind group layout.
@@ -117,34 +119,39 @@ type bindGroupLayoutEntryWire struct {
 }
 
 // toWire converts a BindGroupLayoutEntry to its wire representation.
+// Nil sub-layout pointers produce zero-value wire structs (BindingNotUsed sentinel).
 func (e *BindGroupLayoutEntry) toWire() bindGroupLayoutEntryWire {
-	return bindGroupLayoutEntryWire{
-		NextInChain: e.NextInChain,
-		Binding:     e.Binding,
-		Visibility:  uint64(e.Visibility), // widen uint32 to uint64
-		Buffer: bufferBindingLayoutWire{
-			NextInChain:      e.Buffer.NextInChain,
+	wire := bindGroupLayoutEntryWire{
+		Binding:    e.Binding,
+		Visibility: uint64(e.Visibility), // widen uint32 to uint64
+	}
+	if e.Buffer != nil {
+		wire.Buffer = bufferBindingLayoutWire{
 			Type:             toWGPUBufferBindingType(e.Buffer.Type),
-			HasDynamicOffset: e.Buffer.HasDynamicOffset,
+			HasDynamicOffset: boolToWGPU(e.Buffer.HasDynamicOffset),
 			MinBindingSize:   e.Buffer.MinBindingSize,
-		},
-		Sampler: samplerBindingLayoutWire{
-			NextInChain: e.Sampler.NextInChain,
-			Type:        toWGPUSamplerBindingType(e.Sampler.Type),
-		},
-		Texture: textureBindingLayoutWire{
-			NextInChain:   e.Texture.NextInChain,
+		}
+	}
+	if e.Sampler != nil {
+		wire.Sampler = samplerBindingLayoutWire{
+			Type: toWGPUSamplerBindingType(e.Sampler.Type),
+		}
+	}
+	if e.Texture != nil {
+		wire.Texture = textureBindingLayoutWire{
 			SampleType:    toWGPUTextureSampleType(e.Texture.SampleType),
 			ViewDimension: uint32(e.Texture.ViewDimension),
-			Multisampled:  e.Texture.Multisampled,
-		},
-		StorageTexture: storageTextureBindingLayoutWire{
-			NextInChain:   e.StorageTexture.NextInChain,
+			Multisampled:  boolToWGPU(e.Texture.Multisampled),
+		}
+	}
+	if e.StorageTexture != nil {
+		wire.StorageTexture = storageTextureBindingLayoutWire{
 			Access:        toWGPUStorageTextureAccess(e.StorageTexture.Access),
 			Format:        uint32(e.StorageTexture.Format),
 			ViewDimension: uint32(e.StorageTexture.ViewDimension),
-		},
+		}
 	}
+	return wire
 }
 
 // bindGroupLayoutDescriptorWire is the FFI-compatible descriptor.

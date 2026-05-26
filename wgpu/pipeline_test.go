@@ -40,7 +40,7 @@ func TestCreatePipelineLayout(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
@@ -183,7 +183,7 @@ func TestCreateComputePipelineWithExplicitLayout(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},

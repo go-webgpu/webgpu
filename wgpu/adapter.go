@@ -189,12 +189,30 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 				}
 				return nil, &WGPUError{Op: "RequestAdapter", Message: msg}
 			}
+			// Cache limits at creation time so Limits() returns value without FFI.
+			if req.adapter != nil {
+				req.adapter.limits = fetchAdapterLimits(req.adapter.handle)
+			}
 			return req.adapter, nil
 		default:
 			// Process events to trigger callback
 			i.ProcessEvents()
 		}
 	}
+}
+
+// fetchAdapterLimits calls wgpuAdapterGetLimits and converts the wire struct to public Limits.
+// Returns zero-value Limits on failure (non-fatal: limits remain valid defaults).
+func fetchAdapterLimits(handle uintptr) Limits {
+	var wire limitsWire
+	status, _, _ := procAdapterGetLimits.Call(
+		handle,
+		uintptr(unsafe.Pointer(&wire)),
+	)
+	if WGPUStatus(status) != WGPUStatusSuccess {
+		return Limits{}
+	}
+	return limitsFromWire(&wire)
 }
 
 // Release releases the adapter resources.
@@ -206,15 +224,87 @@ func (a *Adapter) Release() {
 	}
 }
 
-// Limits describes resource limits for an adapter or device.
-// This corresponds to WGPULimits in webgpu.h v29.
+// Limits describes GPU resource limits for an adapter or device.
+//
+// This type matches the gogpu/wgpu API for cross-project compatibility.
+// Limits are cached at creation time (RequestAdapter/RequestDevice) and
+// returned by value — no FFI call is made on each access.
+//
+// Note: wgpu-native-specific fields (MaxImmediateSize, MaxNonSamplerBindings)
+// are not exposed here. Use NativeLimits for native extensions.
+type Limits struct {
+	// MaxTextureDimension1D is the maximum 1D texture dimension.
+	MaxTextureDimension1D uint32
+	// MaxTextureDimension2D is the maximum 2D texture dimension.
+	MaxTextureDimension2D uint32
+	// MaxTextureDimension3D is the maximum 3D texture dimension.
+	MaxTextureDimension3D uint32
+	// MaxTextureArrayLayers is the maximum texture array layer count.
+	MaxTextureArrayLayers uint32
+	// MaxBindGroups is the maximum number of bind groups.
+	MaxBindGroups uint32
+	// MaxBindGroupsPlusVertexBuffers is the max bind groups + vertex buffers.
+	MaxBindGroupsPlusVertexBuffers uint32
+	// MaxBindingsPerBindGroup is the max bindings per bind group.
+	MaxBindingsPerBindGroup uint32
+	// MaxDynamicUniformBuffersPerPipelineLayout is the max dynamic uniform buffers.
+	MaxDynamicUniformBuffersPerPipelineLayout uint32
+	// MaxDynamicStorageBuffersPerPipelineLayout is the max dynamic storage buffers.
+	MaxDynamicStorageBuffersPerPipelineLayout uint32
+	// MaxSampledTexturesPerShaderStage is the max sampled textures per shader stage.
+	MaxSampledTexturesPerShaderStage uint32
+	// MaxSamplersPerShaderStage is the max samplers per shader stage.
+	MaxSamplersPerShaderStage uint32
+	// MaxStorageBuffersPerShaderStage is the max storage buffers per shader stage.
+	MaxStorageBuffersPerShaderStage uint32
+	// MaxStorageTexturesPerShaderStage is the max storage textures per shader stage.
+	MaxStorageTexturesPerShaderStage uint32
+	// MaxUniformBuffersPerShaderStage is the max uniform buffers per shader stage.
+	MaxUniformBuffersPerShaderStage uint32
+	// MaxUniformBufferBindingSize is the max uniform buffer binding size in bytes.
+	MaxUniformBufferBindingSize uint64
+	// MaxStorageBufferBindingSize is the max storage buffer binding size in bytes.
+	MaxStorageBufferBindingSize uint64
+	// MinUniformBufferOffsetAlignment is the minimum uniform buffer offset alignment.
+	MinUniformBufferOffsetAlignment uint32
+	// MinStorageBufferOffsetAlignment is the minimum storage buffer offset alignment.
+	MinStorageBufferOffsetAlignment uint32
+	// MaxVertexBuffers is the max vertex buffers in a pipeline.
+	MaxVertexBuffers uint32
+	// MaxBufferSize is the max buffer size in bytes.
+	MaxBufferSize uint64
+	// MaxVertexAttributes is the max vertex attributes in a pipeline.
+	MaxVertexAttributes uint32
+	// MaxVertexBufferArrayStride is the max vertex buffer array stride.
+	MaxVertexBufferArrayStride uint32
+	// MaxInterStageShaderVariables is the max inter-stage shader variables.
+	MaxInterStageShaderVariables uint32
+	// MaxColorAttachments is the max color attachments in a render pass.
+	MaxColorAttachments uint32
+	// MaxColorAttachmentBytesPerSample is the max bytes per sample for color attachments.
+	MaxColorAttachmentBytesPerSample uint32
+	// MaxComputeWorkgroupStorageSize is the max compute workgroup storage in bytes.
+	MaxComputeWorkgroupStorageSize uint32
+	// MaxComputeInvocationsPerWorkgroup is the max compute invocations per workgroup.
+	MaxComputeInvocationsPerWorkgroup uint32
+	// MaxComputeWorkgroupSizeX is the max compute workgroup size in X dimension.
+	MaxComputeWorkgroupSizeX uint32
+	// MaxComputeWorkgroupSizeY is the max compute workgroup size in Y dimension.
+	MaxComputeWorkgroupSizeY uint32
+	// MaxComputeWorkgroupSizeZ is the max compute workgroup size in Z dimension.
+	MaxComputeWorkgroupSizeZ uint32
+	// MaxComputeWorkgroupsPerDimension is the max compute workgroups per dimension.
+	MaxComputeWorkgroupsPerDimension uint32
+}
+
+// limitsWire is the FFI-compatible C-layout struct for wgpu-native v29 WGPULimits.
 // IMPORTANT: Field order must exactly match C struct layout for correct ABI.
 // v29 BREAKING changes vs v27:
 //   - NextInChain added as FIRST field (was absent in v27 Limits)
 //   - MinUniformBufferOffsetAlignment and MinStorageBufferOffsetAlignment moved
 //     from end to after MaxStorageBufferBindingSize (before MaxVertexBuffers)
 //   - MaxImmediateSize added as LAST field (new in v29)
-type Limits struct {
+type limitsWire struct {
 	NextInChain                               uintptr // *ChainedStruct — NEW in v29
 	MaxTextureDimension1D                     uint32
 	MaxTextureDimension2D                     uint32
@@ -248,6 +338,43 @@ type Limits struct {
 	MaxComputeWorkgroupSizeZ                  uint32
 	MaxComputeWorkgroupsPerDimension          uint32
 	MaxImmediateSize                          uint32 // NEW in v29 (push constants replacement)
+}
+
+// limitsFromWire converts a limitsWire (FFI struct with NextInChain) to public Limits.
+func limitsFromWire(w *limitsWire) Limits {
+	return Limits{
+		MaxTextureDimension1D:                     w.MaxTextureDimension1D,
+		MaxTextureDimension2D:                     w.MaxTextureDimension2D,
+		MaxTextureDimension3D:                     w.MaxTextureDimension3D,
+		MaxTextureArrayLayers:                     w.MaxTextureArrayLayers,
+		MaxBindGroups:                             w.MaxBindGroups,
+		MaxBindGroupsPlusVertexBuffers:            w.MaxBindGroupsPlusVertexBuffers,
+		MaxBindingsPerBindGroup:                   w.MaxBindingsPerBindGroup,
+		MaxDynamicUniformBuffersPerPipelineLayout: w.MaxDynamicUniformBuffersPerPipelineLayout,
+		MaxDynamicStorageBuffersPerPipelineLayout: w.MaxDynamicStorageBuffersPerPipelineLayout,
+		MaxSampledTexturesPerShaderStage:          w.MaxSampledTexturesPerShaderStage,
+		MaxSamplersPerShaderStage:                 w.MaxSamplersPerShaderStage,
+		MaxStorageBuffersPerShaderStage:           w.MaxStorageBuffersPerShaderStage,
+		MaxStorageTexturesPerShaderStage:          w.MaxStorageTexturesPerShaderStage,
+		MaxUniformBuffersPerShaderStage:           w.MaxUniformBuffersPerShaderStage,
+		MaxUniformBufferBindingSize:               w.MaxUniformBufferBindingSize,
+		MaxStorageBufferBindingSize:               w.MaxStorageBufferBindingSize,
+		MinUniformBufferOffsetAlignment:           w.MinUniformBufferOffsetAlignment,
+		MinStorageBufferOffsetAlignment:           w.MinStorageBufferOffsetAlignment,
+		MaxVertexBuffers:                          w.MaxVertexBuffers,
+		MaxBufferSize:                             w.MaxBufferSize,
+		MaxVertexAttributes:                       w.MaxVertexAttributes,
+		MaxVertexBufferArrayStride:                w.MaxVertexBufferArrayStride,
+		MaxInterStageShaderVariables:              w.MaxInterStageShaderVariables,
+		MaxColorAttachments:                       w.MaxColorAttachments,
+		MaxColorAttachmentBytesPerSample:          w.MaxColorAttachmentBytesPerSample,
+		MaxComputeWorkgroupStorageSize:            w.MaxComputeWorkgroupStorageSize,
+		MaxComputeInvocationsPerWorkgroup:         w.MaxComputeInvocationsPerWorkgroup,
+		MaxComputeWorkgroupSizeX:                  w.MaxComputeWorkgroupSizeX,
+		MaxComputeWorkgroupSizeY:                  w.MaxComputeWorkgroupSizeY,
+		MaxComputeWorkgroupSizeZ:                  w.MaxComputeWorkgroupSizeZ,
+		MaxComputeWorkgroupsPerDimension:          w.MaxComputeWorkgroupsPerDimension,
+	}
 }
 
 // SupportedFeatures contains features supported by adapter or device.
@@ -287,28 +414,16 @@ type AdapterInfoGo struct {
 	DeviceID     uint32
 }
 
-// Limits retrieves the limits of this adapter.
-// v29: WGPULimits now has nextInChain as first field; pass *Limits directly (no SupportedLimits wrapper).
-// Returns nil if the adapter is nil or if the operation fails.
-func (a *Adapter) Limits() (*Limits, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
+// Limits returns the resource limits of this adapter.
+//
+// Limits are cached at adapter creation time and returned by value.
+// No FFI call is made. Returns zero-value Limits if the adapter is nil.
+// This matches the gogpu/wgpu API signature for cross-project compatibility.
+func (a *Adapter) Limits() Limits {
 	if a == nil || a.handle == 0 {
-		return nil, &WGPUError{Op: "Adapter.Limits", Message: "adapter is nil"}
+		return Limits{}
 	}
-
-	limits := &Limits{}
-	status, _, _ := procAdapterGetLimits.Call(
-		a.handle,
-		uintptr(unsafe.Pointer(limits)),
-	)
-
-	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Adapter.Limits", Message: "operation failed"}
-	}
-
-	return limits, nil
+	return a.limits
 }
 
 // Features retrieves all features supported by this adapter.

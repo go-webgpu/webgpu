@@ -435,17 +435,16 @@ func (app *App) createBindGroup() error {
 		{
 			Binding:    0,
 			Visibility: wgpu.ShaderStageFragment,
-			Sampler: wgpu.SamplerBindingLayout{
+			Sampler: &wgpu.SamplerBindingLayout{
 				Type: wgpu.SamplerBindingTypeFiltering,
 			},
 		},
 		{
 			Binding:    1,
 			Visibility: wgpu.ShaderStageFragment,
-			Texture: wgpu.TextureBindingLayout{
+			Texture: &wgpu.TextureBindingLayout{
 				SampleType:    wgpu.TextureSampleTypeFloat,
 				ViewDimension: wgpu.TextureViewDimension2D,
-				Multisampled:  wgpu.False,
 			},
 		},
 	}

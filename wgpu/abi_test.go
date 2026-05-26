@@ -59,10 +59,10 @@ func TestABIStructSizes(t *testing.T) {
 		//   forceFallbackAdapter(4)+backendType(4)+compatibleSurface(8) = 32
 		{"requestAdapterOptionsWire", unsafe.Sizeof(requestAdapterOptionsWire{}), 32},
 
-		// Limits: nextInChain(8) + 14×uint32(56) + 2×uint64(16) + 2×uint32(8) +
+		// limitsWire: nextInChain(8) + 14×uint32(56) + 2×uint64(16) + 2×uint32(8) +
 		//   uint32+uint64+9×uint32 + maxImmediateSize(4) = 152
 		// Exact layout: see TestStructFieldOffsets for field-level verification.
-		{"Limits", unsafe.Sizeof(Limits{}), 152},
+		{"limitsWire", unsafe.Sizeof(limitsWire{}), 152},
 
 		// AdapterInfo: nextInChain(8)+vendor(16)+architecture(16)+device(16)+
 		//   description(16)+backendType(4)+adapterType(4)+vendorID(4)+deviceID(4)+
@@ -145,7 +145,8 @@ func TestABIStructSizes(t *testing.T) {
 // =============================================================================
 
 func TestABIStructFieldOffsets(t *testing.T) {
-	t.Run("Limits", func(t *testing.T) {
+	t.Run("limitsWire", func(t *testing.T) {
+		// limitsWire is the FFI-compatible C struct for WGPULimits in wgpu-native v29.
 		// v29 BREAKING: nextInChain added as first field.
 		// v29 BREAKING: minUniform/StorageBufferOffsetAlignment moved
 		//   after maxStorageBufferBindingSize (were at end in v27).
@@ -190,7 +191,7 @@ func TestABIStructFieldOffsets(t *testing.T) {
 		// offset 148: maxImmediateSize (uint32)  [NEW v29]
 		// total: 152 bytes
 
-		var l Limits
+		var l limitsWire
 		offsets := []struct {
 			name     string
 			got      uintptr

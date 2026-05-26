@@ -23,11 +23,17 @@ type Instance struct{ handle uintptr }
 
 // Adapter represents a physical GPU and its capabilities.
 // Obtained via [Instance.RequestAdapter], release with [Adapter.Release].
-type Adapter struct{ handle uintptr }
+type Adapter struct {
+	handle uintptr
+	limits Limits // cached at request time, returned by Limits() without FFI call
+}
 
 // Device is the logical connection to a GPU, used to create all other resources.
 // Obtained via [Adapter.RequestDevice], release with [Device.Release].
-type Device struct{ handle uintptr }
+type Device struct {
+	handle uintptr
+	limits Limits // cached at request time, returned by Limits() without FFI call
+}
 
 // Queue is used to submit command buffers and write data to buffers/textures.
 // Obtained via [Device.Queue], release with [Queue.Release].

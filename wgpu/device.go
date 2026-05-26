@@ -102,6 +102,7 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 
 	// Convert Go-idiomatic descriptor to wire format.
 	var optionsPtr uintptr
+	var reqLimitsWire limitsWire // kept alive for the duration of the FFI call
 	if options != nil {
 		wire := deviceDescriptorWire{
 			Label: stringToStringView(options.Label),
@@ -111,10 +112,12 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 			wire.RequiredFeatures = uintptr(unsafe.Pointer(&options.RequiredFeatures[0]))
 		}
 		if options.RequiredLimits != nil {
-			wire.RequiredLimits = uintptr(unsafe.Pointer(options.RequiredLimits))
+			reqLimitsWire = limitsToWire(options.RequiredLimits)
+			wire.RequiredLimits = uintptr(unsafe.Pointer(&reqLimitsWire))
 		}
 		optionsPtr = uintptr(unsafe.Pointer(&wire))
 	}
+	_ = reqLimitsWire // ensure not optimised away before the call below
 
 	// Prepare callback info
 	callbackInfo := RequestDeviceCallbackInfo{
@@ -133,7 +136,6 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	)
 
 	// Process events until callback fires
-	// We need an instance to call ProcessEvents - get it from global or use a busy loop
 	for {
 		select {
 		case <-req.done:
@@ -145,12 +147,30 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 				}
 				return nil, &WGPUError{Op: "RequestDevice", Message: msg}
 			}
+			// Cache limits at creation time so Limits() returns value without FFI.
+			if req.device != nil {
+				req.device.limits = fetchDeviceLimits(req.device.handle)
+			}
 			return req.device, nil
 		default:
 			// Brief pause to avoid busy spinning
 			// In real usage, you'd call instance.ProcessEvents()
 		}
 	}
+}
+
+// fetchDeviceLimits calls wgpuDeviceGetLimits and converts the wire struct to public Limits.
+// Returns zero-value Limits on failure (non-fatal: limits remain valid defaults).
+func fetchDeviceLimits(handle uintptr) Limits {
+	var wire limitsWire
+	status, _, _ := procDeviceGetLimits.Call(
+		handle,
+		uintptr(unsafe.Pointer(&wire)),
+	)
+	if WGPUStatus(status) != WGPUStatusSuccess {
+		return Limits{}
+	}
+	return limitsFromWire(&wire)
 }
 
 // Queue returns the default queue for the device.
@@ -231,6 +251,47 @@ type DeviceDescriptor struct {
 	RequiredLimits *Limits
 }
 
+// limitsToWire converts public Limits to the FFI-compatible limitsWire struct.
+// Used when passing required limits to wgpuAdapterRequestDevice.
+func limitsToWire(l *Limits) limitsWire {
+	if l == nil {
+		return limitsWire{}
+	}
+	return limitsWire{
+		MaxTextureDimension1D:                     l.MaxTextureDimension1D,
+		MaxTextureDimension2D:                     l.MaxTextureDimension2D,
+		MaxTextureDimension3D:                     l.MaxTextureDimension3D,
+		MaxTextureArrayLayers:                     l.MaxTextureArrayLayers,
+		MaxBindGroups:                             l.MaxBindGroups,
+		MaxBindGroupsPlusVertexBuffers:            l.MaxBindGroupsPlusVertexBuffers,
+		MaxBindingsPerBindGroup:                   l.MaxBindingsPerBindGroup,
+		MaxDynamicUniformBuffersPerPipelineLayout: l.MaxDynamicUniformBuffersPerPipelineLayout,
+		MaxDynamicStorageBuffersPerPipelineLayout: l.MaxDynamicStorageBuffersPerPipelineLayout,
+		MaxSampledTexturesPerShaderStage:          l.MaxSampledTexturesPerShaderStage,
+		MaxSamplersPerShaderStage:                 l.MaxSamplersPerShaderStage,
+		MaxStorageBuffersPerShaderStage:           l.MaxStorageBuffersPerShaderStage,
+		MaxStorageTexturesPerShaderStage:          l.MaxStorageTexturesPerShaderStage,
+		MaxUniformBuffersPerShaderStage:           l.MaxUniformBuffersPerShaderStage,
+		MaxUniformBufferBindingSize:               l.MaxUniformBufferBindingSize,
+		MaxStorageBufferBindingSize:               l.MaxStorageBufferBindingSize,
+		MinUniformBufferOffsetAlignment:           l.MinUniformBufferOffsetAlignment,
+		MinStorageBufferOffsetAlignment:           l.MinStorageBufferOffsetAlignment,
+		MaxVertexBuffers:                          l.MaxVertexBuffers,
+		MaxBufferSize:                             l.MaxBufferSize,
+		MaxVertexAttributes:                       l.MaxVertexAttributes,
+		MaxVertexBufferArrayStride:                l.MaxVertexBufferArrayStride,
+		MaxInterStageShaderVariables:              l.MaxInterStageShaderVariables,
+		MaxColorAttachments:                       l.MaxColorAttachments,
+		MaxColorAttachmentBytesPerSample:          l.MaxColorAttachmentBytesPerSample,
+		MaxComputeWorkgroupStorageSize:            l.MaxComputeWorkgroupStorageSize,
+		MaxComputeInvocationsPerWorkgroup:         l.MaxComputeInvocationsPerWorkgroup,
+		MaxComputeWorkgroupSizeX:                  l.MaxComputeWorkgroupSizeX,
+		MaxComputeWorkgroupSizeY:                  l.MaxComputeWorkgroupSizeY,
+		MaxComputeWorkgroupSizeZ:                  l.MaxComputeWorkgroupSizeZ,
+		MaxComputeWorkgroupsPerDimension:          l.MaxComputeWorkgroupsPerDimension,
+	}
+}
+
 // deviceDescriptorWire is the FFI-compatible C-layout struct for wgpuAdapterRequestDevice.
 // v29: Added Label, RequiredFeatureCount, RequiredFeatures, RequiredLimits,
 // DefaultQueue, DeviceLostCallbackInfo, UncapturedErrorCallbackInfo fields.
@@ -268,27 +329,16 @@ func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.Textur
 	return t
 }
 
-// Limits retrieves the limits of this device.
-// v29: WGPULimits now has nextInChain as first field; pass *Limits directly.
-func (d *Device) Limits() (*Limits, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
+// Limits returns the resource limits of this device.
+//
+// Limits are cached at device creation time and returned by value.
+// No FFI call is made. Returns zero-value Limits if the device is nil.
+// This matches the gogpu/wgpu API signature for cross-project compatibility.
+func (d *Device) Limits() Limits {
 	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "Device.Limits", Message: "device is nil"}
+		return Limits{}
 	}
-
-	limits := &Limits{}
-	status, _, _ := procDeviceGetLimits.Call(
-		d.handle,
-		uintptr(unsafe.Pointer(limits)),
-	)
-
-	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Device.Limits", Message: "operation failed"}
-	}
-
-	return limits, nil
+	return d.limits
 }
 
 // Features retrieves all features enabled on this device.
