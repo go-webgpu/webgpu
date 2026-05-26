@@ -83,11 +83,14 @@ We use GitHub labels to track feature progress:
 
 ## Next: Advanced Features
 
-**Focus**: Complete WebGPU API coverage and gogpu/wgpu API parity.
+**Focus**: Complete WebGPU API coverage and extended wgpu-native capabilities.
 
 | Feature | Status | Issue |
 |---------|--------|-------|
-| Full gogpu/wgpu API parity | `design` | — |
+| Full gogpu/wgpu API parity | ✅ `stable` | — |
+| Buffer mapping (Map with context, async MapPending) | ✅ `stable` | — |
+| Region-based copy operations (CopyTextureToBuffer) | ✅ `stable` | — |
+| Queue submission index (wgpuQueueSubmitForIndex) | ✅ `stable` | — |
 | wgpu-native extensions: logging (`wgpuSetLogCallback`) | `exploring` | — |
 | wgpu-native extensions: backend selection (`WGPUInstanceExtras`) | `exploring` | — |
 | Storage textures | `exploring` | — |
@@ -199,7 +202,7 @@ We track these projects for updates:
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| **v0.5.0** | Unreleased | wgpu-native v29, error returns, method renames, gputypes aliases, 271 ABI tests |
+| **v0.5.0** | Unreleased | wgpu-native v29, error returns, method renames, gputypes aliases, 271 ABI tests, Buffer.Map/MapAsync/MappedRange, Queue.Submit index, CopyTextureToBuffer regions, gogpu/wgpu API parity |
 | **v0.4.3** | 2026-03-29 | goffi v0.5.0 (Windows ARM64/Snapdragon X, FreeBSD amd64) |
 | v0.4.2 | 2026-03-04 | goffi v0.4.2 (purego nofakecgo fix) |
 | v0.4.1 | 2026-03-02 | goffi v0.4.1 (ABI compliance hotfix) |

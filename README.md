@@ -22,7 +22,10 @@ Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgp
 |---------|--------|
 | Instance, Adapter, Device | ✅ |
 | Buffers (vertex, index, uniform, storage) | ✅ |
+| Buffer Mapping (Map with context, async MapPending, type-safe MappedRange) | ✅ |
+| Queue Submission Index Tracking | ✅ |
 | Textures, Samplers, Storage Textures | ✅ |
+| Region-Based Copy Operations (CopyTextureToBuffer) | ✅ |
 | Render Pipelines | ✅ |
 | Compute Pipelines | ✅ |
 | Depth Buffer | ✅ |

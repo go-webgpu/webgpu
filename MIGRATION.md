@@ -12,6 +12,12 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list of changes.
 - [Error Returns on Create Methods](#error-returns-on-create-methods)
 - [Method Renames](#method-renames)
 - [Single Import: gputypes Aliases](#single-import-gputypes-aliases)
+- [Buffer Mapping API](#buffer-mapping-api)
+- [Queue.Submit Returns Index](#queuesubmit-returns-index)
+- [Limits Return Value (No Error)](#limits-return-value-no-error)
+- [BindGroupLayoutEntry Pointer Sub-Layouts](#bindgrouplayoutentry-pointer-sub-layouts)
+- [SamplerDescriptor.Anisotropy Rename](#samplerdescriptoranisotropy-rename)
+- [Surface API Changes](#surface-api-changes)
 - [Removed Types](#removed-types)
 - [Enum Changes](#enum-changes)
 - [Quick Checklist](#quick-checklist)
@@ -123,6 +129,207 @@ The direct `gputypes` import still works and produces the same types (they are a
 
 ---
 
+## Buffer Mapping API
+
+The buffer mapping API has been redesigned to match gogpu/wgpu and support both blocking and async patterns.
+
+### Blocking mapping
+
+```go
+// Before (v0.4.x) — MapAsync with device arg, then GetMappedRange unsafe.Pointer
+if err := buffer.MapAsync(device, wgpu.MapModeRead, 0, size); err != nil {
+    return err
+}
+ptr := buffer.GetMappedRange(0, size)
+data := unsafe.Slice((*byte)(ptr), size)
+defer buffer.Unmap()
+
+// After (v0.5.0) — Map blocks until done, MappedRange returns safe type
+if err := buffer.Map(ctx, wgpu.MapModeRead, 0, size); err != nil {
+    return err
+}
+defer buffer.Unmap()
+mr, err := buffer.MappedRange(0, size)
+if err != nil {
+    return err
+}
+data := mr.Bytes() // []byte, valid until Unmap
+```
+
+### Truly async mapping
+
+```go
+// Before (v0.4.x) — no truly async variant
+if err := buffer.MapAsync(device, wgpu.MapModeRead, 0, size); err != nil {
+    return err
+}
+
+// After (v0.5.0) — non-blocking: returns *MapPending immediately
+pending, err := buffer.MapAsync(wgpu.MapModeRead, 0, size)
+if err != nil {
+    return err
+}
+
+// Option A: poll status manually
+for {
+    ready, err := pending.Status()
+    if ready {
+        // err is nil on success
+        break
+    }
+    device.Poll(false)
+}
+
+// Option B: block with context
+if err := pending.Wait(ctx); err != nil {
+    return err
+}
+
+// Then access mapped data as usual
+mr, _ := buffer.MappedRange(0, size)
+data := mr.Bytes()
+```
+
+### GetMappedRange still available
+
+`Buffer.GetMappedRange(offset, size)` is retained for low-level access. `MappedRange` wraps it with type safety and buffer-state validation.
+
+---
+
+## Queue.Submit Returns Index
+
+`Queue.Submit` now returns the submission index, useful for fence-based synchronization.
+
+```go
+// Before (v0.4.x)
+if err := queue.Submit(cmdBuf); err != nil {
+    return err
+}
+
+// After (v0.5.0)
+subIdx, err := queue.Submit(cmdBuf)
+if err != nil {
+    return err
+}
+// subIdx (uint64) can be used with Device.Poll or future fence APIs
+_ = subIdx
+```
+
+---
+
+## Limits Return Value (No Error)
+
+`Adapter.Limits()` and `Device.Limits()` now return `Limits` directly (cached at creation, no FFI call).
+
+```go
+// Before (v0.4.x) — SupportedLimits wrapper, error return
+supported, err := adapter.GetLimits()
+if err != nil {
+    return err
+}
+maxBuffers := supported.Limits.MaxVertexBuffers
+
+// After (v0.5.0) — value return, no error, no wrapper
+limits := adapter.Limits()
+maxBuffers := limits.MaxVertexBuffers
+```
+
+---
+
+## BindGroupLayoutEntry Pointer Sub-Layouts
+
+Sub-layout fields (`Buffer`, `Sampler`, `Texture`, `StorageTexture`) are now pointers. A nil pointer means "not this binding type". These types are gputypes aliases for cross-project compatibility.
+
+```go
+// Before (v0.4.x) — value types in sub-layouts
+entries := []wgpu.BindGroupLayoutEntry{
+    {
+        Binding:    0,
+        Visibility: wgpu.ShaderStageVertex,
+        Buffer: wgpu.BufferBindingLayout{
+            Type: wgpu.BufferBindingTypeUniform,
+        },
+    },
+}
+
+// After (v0.5.0) — pointer sub-layouts; nil = "not this type"
+entries := []wgpu.BindGroupLayoutEntry{
+    {
+        Binding:    0,
+        Visibility: wgpu.ShaderStageVertex,
+        Buffer: &wgpu.BufferBindingLayout{
+            Type: wgpu.BufferBindingTypeUniform,
+        },
+    },
+}
+```
+
+---
+
+## SamplerDescriptor.Anisotropy Rename
+
+`MaxAnisotropy` is renamed to `Anisotropy`. The old name is kept as a deprecated alias.
+
+```go
+// Before (v0.4.x)
+sampler, err := device.CreateSampler(&wgpu.SamplerDescriptor{
+    MaxAnisotropy: 1,
+})
+
+// After (v0.5.0)
+sampler, err := device.CreateSampler(&wgpu.SamplerDescriptor{
+    Anisotropy: 1,
+})
+```
+
+---
+
+## Surface API Changes
+
+### Configure requires device argument
+
+```go
+// Before (v0.4.x)
+surface.Configure(&config)
+
+// After (v0.5.0) — device is separate first argument, returns error
+if err := surface.Configure(device, &config); err != nil {
+    return err
+}
+```
+
+### GetCurrentTexture returns suboptimal flag
+
+```go
+// Before (v0.4.x)
+tex, err := surface.GetCurrentTexture()
+
+// After (v0.5.0) — added suboptimal bool
+tex, suboptimal, err := surface.GetCurrentTexture()
+if err != nil {
+    return err
+}
+if suboptimal {
+    // Consider reconfiguring the surface
+}
+```
+
+### Present takes texture argument
+
+```go
+// Before (v0.4.x)
+if err := surface.Present(); err != nil {
+    return err
+}
+
+// After (v0.5.0) — takes the texture returned by GetCurrentTexture
+if err := surface.Present(tex); err != nil {
+    return err
+}
+```
+
+---
+
 ## Removed Types
 
 ### SupportedLimits
@@ -186,7 +393,16 @@ After updating to v0.5.0:
 - [ ] Replace `GetSize()` → `Size()` on Buffer
 - [ ] Replace `GetWidth()`/`GetHeight()` → `Width()`/`Height()` on Texture
 - [ ] Remove separate `gputypes` import if no longer needed
-- [ ] Replace `supported.Limits.X` → `limits.X` (SupportedLimits removed)
+- [ ] Replace `supported.Limits.X` → `limits.X` (SupportedLimits removed, Limits() value return)
+- [ ] Update `Adapter.Limits()` / `Device.Limits()` calls: remove error handling (returns value now)
+- [ ] Replace `buffer.MapAsync(device, mode, offset, size)` with `buffer.Map(ctx, mode, offset, size)` (blocking) or `buffer.MapAsync(mode, offset, size)` (non-blocking)
+- [ ] Replace `unsafe.Pointer` from `GetMappedRange` with `buffer.MappedRange(offset, size)` → `.Bytes()`
+- [ ] Update `Queue.Submit` callers: now returns `(uint64, error)` instead of `error`
+- [ ] Update `BindGroupLayoutEntry`: sub-layout fields now pointers (`Buffer: &wgpu.BufferBindingLayout{...}`)
+- [ ] Rename `SamplerDescriptor.MaxAnisotropy` → `Anisotropy`
+- [ ] Update `surface.Configure(&config)` → `surface.Configure(device, &config)`
+- [ ] Update `surface.GetCurrentTexture()` callers: now returns `(*SurfaceTexture, bool, error)`
+- [ ] Update `surface.Present()` → `surface.Present(tex)` (pass texture returned by GetCurrentTexture)
 - [ ] Replace `ChainedStructOut` → `ChainedStruct`
 - [ ] Remove any reference to `InstanceBackendDX11`
 - [ ] Run `go build ./...` and fix remaining compilation errors

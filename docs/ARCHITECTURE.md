@@ -230,6 +230,101 @@ These require `WGPU_NATIVE_PATH` pointing to a valid wgpu-native binary. GitHub 
 
 ---
 
+## Buffer Mapping Architecture
+
+Buffer mapping in WebGPU is inherently async: the GPU must finish any in-flight work on the buffer before the CPU can access it. go-webgpu provides three access patterns:
+
+### Map (blocking, context-aware)
+
+`Buffer.Map(ctx, mode, offset, size) error` — the recommended path for most applications.
+
+1. Calls `mapAsyncStart` which issues `wgpuBufferMapAsync` with a Go callback registered in `mapRequests` (global map, protected by `sync.Mutex`)
+2. The callback (`mapCallbackHandler`) is a C-callable function pointer created once via `ffi.NewCallback`
+3. After submitting the request, `Map` kicks an initial `Device.Poll(false)` (for synchronous-complete backends)
+4. If not immediately complete, a background goroutine drives `Device.Poll` continuously so the mapping resolves without the caller needing to pump events
+5. Blocks on `<-req.done` or `ctx.Done()`, whichever fires first
+
+### MapAsync (non-blocking)
+
+`Buffer.MapAsync(mode, offset, size) (*MapPending, error)` — for callers that want to do other work while waiting.
+
+1. Same `mapAsyncStart` path as Map
+2. Returns a `*MapPending` immediately without blocking
+3. `MapPending.Status()` performs a non-blocking `select` on `req.done`
+4. `MapPending.Wait(ctx)` blocks with context support
+5. Caller must drive `Device.Poll` externally until `Status()` returns ready
+
+### MappedRange (type-safe access)
+
+After `Map` or `MapAsync` resolves, `Buffer.MappedRange(offset, size) (*MappedRange, error)` wraps `Buffer.GetMappedRange` and validates the buffer state (must be `BufferMapStateMapped`). The returned `MappedRange.Bytes()` returns a `[]byte` backed by the GPU-mapped memory, valid until `Buffer.Unmap()`.
+
+```
+caller
+  │ Map(ctx, ...)
+  ▼
+mapAsyncStart ──► wgpuBufferMapAsync (C FFI)
+  │                        │
+  │                   C callback ──► mapCallbackHandler (Go)
+  │                                        │ closes req.done
+  ▼
+select req.done / ctx.Done
+  │ done
+  ▼
+MappedRange ──► Bytes() ──► []byte view into GPU memory
+  │
+  ▼
+Unmap ──► wgpuBufferUnmap (C FFI)
+```
+
+---
+
+## Limits Caching
+
+`Adapter.Limits()` and `Device.Limits()` return a cached `Limits` value with no error. Limits are fetched once via `wgpuAdapterGetLimits` / `wgpuDeviceGetLimits` at `RequestAdapter` / `RequestDevice` time and stored inside the `Adapter` / `Device` struct.
+
+This design has two benefits:
+1. **No error handling at call site** — limits are always available once you have a valid Adapter or Device
+2. **No FFI overhead on repeated access** — common in render loops that check `MaxUniformBufferBindingSize` or similar
+
+The cached value is read-only and thread-safe (written once before the struct is returned to the caller).
+
+---
+
+## Wire Struct Pattern Summary
+
+Every public descriptor type has an unexported `*Wire` counterpart used at the FFI boundary. The pattern is always:
+
+1. **Public struct** — Go-idiomatic types (`string`, `bool`, `*T`, `[]T`)
+2. **Conversion** — inside the method body, construct the wire struct from the public struct
+3. **Wire struct** — C-layout types (`uintptr`, `uint32`, `uint64`, `StringView`, `Bool`)
+4. **FFI call** — pass `unsafe.Pointer` to the wire struct
+
+The wire struct is a local variable on the stack; its address is safe to pass to wgpu-native only for the duration of the FFI call (wgpu-native copies all descriptor data synchronously).
+
+```go
+// Public descriptor — what the user writes
+type BufferDescriptor struct {
+    Label            string
+    Usage            gputypes.BufferUsage
+    Size             uint64
+    MappedAtCreation bool
+}
+
+// Wire struct — matches WGPUBufferDescriptor byte-for-byte
+type bufferDescriptorWire struct {
+    NextInChain      uintptr
+    Label            StringView           // {Data uintptr, Length uintptr}
+    Usage            gputypes.BufferUsage // uint64 on wgpu-native
+    Size             uint64
+    MappedAtCreation Bool                 // uint32 (WGPUBool)
+    _pad             [4]byte
+}
+```
+
+The 271 ABI tests in `abi_test.go` verify that every wire struct matches the C header at compile time.
+
+---
+
 ## Ecosystem Context
 
 ```

@@ -26,14 +26,16 @@ These APIs are unlikely to change and will follow the deprecation policy below:
 | Category | Examples |
 |----------|---------|
 | **Instance lifecycle** | `CreateInstance`, `Instance.Release`, `Instance.ProcessEvents` |
-| **Adapter** | `Instance.RequestAdapter`, `Adapter.Limits`, `Adapter.Info`, `Adapter.Features`, `Adapter.Release` |
-| **Device** | `Adapter.RequestDevice`, `Device.Queue`, `Device.Limits`, `Device.Release` |
-| **Buffer** | `Device.CreateBuffer`, `Buffer.MapAsync`, `Buffer.GetMappedRange`, `Buffer.Size`, `Buffer.Unmap`, `Buffer.Release` |
+| **Adapter** | `Instance.RequestAdapter`, `Adapter.Limits` (value return, cached), `Adapter.Info`, `Adapter.Features`, `Adapter.Release` |
+| **Device** | `Adapter.RequestDevice`, `Device.Queue`, `Device.Limits` (value return, cached), `Device.Release` |
+| **Buffer** | `Device.CreateBuffer`, `Buffer.Map`, `Buffer.MapAsync`, `Buffer.MappedRange`, `Buffer.GetMappedRange`, `Buffer.Size`, `Buffer.Unmap`, `Buffer.Release` |
+| **MapPending** | `MapPending.Status`, `MapPending.Wait`, `MapPending.Release` |
+| **MappedRange** | `MappedRange.Bytes`, `MappedRange.Len`, `MappedRange.Offset` |
 | **Texture** | `Device.CreateTexture`, `Texture.CreateView`, `Texture.Width`, `Texture.Height`, `Texture.Format`, `Texture.Release`, `TextureView.Release` |
 | **Shader** | `Device.CreateShaderModuleWGSL`, `ShaderModule.Release` |
 | **Pipeline** | `Device.CreateRenderPipeline`, `Device.CreateComputePipeline`, `*Pipeline.Release` |
 | **Bind Group** | `Device.CreateBindGroup`, `Device.CreateBindGroupLayout`, `*.Release` |
-| **Command** | `Device.CreateCommandEncoder`, `CommandEncoder.Finish`, `Queue.Submit` |
+| **Command** | `Device.CreateCommandEncoder`, `CommandEncoder.Finish`, `Queue.Submit` (returns `(uint64, error)`) |
 | **Render Pass** | `CommandEncoder.BeginRenderPass`, `RenderPassEncoder.*`, `RenderPassEncoder.End` |
 | **Compute Pass** | `CommandEncoder.BeginComputePass`, `ComputePassEncoder.*`, `ComputePassEncoder.End` |
 | **Surface** | `Surface.Configure`, `Surface.GetCurrentTexture`, `Surface.Present`, `Surface.Release` |
@@ -47,7 +49,6 @@ These APIs may change in minor versions:
 
 | API | Reason | Stability target |
 |-----|--------|-----------------|
-| `Device.Limits` | Returns error on some wgpu-native versions | v1.0 |
 | `Device.Features` | Uses newer wgpuDeviceGetFeatures API | v1.0 |
 | `Surface.GetCapabilities` | New in v0.3 | v1.0 |
 | `*Simple` convenience methods | May be renamed or adjusted | v1.0 |
