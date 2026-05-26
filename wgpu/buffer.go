@@ -26,14 +26,15 @@ type MapAsyncStatus uint32
 const (
 	// MapAsyncStatusSuccess indicates the buffer was successfully mapped.
 	MapAsyncStatusSuccess MapAsyncStatus = 0x00000001
-	// MapAsyncStatusInstanceDropped indicates the instance was dropped before completion.
-	MapAsyncStatusInstanceDropped MapAsyncStatus = 0x00000002
+	// MapAsyncStatusCallbackCancelled indicates the callback was cancelled.
+	MapAsyncStatusCallbackCancelled MapAsyncStatus = 0x00000002
 	// MapAsyncStatusError indicates a mapping error occurred.
 	MapAsyncStatusError MapAsyncStatus = 0x00000003
 	// MapAsyncStatusAborted indicates the mapping was aborted (e.g., buffer destroyed).
 	MapAsyncStatusAborted MapAsyncStatus = 0x00000004
-	// MapAsyncStatusUnknown indicates an unknown mapping error.
-	MapAsyncStatusUnknown MapAsyncStatus = 0x00000005
+
+	// Deprecated: use MapAsyncStatusCallbackCancelled.
+	MapAsyncStatusInstanceDropped = MapAsyncStatusCallbackCancelled
 )
 
 // BufferMapCallbackInfo holds callback configuration for MapAsync.

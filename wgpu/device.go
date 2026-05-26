@@ -300,6 +300,9 @@ func (d *Device) Features() []FeatureName {
 	result := make([]FeatureName, supported.FeatureCount)
 	copy(result, features)
 
+	// Free C-allocated memory
+	procSupportedFeaturesFreeMembers.Call(supported.FeatureCount, supported.Features)
+
 	return result
 }
 
