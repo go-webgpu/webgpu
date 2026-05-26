@@ -1,6 +1,7 @@
 package wgpu
 
 import (
+	"context"
 	"sync"
 	"unsafe"
 
@@ -145,7 +146,7 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) (*Buffer, error) {
 		return nil, &WGPUError{Op: "CreateBuffer", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Buffer")
-	return &Buffer{handle: handle}, nil
+	return &Buffer{handle: handle, device: d}, nil
 }
 
 // GetMappedRange returns a pointer to the mapped buffer data.
@@ -170,12 +171,15 @@ func (b *Buffer) GetMappedRange(offset, size uint64) unsafe.Pointer {
 
 // Unmap unmaps the buffer, making the mapped memory inaccessible.
 // For buffers created with MappedAtCreation, this commits the data to the GPU.
-func (b *Buffer) Unmap() {
+// Returns nil on success. Matches gogpu/wgpu Buffer.Unmap() error signature.
+func (b *Buffer) Unmap() error {
 	mustInit()
 	if b == nil || b.handle == 0 {
-		return
+		return nil
 	}
 	procBufferUnmap.Call(b.handle) //nolint:errcheck
+	// wgpu-native returns void for wgpuBufferUnmap; always nil per WebGPU spec.
+	return nil
 }
 
 // Size returns the size of the buffer in bytes.
@@ -188,73 +192,14 @@ func (b *Buffer) Size() uint64 {
 	return uint64(size)
 }
 
-// MapAsync maps a buffer for reading or writing.
-// This is a synchronous wrapper that blocks until the mapping is complete.
-// The device parameter is used to poll for completion.
-// After MapAsync succeeds, use GetMappedRange to access the data.
-// Call Unmap when done to release the mapping.
-func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) error {
-	if err := checkInit(); err != nil {
-		return err
+// MapAsyncBlocking maps a buffer for reading or writing, blocking until complete.
+// Deprecated: Use [Buffer.Map] for blocking mapping or [Buffer.MapAsync] for non-blocking.
+// This method is retained for backward compatibility.
+func (b *Buffer) MapAsyncBlocking(device *Device, mode MapMode, offset, size uint64) error {
+	if device != nil && b.device == nil {
+		b.device = device
 	}
-	if b == nil || b.handle == 0 {
-		return &WGPUError{Op: "Buffer.MapAsync", Message: "buffer is nil or released"}
-	}
-	if device == nil || device.handle == 0 {
-		return &WGPUError{Op: "Buffer.MapAsync", Message: "device is nil or released"}
-	}
-
-	// Initialize callback once
-	mapCallbackOnce.Do(initMapCallback)
-
-	// Create request state
-	req := &mapRequest{
-		done: make(chan struct{}),
-	}
-
-	// Register request
-	mapRequestsMu.Lock()
-	mapRequestID++
-	reqID := mapRequestID
-	mapRequests[reqID] = req
-	mapRequestsMu.Unlock()
-
-	// Prepare callback info
-	callbackInfo := BufferMapCallbackInfo{
-		NextInChain: 0,
-		Mode:        CallbackModeAllowProcessEvents,
-		Callback:    mapCallbackPtr,
-		Userdata1:   reqID,
-		Userdata2:   0,
-	}
-
-	// Call wgpuBufferMapAsync
-	procBufferMapAsync.Call( //nolint:errcheck
-		b.handle,
-		uintptr(mode),
-		uintptr(offset),
-		uintptr(size),
-		uintptr(unsafe.Pointer(&callbackInfo)),
-	)
-
-	// Poll device until callback fires
-	for {
-		select {
-		case <-req.done:
-			// Callback completed
-			if req.status != MapAsyncStatusSuccess {
-				msg := req.message
-				if msg == "" {
-					msg = "buffer map failed"
-				}
-				return &WGPUError{Op: "Buffer.MapAsync", Message: msg}
-			}
-			return nil
-		default:
-			// Poll device to process callbacks
-			device.Poll(false)
-		}
-	}
+	return b.Map(context.Background(), mode, offset, size)
 }
 
 // Destroy destroys the buffer, making it invalid.

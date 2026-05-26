@@ -200,7 +200,7 @@ func (enc *CommandEncoder) PopDebugGroup() {
 	procCommandEncoderPopDebugGroup.Call(enc.handle) //nolint:errcheck
 }
 
-// CopyBufferToTexture copies data from a buffer to a texture.
+// CopyBufferToTexture copies data from a buffer to a texture using low-level wire types.
 // Errors are reported via Device error scopes, not as return values.
 func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
@@ -216,8 +216,38 @@ func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, dest
 }
 
 // CopyTextureToBuffer copies data from a texture to a buffer.
+// Accepts gogpu/wgpu-compatible types: src *Texture, dst *Buffer, regions []BufferTextureCopy.
+// Each region specifies the buffer layout, texture subresource origin, and copy extent.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
+func (enc *CommandEncoder) CopyTextureToBuffer(src *Texture, dst *Buffer, regions []BufferTextureCopy) {
+	mustInit()
+	if enc == nil || enc.handle == 0 || src == nil || dst == nil || len(regions) == 0 {
+		return
+	}
+	for i := range regions {
+		r := &regions[i]
+		srcWire := r.TextureBase.toWire()
+		dstWire := TexelCopyBufferInfo{
+			Layout: TexelCopyBufferLayout{
+				Offset:       r.BufferLayout.Offset,
+				BytesPerRow:  r.BufferLayout.BytesPerRow,
+				RowsPerImage: r.BufferLayout.RowsPerImage,
+			},
+			Buffer: dst.handle,
+		}
+		size := r.Size
+		procCommandEncoderCopyTextureToBuffer.Call( //nolint:errcheck
+			enc.handle,
+			uintptr(unsafe.Pointer(&srcWire)),
+			uintptr(unsafe.Pointer(&dstWire)),
+			uintptr(unsafe.Pointer(&size)),
+		)
+	}
+}
+
+// CopyTextureToBufferRaw copies data from a texture to a buffer using low-level wire types.
+// Prefer [CopyTextureToBuffer] for new code.
+func (enc *CommandEncoder) CopyTextureToBufferRaw(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
@@ -231,8 +261,31 @@ func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, des
 }
 
 // CopyTextureToTexture copies data from one texture to another.
+// Accepts gogpu/wgpu-compatible types: src *Texture, dst *Texture, regions []TextureCopy.
+// Each region specifies the source and destination subresource origins and copy extent.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
+func (enc *CommandEncoder) CopyTextureToTexture(src, dst *Texture, regions []TextureCopy) {
+	mustInit()
+	if enc == nil || enc.handle == 0 || src == nil || dst == nil || len(regions) == 0 {
+		return
+	}
+	for i := range regions {
+		r := &regions[i]
+		srcWire := r.Source.toWire()
+		dstWire := r.Destination.toWire()
+		size := r.Size
+		procCommandEncoderCopyTextureToTexture.Call( //nolint:errcheck
+			enc.handle,
+			uintptr(unsafe.Pointer(&srcWire)),
+			uintptr(unsafe.Pointer(&dstWire)),
+			uintptr(unsafe.Pointer(&size)),
+		)
+	}
+}
+
+// CopyTextureToTextureRaw copies data from one texture to another using low-level wire types.
+// Prefer [CopyTextureToTexture] for new code.
+func (enc *CommandEncoder) CopyTextureToTextureRaw(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
@@ -401,24 +454,28 @@ func (cpe *ComputePassEncoder) Release() {
 func (cpe *ComputePassEncoder) Handle() uintptr { return cpe.handle }
 
 // Submit submits command buffers for execution.
-// Returns nil on success. In this FFI implementation errors are surfaced
-// through the Device uncaptured-error callback rather than as return values,
-// so nil is always returned — the signature matches gogpu/wgpu for API compatibility.
-func (q *Queue) Submit(commands ...*CommandBuffer) error {
+// Returns the submission index (uint64) and nil on success. The submission
+// index can be used with Device.Poll to track when work completes.
+// Matches gogpu/wgpu Queue.Submit(commands ...*CommandBuffer) (uint64, error).
+func (q *Queue) Submit(commands ...*CommandBuffer) (uint64, error) {
 	mustInit()
 	if q == nil || q.handle == 0 || len(commands) == 0 {
-		return nil
+		return 0, nil
 	}
 	handles := make([]uintptr, len(commands))
 	for i, cmd := range commands {
-		handles[i] = cmd.handle
+		if cmd != nil {
+			handles[i] = cmd.handle
+		}
 	}
-	procQueueSubmit.Call( //nolint:errcheck
+	// wgpuQueueSubmitForIndex is a wgpu-native extension that returns WGPUSubmissionIndex (uint64).
+	// This enables callers to poll for GPU completion of a specific submission.
+	submissionIndex, _, _ := procQueueSubmitForIndex.Call(
 		q.handle,
 		uintptr(len(handles)),
 		uintptr(unsafe.Pointer(&handles[0])),
 	)
-	return nil
+	return uint64(submissionIndex), nil
 }
 
 // Release releases the command buffer.

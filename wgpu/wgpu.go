@@ -108,7 +108,8 @@ var (
 	procCommandBufferRelease Proc
 
 	// Function pointers - Queue (additional)
-	procQueueSubmit Proc
+	procQueueSubmit         Proc
+	procQueueSubmitForIndex Proc // wgpu-native extension: returns WGPUSubmissionIndex (uint64)
 
 	// Function pointers - Surface
 	procInstanceCreateSurface          Proc
@@ -325,6 +326,7 @@ func initSymbols() {
 
 	// Queue (additional)
 	procQueueSubmit = wgpuLib.NewProc("wgpuQueueSubmit")
+	procQueueSubmitForIndex = wgpuLib.NewProc("wgpuQueueSubmitForIndex") // wgpu-native extension
 
 	// Surface
 	procInstanceCreateSurface = wgpuLib.NewProc("wgpuInstanceCreateSurface")

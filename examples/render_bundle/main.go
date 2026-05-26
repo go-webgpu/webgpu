@@ -487,7 +487,9 @@ func (app *App) render() error {
 	}
 	defer cmdBuffer.Release()
 
-	_ = app.queue.Submit(cmdBuffer)
+	if _, err := app.queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
 	_ = app.surface.Present()
 
 	return nil

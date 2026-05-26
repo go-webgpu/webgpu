@@ -246,7 +246,8 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
 	return &Texture{handle: handle}, nil
 }
 
-// TexelCopyTextureInfo describes a texture for WriteTexture.
+// TexelCopyTextureInfo describes a texture for WriteTexture (low-level wire type).
+// Prefer [ImageCopyTexture] for new code — it holds a *Texture handle.
 type TexelCopyTextureInfo struct {
 	Texture  uintptr
 	MipLevel uint32
@@ -254,7 +255,8 @@ type TexelCopyTextureInfo struct {
 	Aspect   TextureAspect
 }
 
-// TexelCopyBufferLayout describes buffer layout for WriteTexture.
+// TexelCopyBufferLayout describes buffer layout for WriteTexture (low-level wire type).
+// Prefer [ImageDataLayout] for new code.
 type TexelCopyBufferLayout struct {
 	Offset       uint64
 	BytesPerRow  uint32
@@ -267,10 +269,71 @@ type TexelCopyBufferInfo struct {
 	Buffer uintptr // Buffer handle
 }
 
+// ImageCopyTexture describes a texture subresource and origin for copy/write operations.
+// Matches gogpu/wgpu ImageCopyTexture.
+type ImageCopyTexture struct {
+	Texture  *Texture
+	MipLevel uint32
+	Origin   gputypes.Origin3D
+	Aspect   TextureAspect
+}
+
+// toWire converts to the FFI wire format (TexelCopyTextureInfo).
+func (i *ImageCopyTexture) toWire() TexelCopyTextureInfo {
+	if i == nil {
+		return TexelCopyTextureInfo{}
+	}
+	var handle uintptr
+	if i.Texture != nil {
+		handle = i.Texture.handle
+	}
+	return TexelCopyTextureInfo{
+		Texture:  handle,
+		MipLevel: i.MipLevel,
+		Origin:   i.Origin,
+		Aspect:   i.Aspect,
+	}
+}
+
+// ImageDataLayout describes the layout of image data in a buffer.
+// Matches gogpu/wgpu ImageDataLayout.
+type ImageDataLayout struct {
+	Offset       uint64
+	BytesPerRow  uint32
+	RowsPerImage uint32
+}
+
 // WriteTexture writes data to a texture.
 // Returns nil on success. In this FFI implementation errors are surfaced through
 // the Device uncaptured-error callback; the signature matches gogpu/wgpu for API compatibility.
-func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) error {
+//
+// Accepts either [ImageCopyTexture] or [TexelCopyTextureInfo] as dest (via overloads below).
+// This overload takes the high-level [ImageCopyTexture] type.
+func (q *Queue) WriteTexture(dest *ImageCopyTexture, data []byte, layout *ImageDataLayout, size *gputypes.Extent3D) error {
+	mustInit()
+	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
+		return nil
+	}
+	wire := dest.toWire()
+	wireLayout := TexelCopyBufferLayout{
+		Offset:       layout.Offset,
+		BytesPerRow:  layout.BytesPerRow,
+		RowsPerImage: layout.RowsPerImage,
+	}
+	procQueueWriteTexture.Call( //nolint:errcheck
+		q.handle,
+		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(len(data)),
+		uintptr(unsafe.Pointer(&wireLayout)),
+		uintptr(unsafe.Pointer(size)),
+	)
+	return nil
+}
+
+// WriteTextureRaw writes data to a texture using the low-level wire types.
+// Prefer [WriteTexture] for new code.
+func (q *Queue) WriteTextureRaw(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) error {
 	mustInit()
 	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
 		return nil
@@ -284,4 +347,26 @@ func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *Te
 		uintptr(unsafe.Pointer(size)),
 	)
 	return nil
+}
+
+// BufferTextureCopy defines a buffer-texture copy region.
+// Matches gogpu/wgpu BufferTextureCopy.
+type BufferTextureCopy struct {
+	// BufferLayout describes the memory layout of the buffer data.
+	BufferLayout ImageDataLayout
+	// TextureBase describes the texture subresource and origin.
+	TextureBase ImageCopyTexture
+	// Size is the extent of the copy operation.
+	Size gputypes.Extent3D
+}
+
+// TextureCopy describes a texture-to-texture copy region.
+// Matches gogpu/wgpu TextureCopy.
+type TextureCopy struct {
+	// Source describes the source texture subresource and origin.
+	Source ImageCopyTexture
+	// Destination describes the destination texture subresource and origin.
+	Destination ImageCopyTexture
+	// Size is the extent of the copy operation.
+	Size gputypes.Extent3D
 }

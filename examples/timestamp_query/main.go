@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -188,16 +189,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	}
 	encoder.Release()
 
-	_ = queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
 	cmdBuffer.Release()
 
 	// Wait for GPU
 	device.Poll(true)
 
 	// Map staging buffer
-	if err := stagingBuffer.MapAsync(device, wgpu.MapModeRead, 0, queryResultSize); err != nil {
+	mapPending, err := stagingBuffer.MapAsync(wgpu.MapModeRead, 0, queryResultSize)
+	if err != nil {
 		return fmt.Errorf("map staging buffer: %w", err)
 	}
+	if werr := mapPending.Wait(context.Background()); werr != nil {
+		mapPending.Release()
+		return fmt.Errorf("map staging buffer wait: %w", werr)
+	}
+	mapPending.Release()
 
 	// Read timestamp values
 	ptr := stagingBuffer.GetMappedRange(0, queryResultSize)
@@ -313,7 +322,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	}
 	encoder.Release()
 
-	_ = queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
 	cmdBuffer.Release()
 
 	// Wait for GPU to complete

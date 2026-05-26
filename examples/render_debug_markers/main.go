@@ -168,7 +168,9 @@ func main() {
 	// Submit commands
 	queue := device.Queue()
 	defer queue.Release()
-	_ = queue.Submit(commandBuffer)
+	if _, err = queue.Submit(commandBuffer); err != nil {
+		log.Fatalf("submit: %v", err)
+	}
 
 	fmt.Println("Commands submitted")
 	fmt.Println("\n=== Debug Marker Hierarchy ===")

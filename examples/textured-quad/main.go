@@ -389,14 +389,14 @@ func (app *App) createTexture() error {
 	const bytesPerRow = size * bytesPerPixel
 	const alignedBytesPerRow = ((bytesPerRow + 255) / 256) * 256
 
-	destInfo := wgpu.TexelCopyTextureInfo{
-		Texture:  app.texture.Handle(),
+	destInfo := wgpu.ImageCopyTexture{
+		Texture:  app.texture,
 		MipLevel: 0,
 		Origin:   wgpu.Origin3D{X: 0, Y: 0, Z: 0},
 		Aspect:   wgpu.TextureAspectAll,
 	}
 
-	layout := wgpu.TexelCopyBufferLayout{
+	layout := wgpu.ImageDataLayout{
 		Offset:       0,
 		BytesPerRow:  alignedBytesPerRow,
 		RowsPerImage: size,
@@ -709,7 +709,9 @@ func (app *App) render() error {
 	defer cmdBuffer.Release()
 
 	// Submit commands and present
-	_ = app.queue.Submit(cmdBuffer)
+	if _, err := app.queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
 	_ = app.surface.Present()
 
 	return nil

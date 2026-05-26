@@ -85,15 +85,24 @@ func main() {
 
 	// Map async
 	fmt.Println("\nMapping buffer asynchronously...")
-	err = mappableBuffer.MapAsync(device, wgpu.MapModeRead, 0, 1024)
-	if err != nil {
-		log.Printf("MapAsync failed: %v", err)
+	mapPending, mapErr := mappableBuffer.MapAsync(wgpu.MapModeRead, 0, 1024)
+	if mapErr != nil {
+		log.Printf("MapAsync failed: %v", mapErr)
 	} else {
+		// Drive polling until resolved.
+		for {
+			if ready, _ := mapPending.Status(); ready {
+				break
+			}
+			// In a real app, call device.Poll(false) here.
+		}
+		mapPending.Release()
+
 		mapState = mappableBuffer.MapState()
 		fmt.Printf("Map state after MapAsync(): %s\n", mapStateToString(mapState))
 
 		// Unmap again
-		mappableBuffer.Unmap()
+		mappableBuffer.Unmap() //nolint:errcheck
 		mapState = mappableBuffer.MapState()
 		fmt.Printf("Map state after final Unmap(): %s\n", mapStateToString(mapState))
 	}

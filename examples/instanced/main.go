@@ -281,7 +281,9 @@ func main() {
 	}
 	encoder.Release()
 
-	_ = queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		log.Fatalf("submit: %v", err)
+	}
 	cmdBuffer.Release()
 
 	fmt.Println("Instanced rendering complete!")

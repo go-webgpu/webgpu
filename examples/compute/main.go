@@ -153,14 +153,27 @@ func main() {
 		log.Fatalf("finish encoder: %v", err)
 	}
 	encoder.Release()
-	_ = queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		log.Fatalf("queue submit: %v", err)
+	}
 	cmdBuffer.Release()
 
 	// Map readback buffer and read results
-	err = readbackBuffer.MapAsync(device, wgpu.MapModeRead, 0, bufferSize)
+	mapPending, err := readbackBuffer.MapAsync(wgpu.MapModeRead, 0, bufferSize)
 	if err != nil {
 		log.Fatalf("MapAsync failed: %v", err)
 	}
+	// Drive polling until the map resolves.
+	for {
+		if ready, werr := mapPending.Status(); ready {
+			if werr != nil {
+				log.Fatalf("MapAsync resolved with error: %v", werr)
+			}
+			break
+		}
+		device.Poll(false)
+	}
+	mapPending.Release()
 
 	resultPtr := readbackBuffer.GetMappedRange(0, bufferSize)
 	if resultPtr != nil {

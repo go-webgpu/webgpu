@@ -320,10 +320,21 @@ func TestFullComputeExample(t *testing.T) {
 
 	// Map the readback buffer and verify results
 	t.Log("Mapping readback buffer...")
-	err = readbackBuffer.MapAsync(device, MapModeRead, 0, bufferSize)
+	mapPending, err := readbackBuffer.MapAsync(MapModeRead, 0, bufferSize)
 	if err != nil {
 		t.Fatalf("MapAsync failed: %v", err)
 	}
+	// Drive polling until resolved (requires GPU — test is GPU-gated).
+	for {
+		if ready, werr := mapPending.Status(); ready {
+			if werr != nil {
+				t.Fatalf("MapAsync resolved with error: %v", werr)
+			}
+			break
+		}
+		device.Poll(false)
+	}
+	mapPending.Release()
 
 	resultPtr := readbackBuffer.GetMappedRange(0, bufferSize)
 	if resultPtr == nil {
