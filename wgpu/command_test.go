@@ -39,9 +39,9 @@ func TestCreateCommandEncoder(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating command encoder...")
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("CreateCommandEncoder returned nil")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
 	}
 	defer encoder.Release()
 
@@ -71,15 +71,15 @@ func TestCommandEncoderFinish(t *testing.T) {
 	}
 	defer device.Release()
 
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("CreateCommandEncoder returned nil")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
 	}
 
 	t.Log("Finishing command encoder...")
-	cmdBuffer := encoder.Finish(nil)
-	if cmdBuffer == nil {
-		t.Fatal("Finish returned nil")
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
 	}
 	defer cmdBuffer.Release()
 
@@ -105,23 +105,23 @@ func TestComputePassDispatch(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
 	// Create shader
-	shader := device.CreateShaderModuleWGSL(computeDoubleShader)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(computeDoubleShader)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
 	// Create compute pipeline with auto layout
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -136,14 +136,14 @@ func TestComputePassDispatch(t *testing.T) {
 	const numElements = 64
 	bufferSize := uint64(numElements * 4) // 4 bytes per float32
 
-	buffer := device.CreateBuffer(&BufferDescriptor{
+	buffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 
@@ -163,22 +163,22 @@ func TestComputePassDispatch(t *testing.T) {
 	entries := []BindGroupEntry{
 		BufferBindingEntry(0, buffer, 0, bufferSize),
 	}
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, entries)
-	if bindGroup == nil {
-		t.Fatal("CreateBindGroupSimple returned nil")
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, entries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupSimple failed: %v", err)
 	}
 	defer bindGroup.Release()
 
 	// Create and execute compute pass
 	t.Log("Creating compute pass...")
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("CreateCommandEncoder returned nil")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
 	}
 
-	pass := encoder.BeginComputePass(nil)
-	if pass == nil {
-		t.Fatal("BeginComputePass returned nil")
+	pass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		t.Fatalf("BeginComputePass failed: %v", err)
 	}
 
 	pass.SetPipeline(pipeline)
@@ -187,9 +187,9 @@ func TestComputePassDispatch(t *testing.T) {
 	pass.End()
 	pass.Release()
 
-	cmdBuffer := encoder.Finish(nil)
-	if cmdBuffer == nil {
-		t.Fatal("Finish returned nil")
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
 	}
 
 	t.Log("Submitting compute work...")
@@ -219,23 +219,23 @@ func TestFullComputeExample(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
 	// Create shader
-	shader := device.CreateShaderModuleWGSL(computeDoubleShader)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(computeDoubleShader)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
 	// Create compute pipeline
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -249,14 +249,14 @@ func TestFullComputeExample(t *testing.T) {
 	const numElements = 64
 	bufferSize := uint64(numElements * 4)
 
-	storageBuffer := device.CreateBuffer(&BufferDescriptor{
+	storageBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
-	if storageBuffer == nil {
-		t.Fatal("CreateBuffer (storage) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (storage) failed: %v", err)
 	}
 	defer storageBuffer.Release()
 
@@ -269,14 +269,14 @@ func TestFullComputeExample(t *testing.T) {
 	storageBuffer.Unmap()
 
 	// Create readback buffer
-	readbackBuffer := device.CreateBuffer(&BufferDescriptor{
+	readbackBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: False,
 	})
-	if readbackBuffer == nil {
-		t.Fatal("CreateBuffer (readback) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (readback) failed: %v", err)
 	}
 	defer readbackBuffer.Release()
 
@@ -284,16 +284,22 @@ func TestFullComputeExample(t *testing.T) {
 	entries := []BindGroupEntry{
 		BufferBindingEntry(0, storageBuffer, 0, bufferSize),
 	}
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, entries)
-	if bindGroup == nil {
-		t.Fatal("CreateBindGroupSimple returned nil")
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, entries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupSimple failed: %v", err)
 	}
 	defer bindGroup.Release()
 
 	// Run compute
 	t.Log("Running compute shader...")
-	encoder := device.CreateCommandEncoder(nil)
-	pass := encoder.BeginComputePass(nil)
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
+	}
+	pass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		t.Fatalf("BeginComputePass failed: %v", err)
+	}
 	pass.SetPipeline(pipeline)
 	pass.SetBindGroup(0, bindGroup, nil)
 	pass.DispatchWorkgroups(1, 1, 1)
@@ -303,7 +309,10 @@ func TestFullComputeExample(t *testing.T) {
 	// Copy result to readback buffer
 	encoder.CopyBufferToBuffer(storageBuffer, 0, readbackBuffer, 0, bufferSize)
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
+	}
 	queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
@@ -355,21 +364,21 @@ func TestCopyBufferToBuffer(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
 	// Create source buffer with data
-	srcBuffer := device.CreateBuffer(&BufferDescriptor{
+	srcBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: True,
 	})
-	if srcBuffer == nil {
-		t.Fatal("CreateBuffer (src) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (src) failed: %v", err)
 	}
 	defer srcBuffer.Release()
 
@@ -381,22 +390,28 @@ func TestCopyBufferToBuffer(t *testing.T) {
 	srcBuffer.Unmap()
 
 	// Create destination buffer
-	dstBuffer := device.CreateBuffer(&BufferDescriptor{
+	dstBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
 		MappedAtCreation: False,
 	})
-	if dstBuffer == nil {
-		t.Fatal("CreateBuffer (dst) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (dst) failed: %v", err)
 	}
 	defer dstBuffer.Release()
 
 	// Copy buffer
 	t.Log("Copying buffer...")
-	encoder := device.CreateCommandEncoder(nil)
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
+	}
 	encoder.CopyBufferToBuffer(srcBuffer, 0, dstBuffer, 0, 256)
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
+	}
 	queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
 
@@ -422,9 +437,9 @@ func TestQueueSubmitMultiple(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
@@ -432,10 +447,13 @@ func TestQueueSubmitMultiple(t *testing.T) {
 	t.Log("Creating multiple command buffers...")
 	var cmdBuffers []*CommandBuffer
 	for i := 0; i < 3; i++ {
-		encoder := device.CreateCommandEncoder(nil)
-		cmdBuffer := encoder.Finish(nil)
-		if cmdBuffer == nil {
-			t.Fatalf("Finish returned nil for buffer %d", i)
+		encoder, err := device.CreateCommandEncoder(nil)
+		if err != nil {
+			t.Fatalf("CreateCommandEncoder failed for buffer %d: %v", i, err)
+		}
+		cmdBuffer, err := encoder.Finish(nil)
+		if err != nil {
+			t.Fatalf("Finish failed for buffer %d: %v", i, err)
 		}
 		cmdBuffers = append(cmdBuffers, cmdBuffer)
 	}

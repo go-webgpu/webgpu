@@ -116,21 +116,21 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
 	// Create pipeline
-	pipeline := device.CreateRenderPipelineSimple(
+	pipeline, err := device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
 		gputypes.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipelineSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipelineSimple: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -180,13 +180,13 @@ func TestRenderBundleWithVertexBuffer(t *testing.T) {
 		0.5, -0.5,
 	}
 	bufferSize := uint64(len(vertices) * 4)
-	vertexBuffer := device.CreateBuffer(&BufferDescriptor{
+	vertexBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
-	if vertexBuffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer: %v", err)
 	}
 	defer vertexBuffer.Release()
 
@@ -214,20 +214,20 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateRenderPipelineSimple(
+	pipeline, err := device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
 		gputypes.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipelineSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipelineSimple: %v", err)
 	}
 	defer pipeline.Release()
 

@@ -128,14 +128,14 @@ func (e *BindGroupLayoutEntry) toWire() bindGroupLayoutEntryWire {
 		Texture: textureBindingLayoutWire{
 			NextInChain:   e.Texture.NextInChain,
 			SampleType:    toWGPUTextureSampleType(e.Texture.SampleType),
-			ViewDimension: toWGPUTextureViewDimension(e.Texture.ViewDimension),
+			ViewDimension: uint32(e.Texture.ViewDimension),
 			Multisampled:  e.Texture.Multisampled,
 		},
 		StorageTexture: storageTextureBindingLayoutWire{
 			NextInChain:   e.StorageTexture.NextInChain,
 			Access:        toWGPUStorageTextureAccess(e.StorageTexture.Access),
-			Format:        toWGPUTextureFormat(e.StorageTexture.Format),
-			ViewDimension: toWGPUTextureViewDimension(e.StorageTexture.ViewDimension),
+			Format:        uint32(e.StorageTexture.Format),
+			ViewDimension: uint32(e.StorageTexture.ViewDimension),
 		},
 	}
 }
@@ -170,10 +170,16 @@ type BindGroupDescriptor struct {
 
 // CreateBindGroupLayout creates a bind group layout.
 // Entries are converted from gputypes to wgpu-native enum values before FFI call.
-func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGroupLayout {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) (*BindGroupLayout, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "descriptor is nil"}
 	}
 
 	// If there are entries, we need to convert them to wire format
@@ -197,17 +203,23 @@ func (d *Device) CreateBindGroupLayout(desc *BindGroupLayoutDescriptor) *BindGro
 		uintptr(unsafe.Pointer(&wireDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "BindGroupLayout")
-	return &BindGroupLayout{handle: handle}
+	return &BindGroupLayout{handle: handle}, nil
 }
 
 // CreateBindGroupLayoutSimple creates a bind group layout with the given entries.
-func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) *BindGroupLayout {
-	mustInit()
-	if d == nil || d.handle == 0 || len(entries) == 0 {
-		return nil
+// Returns an error if the FFI call fails or the device is nil.
+func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) (*BindGroupLayout, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "device is nil or released"}
+	}
+	if len(entries) == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "entries slice is empty"}
 	}
 
 	// Convert entries to wire format
@@ -227,10 +239,10 @@ func (d *Device) CreateBindGroupLayoutSimple(entries []BindGroupLayoutEntry) *Bi
 		uintptr(unsafe.Pointer(&wireDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateBindGroupLayout", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "BindGroupLayout")
-	return &BindGroupLayout{handle: handle}
+	return &BindGroupLayout{handle: handle}, nil
 }
 
 // Release releases the bind group layout.
@@ -246,27 +258,42 @@ func (bgl *BindGroupLayout) Release() {
 func (bgl *BindGroupLayout) Handle() uintptr { return bgl.handle }
 
 // CreateBindGroup creates a bind group.
-func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) *BindGroup {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateBindGroup(desc *BindGroupDescriptor) (*BindGroup, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "descriptor is nil"}
 	}
 	handle, _, _ := procDeviceCreateBindGroup.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "BindGroup")
-	return &BindGroup{handle: handle}
+	return &BindGroup{handle: handle}, nil
 }
 
 // CreateBindGroupSimple creates a bind group with buffer entries.
-func (d *Device) CreateBindGroupSimple(layout *BindGroupLayout, entries []BindGroupEntry) *BindGroup {
-	mustInit()
-	if d == nil || d.handle == 0 || layout == nil || len(entries) == 0 {
-		return nil
+// Returns an error if the FFI call fails or the device/layout is nil.
+func (d *Device) CreateBindGroupSimple(layout *BindGroupLayout, entries []BindGroupEntry) (*BindGroup, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "device is nil or released"}
+	}
+	if layout == nil {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "layout is nil"}
+	}
+	if len(entries) == 0 {
+		return nil, &WGPUError{Op: "CreateBindGroup", Message: "entries slice is empty"}
 	}
 	desc := BindGroupDescriptor{
 		Label:      EmptyStringView(),

@@ -18,18 +18,32 @@ type CommandBufferDescriptor struct {
 	Label       StringView
 }
 
-// ComputePassDescriptor describes a compute pass.
+// ComputePassTimestampWrites is a deprecated alias for PassTimestampWrites.
+// Deprecated: Use PassTimestampWrites. Renamed in wgpu-native v29.
+type ComputePassTimestampWrites = PassTimestampWrites
+
+// computePassDescriptorWire is the native FFI structure for ComputePassDescriptor.
+// v29: timestampWrites field is *WGPUPassTimestampWrites (unified, not separate ComputePassTimestampWrites).
+type computePassDescriptorWire struct {
+	nextInChain     uintptr    // 8 bytes
+	label           StringView // 16 bytes
+	timestampWrites uintptr    // 8 bytes (*passTimestampWrites, nullable)
+}
+
+// ComputePassDescriptor describes a compute pass (user-facing API).
 type ComputePassDescriptor struct {
-	NextInChain     uintptr // *ChainedStruct
-	Label           StringView
-	TimestampWrites uintptr // *ComputePassTimestampWrites (nullable)
+	Label           string
+	TimestampWrites *PassTimestampWrites // optional; use PassTimestampWrites (was ComputePassTimestampWrites)
 }
 
 // CreateCommandEncoder creates a command encoder.
-func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEncoder {
-	mustInit()
+// Returns an error if the FFI call fails or the device is nil.
+func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) (*CommandEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if d == nil || d.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateCommandEncoder", Message: "device is nil or released"}
 	}
 	var descPtr uintptr
 	if desc != nil {
@@ -40,31 +54,58 @@ func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEn
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateCommandEncoder", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "CommandEncoder")
-	return &CommandEncoder{handle: handle}
+	return &CommandEncoder{handle: handle}, nil
 }
 
 // BeginComputePass begins a compute pass.
-func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) *ComputePassEncoder {
-	mustInit()
+// Returns an error if the FFI call fails or the encoder is nil.
+func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) (*ComputePassEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if enc == nil || enc.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "BeginComputePass", Message: "encoder is nil or released"}
 	}
+
+	var wireDesc computePassDescriptorWire
+	var wireTimestamp passTimestampWrites
 	var descPtr uintptr
+
 	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+		wireDesc.nextInChain = 0
+		if desc.Label != "" {
+			labelBytes := []byte(desc.Label)
+			wireDesc.label = StringView{
+				Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+				Length: uintptr(len(labelBytes)),
+			}
+		} else {
+			wireDesc.label = EmptyStringView()
+		}
+		if desc.TimestampWrites != nil {
+			wireTimestamp = passTimestampWrites{
+				nextInChain:               0,
+				querySet:                  desc.TimestampWrites.QuerySet.handle,
+				beginningOfPassWriteIndex: desc.TimestampWrites.BeginningOfPassWriteIndex,
+				endOfPassWriteIndex:       desc.TimestampWrites.EndOfPassWriteIndex,
+			}
+			wireDesc.timestampWrites = uintptr(unsafe.Pointer(&wireTimestamp))
+		}
+		descPtr = uintptr(unsafe.Pointer(&wireDesc))
 	}
+
 	handle, _, _ := procCommandEncoderBeginComputePass.Call(
 		enc.handle,
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "BeginComputePass", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "ComputePassEncoder")
-	return &ComputePassEncoder{handle: handle}
+	return &ComputePassEncoder{handle: handle}, nil
 }
 
 // CopyBufferToBuffer copies data between buffers.
@@ -196,10 +237,13 @@ func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, de
 }
 
 // Finish finishes recording and returns a command buffer.
-func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) *CommandBuffer {
-	mustInit()
+// Returns an error if the FFI call fails or the encoder is nil.
+func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) (*CommandBuffer, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if enc == nil || enc.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CommandEncoder.Finish", Message: "encoder is nil or released"}
 	}
 	var descPtr uintptr
 	if desc != nil {
@@ -210,10 +254,10 @@ func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) *CommandBuffer 
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CommandEncoder.Finish", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "CommandBuffer")
-	return &CommandBuffer{handle: handle}
+	return &CommandBuffer{handle: handle}, nil
 }
 
 // Release releases the command encoder.

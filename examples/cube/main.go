@@ -13,7 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -311,7 +310,7 @@ func (app *App) initWebGPU() error {
 	app.device = device
 
 	// Get queue
-	app.queue = device.GetQueue()
+	app.queue = device.Queue()
 
 	// Create surface
 	surface, err := inst.CreateSurfaceFromWindowsHWND(uintptr(app.hinstance), uintptr(app.hwnd))
@@ -327,12 +326,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      gputypes.TextureFormatBGRA8Unorm,
-		Usage:       gputypes.TextureUsageRenderAttachment,
+		Format:      wgpu.TextureFormatBGRA8Unorm,
+		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
-		PresentMode: gputypes.PresentModeFifo,
+		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
+		PresentMode: wgpu.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -340,12 +339,12 @@ func (app *App) configureSurface() error {
 
 // createDepthTexture creates the depth texture and view.
 func (app *App) createDepthTexture() error {
-	app.depthTexture = app.device.CreateDepthTexture(app.width, app.height, gputypes.TextureFormatDepth24Plus)
+	app.depthTexture = app.device.CreateDepthTexture(app.width, app.height, wgpu.TextureFormatDepth24Plus)
 	if app.depthTexture == nil {
 		return fmt.Errorf("failed to create depth texture")
 	}
 
-	app.depthTextureView = app.depthTexture.CreateView(nil)
+	app.depthTextureView, _ = app.depthTexture.CreateView(nil)
 	if app.depthTextureView == nil {
 		return fmt.Errorf("failed to create depth texture view")
 	}
@@ -427,9 +426,9 @@ func (app *App) createVertexBuffer() error {
 	vertexBufferSize := uint64(len(vertices) * 4) // 4 bytes per float32
 
 	// Create buffer with MappedAtCreation = true for easy data upload
-	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
+	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
+		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -461,9 +460,9 @@ func (app *App) createUniformBuffer() error {
 	const uniformBufferSize = 64
 
 	// Create buffer with Uniform usage and CopyDst for updates
-	app.uniformBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
+	app.uniformBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            gputypes.BufferUsageUniform | gputypes.BufferUsageCopyDst,
+		Usage:            wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst,
 		Size:             uniformBufferSize,
 		MappedAtCreation: wgpu.False,
 	})
@@ -480,16 +479,16 @@ func (app *App) createBindGroupLayout() error {
 	entries := []wgpu.BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: gputypes.ShaderStageVertex,
+			Visibility: wgpu.ShaderStageVertex,
 			Buffer: wgpu.BufferBindingLayout{
-				Type:             gputypes.BufferBindingTypeUniform,
+				Type:             wgpu.BufferBindingTypeUniform,
 				HasDynamicOffset: wgpu.False,
 				MinBindingSize:   64, // mat4x4f = 64 bytes
 			},
 		},
 	}
 
-	app.bindGroupLayout = app.device.CreateBindGroupLayoutSimple(entries)
+	app.bindGroupLayout, _ = app.device.CreateBindGroupLayoutSimple(entries)
 	if app.bindGroupLayout == nil {
 		return fmt.Errorf("failed to create bind group layout")
 	}
@@ -503,7 +502,7 @@ func (app *App) createBindGroup() error {
 		wgpu.BufferBindingEntry(0, app.uniformBuffer, 0, 64),
 	}
 
-	app.bindGroup = app.device.CreateBindGroupSimple(app.bindGroupLayout, entries)
+	app.bindGroup, _ = app.device.CreateBindGroupSimple(app.bindGroupLayout, entries)
 	if app.bindGroup == nil {
 		return fmt.Errorf("failed to create bind group")
 	}
@@ -513,7 +512,7 @@ func (app *App) createBindGroup() error {
 
 // createPipelineLayout creates the pipeline layout with bind group layout.
 func (app *App) createPipelineLayout() (*wgpu.PipelineLayout, error) {
-	pipelineLayout := app.device.CreatePipelineLayoutSimple([]*wgpu.BindGroupLayout{app.bindGroupLayout})
+	pipelineLayout, _ := app.device.CreatePipelineLayoutSimple([]*wgpu.BindGroupLayout{app.bindGroupLayout})
 	if pipelineLayout == nil {
 		return nil, fmt.Errorf("failed to create pipeline layout")
 	}
@@ -524,7 +523,7 @@ func (app *App) createPipelineLayout() (*wgpu.PipelineLayout, error) {
 // nolint:funlen // Pipeline creation requires many configuration steps
 func (app *App) createPipeline() error {
 	// Create shader module
-	shader := app.device.CreateShaderModuleWGSL(shaderSource)
+	shader, _ := app.device.CreateShaderModuleWGSL(shaderSource)
 	if shader == nil {
 		return fmt.Errorf("failed to create shader module")
 	}
@@ -540,19 +539,19 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         gputypes.VertexFormatFloat32x3, // position: vec3f
+			Format:         wgpu.VertexFormatFloat32x3, // position: vec3f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         gputypes.VertexFormatFloat32x3, // color: vec3f
+			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
 			Offset:         12,                             // 3 floats * 4 bytes = 12 bytes offset
 			ShaderLocation: 1,
 		},
 	}
 
 	// Create render pipeline with vertex buffer layout and depth testing
-	pipeline := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
+	pipeline, _ := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
 		Label:  "",
 		Layout: pipelineLayout,
 		Vertex: wgpu.VertexState{
@@ -560,31 +559,31 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    24, // 6 floats * 4 bytes = 24 bytes per vertex
-				StepMode:       gputypes.VertexStepModeVertex,
+				StepMode:       wgpu.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  gputypes.PrimitiveTopologyTriangleList,
-			FrontFace: gputypes.FrontFaceCCW,
-			CullMode:  gputypes.CullModeBack, // Enable back-face culling for cube
+			Topology:  wgpu.PrimitiveTopologyTriangleList,
+			FrontFace: wgpu.FrontFaceCCW,
+			CullMode:  wgpu.CullModeBack, // Enable back-face culling for cube
 		},
 		DepthStencil: &wgpu.DepthStencilState{
-			Format:            gputypes.TextureFormatDepth24Plus,
+			Format:            wgpu.TextureFormatDepth24Plus,
 			DepthWriteEnabled: true,
-			DepthCompare:      gputypes.CompareFunctionLess,
+			DepthCompare:      wgpu.CompareFunctionLess,
 			StencilFront: wgpu.StencilFaceState{
-				Compare:     gputypes.CompareFunctionAlways,
-				FailOp:      gputypes.StencilOperationKeep,
-				DepthFailOp: gputypes.StencilOperationKeep,
-				PassOp:      gputypes.StencilOperationKeep,
+				Compare:     wgpu.CompareFunctionAlways,
+				FailOp:      wgpu.StencilOperationKeep,
+				DepthFailOp: wgpu.StencilOperationKeep,
+				PassOp:      wgpu.StencilOperationKeep,
 			},
 			StencilBack: wgpu.StencilFaceState{
-				Compare:     gputypes.CompareFunctionAlways,
-				FailOp:      gputypes.StencilOperationKeep,
-				DepthFailOp: gputypes.StencilOperationKeep,
-				PassOp:      gputypes.StencilOperationKeep,
+				Compare:     wgpu.CompareFunctionAlways,
+				FailOp:      wgpu.StencilOperationKeep,
+				DepthFailOp: wgpu.StencilOperationKeep,
+				PassOp:      wgpu.StencilOperationKeep,
 			},
 			StencilReadMask:     0xFFFFFFFF,
 			StencilWriteMask:    0xFFFFFFFF,
@@ -600,8 +599,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    gputypes.TextureFormatBGRA8Unorm,
-				WriteMask: gputypes.ColorWriteMaskAll,
+				Format:    wgpu.TextureFormatBGRA8Unorm,
+				WriteMask: wgpu.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -677,7 +676,7 @@ func (app *App) acquireSurfaceTexture() error {
 	app.surfaceTex = surfaceTex
 
 	// Create texture view
-	view := surfaceTex.Texture.CreateView(nil)
+	view, _ := surfaceTex.Texture.CreateView(nil)
 	if view == nil {
 		return fmt.Errorf("failed to create texture view")
 	}
@@ -687,12 +686,12 @@ func (app *App) acquireSurfaceTexture() error {
 
 // renderCube encodes the rotating cube rendering commands.
 func (app *App) renderCube(encoder *wgpu.CommandEncoder, view *wgpu.TextureView) error {
-	pass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	pass, _ := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		Label: "Cube Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  gputypes.LoadOpClear,
-			StoreOp: gputypes.StoreOpStore,
+			LoadOp:  wgpu.LoadOpClear,
+			StoreOp: wgpu.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,
@@ -702,12 +701,12 @@ func (app *App) renderCube(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 		}},
 		DepthStencilAttachment: &wgpu.RenderPassDepthStencilAttachment{
 			View:              app.depthTextureView,
-			DepthLoadOp:       gputypes.LoadOpClear,
-			DepthStoreOp:      gputypes.StoreOpStore,
+			DepthLoadOp:       wgpu.LoadOpClear,
+			DepthStoreOp:      wgpu.StoreOpStore,
 			DepthClearValue:   1.0,
 			DepthReadOnly:     false,
-			StencilLoadOp:     gputypes.LoadOpClear,
-			StencilStoreOp:    gputypes.StoreOpStore,
+			StencilLoadOp:     wgpu.LoadOpClear,
+			StencilStoreOp:    wgpu.StoreOpStore,
 			StencilClearValue: 0,
 			StencilReadOnly:   false,
 		},
@@ -750,7 +749,7 @@ func (app *App) render() error {
 	}
 
 	// Create command encoder
-	encoder := app.device.CreateCommandEncoder(nil)
+	encoder, _ := app.device.CreateCommandEncoder(nil)
 	if encoder == nil {
 		return fmt.Errorf("failed to create command encoder")
 	}
@@ -762,7 +761,7 @@ func (app *App) render() error {
 	}
 
 	// Finish encoding
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, _ := encoder.Finish(nil)
 	if cmdBuffer == nil {
 		return fmt.Errorf("failed to finish command encoder")
 	}

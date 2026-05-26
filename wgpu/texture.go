@@ -69,10 +69,13 @@ type textureViewDescriptorWire struct {
 // CreateView creates a view into this texture.
 // Pass nil for default view parameters.
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
-func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
-	mustInit()
+// Returns an error if the FFI call fails or the texture is nil.
+func (t *Texture) CreateView(desc *TextureViewDescriptor) (*TextureView, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if t == nil || t.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateView", Message: "texture is nil or released"}
 	}
 
 	var descPtr uintptr
@@ -81,8 +84,8 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 		wireDesc := textureViewDescriptorWire{
 			NextInChain:     desc.NextInChain,
 			Label:           desc.Label,
-			Format:          toWGPUTextureFormat(desc.Format),
-			Dimension:       toWGPUTextureViewDimension(desc.Dimension),
+			Format:          uint32(desc.Format),
+			Dimension:       uint32(desc.Dimension),
 			BaseMipLevel:    desc.BaseMipLevel,
 			MipLevelCount:   desc.MipLevelCount,
 			BaseArrayLayer:  desc.BaseArrayLayer,
@@ -98,10 +101,10 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateView", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "TextureView")
-	return &TextureView{handle: handle}
+	return &TextureView{handle: handle}, nil
 }
 
 // Destroy destroys the texture.
@@ -124,8 +127,8 @@ func (t *Texture) Release() {
 // Handle returns the underlying handle. For advanced use only.
 func (t *Texture) Handle() uintptr { return t.handle }
 
-// GetWidth returns the width of the texture in texels.
-func (t *Texture) GetWidth() uint32 {
+// Width returns the width of the texture in texels.
+func (t *Texture) Width() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -134,8 +137,8 @@ func (t *Texture) GetWidth() uint32 {
 	return uint32(result)
 }
 
-// GetHeight returns the height of the texture in texels.
-func (t *Texture) GetHeight() uint32 {
+// Height returns the height of the texture in texels.
+func (t *Texture) Height() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -144,8 +147,8 @@ func (t *Texture) GetHeight() uint32 {
 	return uint32(result)
 }
 
-// GetDepthOrArrayLayers returns the depth (for 3D textures) or array layer count.
-func (t *Texture) GetDepthOrArrayLayers() uint32 {
+// DepthOrArrayLayers returns the depth (for 3D textures) or array layer count.
+func (t *Texture) DepthOrArrayLayers() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -154,8 +157,8 @@ func (t *Texture) GetDepthOrArrayLayers() uint32 {
 	return uint32(result)
 }
 
-// GetMipLevelCount returns the number of mip levels.
-func (t *Texture) GetMipLevelCount() uint32 {
+// MipLevelCount returns the number of mip levels.
+func (t *Texture) MipLevelCount() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -164,16 +167,15 @@ func (t *Texture) GetMipLevelCount() uint32 {
 	return uint32(result)
 }
 
-// GetFormat returns the texture format.
-// The format is converted from wgpu-native enum to gputypes enum.
-func (t *Texture) GetFormat() gputypes.TextureFormat {
+// Format returns the texture format.
+// TextureFormat values match between gputypes v0.3.0 and wgpu-native v29 exactly.
+func (t *Texture) Format() gputypes.TextureFormat {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return gputypes.TextureFormatUndefined
 	}
 	result, _, _ := procTextureGetFormat.Call(t.handle)
-	// Convert from wgpu-native enum to gputypes
-	return fromWGPUTextureFormat(uint32(result))
+	return gputypes.TextureFormat(result)
 }
 
 // Release releases the texture view reference.
@@ -190,10 +192,16 @@ func (tv *TextureView) Handle() uintptr { return tv.handle }
 
 // CreateTexture creates a texture with the specified descriptor.
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
-func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateTexture", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateTexture", Message: "descriptor is nil"}
 	}
 
 	// wgpu-native requires MipLevelCount >= 1 and SampleCount >= 1
@@ -211,9 +219,9 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 		NextInChain:     desc.NextInChain,
 		Label:           desc.Label,
 		Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
-		Dimension:       toWGPUTextureDimension(desc.Dimension),
+		Dimension:       uint32(desc.Dimension),
 		Size:            desc.Size,
-		Format:          toWGPUTextureFormat(desc.Format),
+		Format:          uint32(desc.Format),
 		MipLevelCount:   mipLevelCount,
 		SampleCount:     sampleCount,
 		ViewFormatCount: desc.ViewFormatCount,
@@ -225,10 +233,10 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 		uintptr(unsafe.Pointer(&wireDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateTexture", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Texture")
-	return &Texture{handle: handle}
+	return &Texture{handle: handle}, nil
 }
 
 // TexelCopyTextureInfo describes a texture for WriteTexture.

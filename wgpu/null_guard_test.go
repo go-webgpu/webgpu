@@ -12,91 +12,91 @@ func TestNullGuard_Device_Creation(t *testing.T) {
 	var d *Device
 
 	t.Run("CreateCommandEncoder", func(t *testing.T) {
-		result := d.CreateCommandEncoder(nil)
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateCommandEncoder(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateBuffer", func(t *testing.T) {
-		result := d.CreateBuffer(&BufferDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateBuffer(&BufferDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateTexture", func(t *testing.T) {
-		result := d.CreateTexture(&TextureDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateTexture(&TextureDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateShaderModuleWGSL", func(t *testing.T) {
-		result := d.CreateShaderModuleWGSL("@vertex fn main() {}")
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateShaderModuleWGSL("@vertex fn main() {}")
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateSampler", func(t *testing.T) {
-		result := d.CreateSampler(&SamplerDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateSampler(&SamplerDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateBindGroupLayout", func(t *testing.T) {
-		result := d.CreateBindGroupLayout(&BindGroupLayoutDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateBindGroupLayout(&BindGroupLayoutDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateBindGroup", func(t *testing.T) {
-		result := d.CreateBindGroup(&BindGroupDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateBindGroup(&BindGroupDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreatePipelineLayout", func(t *testing.T) {
-		result := d.CreatePipelineLayout(&PipelineLayoutDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreatePipelineLayout(&PipelineLayoutDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateComputePipeline", func(t *testing.T) {
-		result := d.CreateComputePipeline(&ComputePipelineDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateComputePipeline(&ComputePipelineDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateRenderPipeline", func(t *testing.T) {
-		result := d.CreateRenderPipeline(&RenderPipelineDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateRenderPipeline(&RenderPipelineDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateQuerySet", func(t *testing.T) {
-		result := d.CreateQuerySet(&QuerySetDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateQuerySet(&QuerySetDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
 	t.Run("CreateRenderBundleEncoder", func(t *testing.T) {
-		result := d.CreateRenderBundleEncoder(&RenderBundleEncoderDescriptor{})
-		if result != nil {
-			t.Error("expected nil for nil device")
+		result, err := d.CreateRenderBundleEncoder(&RenderBundleEncoderDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil device")
 		}
 	})
 
-	t.Run("GetQueue", func(t *testing.T) {
-		result := d.GetQueue()
+	t.Run("Queue", func(t *testing.T) {
+		result := d.Queue()
 		if result != nil {
 			t.Error("expected nil for nil device")
 		}
@@ -128,19 +128,21 @@ func TestNullGuard_Device_ZeroHandle(t *testing.T) {
 	d := &Device{handle: 0}
 
 	t.Run("CreateCommandEncoder", func(t *testing.T) {
-		if d.CreateCommandEncoder(nil) != nil {
-			t.Error("expected nil for zero-handle device")
+		result, err := d.CreateCommandEncoder(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for zero-handle device")
 		}
 	})
 
 	t.Run("CreateBuffer", func(t *testing.T) {
-		if d.CreateBuffer(&BufferDescriptor{}) != nil {
-			t.Error("expected nil for zero-handle device")
+		result, err := d.CreateBuffer(&BufferDescriptor{})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for zero-handle device")
 		}
 	})
 
-	t.Run("GetQueue", func(t *testing.T) {
-		if d.GetQueue() != nil {
+	t.Run("Queue", func(t *testing.T) {
+		if d.Queue() != nil {
 			t.Error("expected nil for zero-handle device")
 		}
 	})
@@ -193,22 +195,25 @@ func TestNullGuard_CommandEncoder(t *testing.T) {
 	var enc *CommandEncoder
 
 	t.Run("BeginComputePass", func(t *testing.T) {
-		if enc.BeginComputePass(nil) != nil {
-			t.Error("expected nil for nil encoder")
+		result, err := enc.BeginComputePass(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil encoder")
 		}
 	})
 
 	t.Run("BeginRenderPass", func(t *testing.T) {
-		if enc.BeginRenderPass(&RenderPassDescriptor{
+		result, err := enc.BeginRenderPass(&RenderPassDescriptor{
 			ColorAttachments: []RenderPassColorAttachment{{}},
-		}) != nil {
-			t.Error("expected nil for nil encoder")
+		})
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil encoder")
 		}
 	})
 
 	t.Run("Finish", func(t *testing.T) {
-		if enc.Finish(nil) != nil {
-			t.Error("expected nil for nil encoder")
+		result, err := enc.Finish(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil encoder")
 		}
 	})
 
@@ -404,8 +409,8 @@ func TestNullGuard_Buffer(t *testing.T) {
 		}
 	})
 
-	t.Run("GetSize", func(t *testing.T) {
-		if buf.GetSize() != 0 {
+	t.Run("Size", func(t *testing.T) {
+		if buf.Size() != 0 {
 			t.Error("expected 0 for nil buffer")
 		}
 	})
@@ -420,8 +425,9 @@ func TestNullGuard_Texture(t *testing.T) {
 	var tex *Texture
 
 	t.Run("CreateView", func(t *testing.T) {
-		if tex.CreateView(nil) != nil {
-			t.Error("expected nil for nil texture")
+		result, err := tex.CreateView(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil texture")
 		}
 	})
 }
@@ -529,62 +535,72 @@ func TestNullGuard_NilDesc(t *testing.T) {
 	d := &Device{handle: 1} // fake non-zero handle
 
 	t.Run("CreateBuffer_NilDesc", func(t *testing.T) {
-		if d.CreateBuffer(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateBuffer(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateTexture_NilDesc", func(t *testing.T) {
-		if d.CreateTexture(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateTexture(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateSampler_NilDesc", func(t *testing.T) {
-		if d.CreateSampler(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateSampler(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateBindGroupLayout_NilDesc", func(t *testing.T) {
-		if d.CreateBindGroupLayout(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateBindGroupLayout(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateBindGroup_NilDesc", func(t *testing.T) {
-		if d.CreateBindGroup(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateBindGroup(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreatePipelineLayout_NilDesc", func(t *testing.T) {
-		if d.CreatePipelineLayout(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreatePipelineLayout(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateComputePipeline_NilDesc", func(t *testing.T) {
-		if d.CreateComputePipeline(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateComputePipeline(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateRenderPipeline_NilDesc", func(t *testing.T) {
-		if d.CreateRenderPipeline(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateRenderPipeline(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateQuerySet_NilDesc", func(t *testing.T) {
-		if d.CreateQuerySet(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateQuerySet(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 
 	t.Run("CreateRenderBundleEncoder_NilDesc", func(t *testing.T) {
-		if d.CreateRenderBundleEncoder(nil) != nil {
-			t.Error("expected nil for nil desc")
+		result, err := d.CreateRenderBundleEncoder(nil)
+		if result != nil || err == nil {
+			t.Error("expected nil result and non-nil error for nil desc")
 		}
 	})
 }

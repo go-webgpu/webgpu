@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -19,7 +18,7 @@ func main() {
 
 	// Request adapter (GPU)
 	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{
-		PowerPreference: gputypes.PowerPreferenceHighPerformance,
+		PowerPreference: wgpu.PowerPreferenceHighPerformance,
 	})
 	if err != nil {
 		log.Fatalf("Failed to request adapter: %v", err)
@@ -27,7 +26,7 @@ func main() {
 	defer adapter.Release()
 
 	// Get adapter information
-	info, err := adapter.GetInfo()
+	info, err := adapter.Info()
 	if err != nil {
 		log.Fatalf("Failed to get adapter info: %v", err)
 	}
@@ -43,24 +42,24 @@ func main() {
 	fmt.Printf("Device ID:    0x%04X\n", info.DeviceID)
 
 	// Get adapter limits
-	limits, err := adapter.GetLimits()
+	limits, err := adapter.Limits()
 	if err != nil {
 		log.Fatalf("Failed to get adapter limits: %v", err)
 	}
 
 	fmt.Println("\n=== Key Adapter Limits ===")
-	fmt.Printf("Max Texture 2D:              %d x %d\n", limits.Limits.MaxTextureDimension2D, limits.Limits.MaxTextureDimension2D)
-	fmt.Printf("Max Texture 3D:              %d x %d x %d\n", limits.Limits.MaxTextureDimension3D, limits.Limits.MaxTextureDimension3D, limits.Limits.MaxTextureDimension3D)
-	fmt.Printf("Max Bind Groups:             %d\n", limits.Limits.MaxBindGroups)
-	fmt.Printf("Max Buffer Size:             %d bytes (%.2f GB)\n", limits.Limits.MaxBufferSize, float64(limits.Limits.MaxBufferSize)/(1024*1024*1024))
-	fmt.Printf("Max Uniform Buffer Size:     %d bytes (%.2f MB)\n", limits.Limits.MaxUniformBufferBindingSize, float64(limits.Limits.MaxUniformBufferBindingSize)/(1024*1024))
-	fmt.Printf("Max Storage Buffer Size:     %d bytes (%.2f GB)\n", limits.Limits.MaxStorageBufferBindingSize, float64(limits.Limits.MaxStorageBufferBindingSize)/(1024*1024*1024))
-	fmt.Printf("Max Compute Workgroup Size:  %d x %d x %d\n", limits.Limits.MaxComputeWorkgroupSizeX, limits.Limits.MaxComputeWorkgroupSizeY, limits.Limits.MaxComputeWorkgroupSizeZ)
-	fmt.Printf("Max Vertex Buffers:          %d\n", limits.Limits.MaxVertexBuffers)
-	fmt.Printf("Max Color Attachments:       %d\n", limits.Limits.MaxColorAttachments)
+	fmt.Printf("Max Texture 2D:              %d x %d\n", limits.MaxTextureDimension2D, limits.MaxTextureDimension2D)
+	fmt.Printf("Max Texture 3D:              %d x %d x %d\n", limits.MaxTextureDimension3D, limits.MaxTextureDimension3D, limits.MaxTextureDimension3D)
+	fmt.Printf("Max Bind Groups:             %d\n", limits.MaxBindGroups)
+	fmt.Printf("Max Buffer Size:             %d bytes (%.2f GB)\n", limits.MaxBufferSize, float64(limits.MaxBufferSize)/(1024*1024*1024))
+	fmt.Printf("Max Uniform Buffer Size:     %d bytes (%.2f MB)\n", limits.MaxUniformBufferBindingSize, float64(limits.MaxUniformBufferBindingSize)/(1024*1024))
+	fmt.Printf("Max Storage Buffer Size:     %d bytes (%.2f GB)\n", limits.MaxStorageBufferBindingSize, float64(limits.MaxStorageBufferBindingSize)/(1024*1024*1024))
+	fmt.Printf("Max Compute Workgroup Size:  %d x %d x %d\n", limits.MaxComputeWorkgroupSizeX, limits.MaxComputeWorkgroupSizeY, limits.MaxComputeWorkgroupSizeZ)
+	fmt.Printf("Max Vertex Buffers:          %d\n", limits.MaxVertexBuffers)
+	fmt.Printf("Max Color Attachments:       %d\n", limits.MaxColorAttachments)
 
 	// Enumerate features
-	features := adapter.EnumerateFeatures()
+	features := adapter.Features()
 	fmt.Println("\n=== Supported Features ===")
 	if len(features) == 0 {
 		fmt.Println("No optional features supported")

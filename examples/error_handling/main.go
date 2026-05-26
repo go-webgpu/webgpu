@@ -37,7 +37,7 @@ func main() {
 	device.PushErrorScope(wgpu.ErrorFilterValidation)
 
 	// Perform some GPU operations (valid ones)
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
 		log.Fatal("Failed to get queue")
 	}

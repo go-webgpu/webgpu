@@ -81,8 +81,16 @@ var (
 	ErrSurfaceNeedsReconfigure = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface needs reconfigure"}
 	ErrSurfaceLost             = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface lost"}
 	ErrSurfaceTimeout          = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface texture timeout"}
-	ErrSurfaceOutOfMemory      = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "out of memory"}
-	ErrSurfaceDeviceLost       = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "device lost"}
+	// ErrSurfaceOccluded is returned on macOS Metal when the window is minimized or fully covered.
+	// Applications should skip rendering for the current frame and try again when unoccluded.
+	// New in wgpu-native v29.
+	ErrSurfaceOccluded = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "surface occluded (window minimized or covered)"}
+	// ErrSurfaceOutOfMemory is kept for backward compatibility.
+	// Deprecated: In v29 this is reported as generic Error status.
+	ErrSurfaceOutOfMemory = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "out of memory"}
+	// ErrSurfaceDeviceLost is kept for backward compatibility.
+	// Deprecated: In v29 this is reported as generic Error status.
+	ErrSurfaceDeviceLost = &WGPUError{Op: "Surface.GetCurrentTexture", Message: "device lost"}
 )
 
 // Configure configures the surface for rendering.
@@ -97,7 +105,7 @@ func (s *Surface) Configure(config *SurfaceConfiguration) {
 	nativeConfig := surfaceConfigurationWire{
 		nextInChain:     0,
 		device:          config.Device.handle,
-		format:          toWGPUTextureFormat(config.Format),
+		format:          uint32(config.Format),
 		usage:           uint64(config.Usage),
 		width:           config.Width,
 		height:          config.Height,
@@ -154,11 +162,13 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, error) {
 		return nil, ErrSurfaceLost
 	case SurfaceGetCurrentTextureStatusTimeout:
 		return nil, ErrSurfaceTimeout
-	case SurfaceGetCurrentTextureStatusOutOfMemory:
-		return nil, ErrSurfaceOutOfMemory
-	case SurfaceGetCurrentTextureStatusDeviceLost:
-		return nil, ErrSurfaceDeviceLost
+	case NativeSurfaceGetCurrentTextureStatusOccluded:
+		// wgpu-native v29: window is occluded/minimized (Metal backend only).
+		// No texture is returned; caller should skip this frame and try again.
+		return nil, ErrSurfaceOccluded
 	default:
+		// v29: SurfaceGetCurrentTextureStatusError (0x06) covers all error cases
+		// including former OutOfMemory (0x06) and DeviceLost (0x07).
 		return nil, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
 	}
 }
@@ -217,7 +227,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 		rawFormats := unsafe.Slice((*uint32)(ptrFromUintptr(wire.formats)), wire.formatCount)
 		caps.Formats = make([]gputypes.TextureFormat, len(rawFormats))
 		for i, f := range rawFormats {
-			caps.Formats[i] = fromWGPUTextureFormat(f)
+			caps.Formats[i] = gputypes.TextureFormat(f)
 		}
 	}
 

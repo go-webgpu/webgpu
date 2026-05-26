@@ -60,16 +60,17 @@ func TestDebugRenderPipelineBytes(t *testing.T) {
 	defer device.Release()
 
 	// Check gputypes values
+	// gputypes v0.3.0 and wgpu-native v29 have identical TextureFormat values.
+	// BGRA8Unorm = 0x1B = 27 in both gputypes and v29 webgpu.h.
 	t.Logf("gputypes.TextureFormatBGRA8Unorm = %d (0x%X)", gputypes.TextureFormatBGRA8Unorm, gputypes.TextureFormatBGRA8Unorm)
 	t.Logf("gputypes.TextureFormatRG11B10Ufloat = %d (0x%X)", gputypes.TextureFormatRG11B10Ufloat, gputypes.TextureFormatRG11B10Ufloat)
 
-	// Verify the conversion
-	// gputypes BGRA8Unorm = 27, webgpu-headers BGRA8Unorm = 23
-	converted := toWGPUTextureFormat(gputypes.TextureFormatBGRA8Unorm)
-	t.Logf("toWGPUTextureFormat(BGRA8Unorm) = %d (0x%X)", converted, converted)
+	// Verify the direct cast: gputypes v0.3.0 BGRA8Unorm = 0x1B = 27, v29 BGRA8Unorm = 0x1B = 27 (match)
+	converted := uint32(gputypes.TextureFormatBGRA8Unorm)
+	t.Logf("uint32(BGRA8Unorm) = %d (0x%X)", converted, converted)
 
-	if converted != 23 {
-		t.Errorf("toWGPUTextureFormat(BGRA8Unorm) should return 23 (wgpu-native value) but returned %d", converted)
+	if converted != 27 {
+		t.Errorf("uint32(BGRA8Unorm) should return 27 (v29 wgpu-native value) but returned %d", converted)
 	}
 
 	// Manually create the structs to see what's happening
@@ -89,9 +90,9 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 

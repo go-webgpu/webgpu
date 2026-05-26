@@ -108,20 +108,26 @@ type BufferDescriptor struct {
 }
 
 // CreateBuffer creates a new GPU buffer.
-func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateBuffer(desc *BufferDescriptor) (*Buffer, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "descriptor is nil"}
 	}
 	handle, _, _ := procDeviceCreateBuffer.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Buffer")
-	return &Buffer{handle: handle}
+	return &Buffer{handle: handle}, nil
 }
 
 // GetMappedRange returns a pointer to the mapped buffer data.
@@ -154,8 +160,8 @@ func (b *Buffer) Unmap() {
 	procBufferUnmap.Call(b.handle) //nolint:errcheck
 }
 
-// GetSize returns the size of the buffer in bytes.
-func (b *Buffer) GetSize() uint64 {
+// Size returns the size of the buffer in bytes.
+func (b *Buffer) Size() uint64 {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return 0
@@ -282,8 +288,8 @@ func (q *Queue) WriteBufferRaw(buffer *Buffer, offset uint64, data unsafe.Pointe
 	)
 }
 
-// GetUsage returns the usage flags of this buffer.
-func (b *Buffer) GetUsage() gputypes.BufferUsage {
+// Usage returns the usage flags of this buffer.
+func (b *Buffer) Usage() gputypes.BufferUsage {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return gputypes.BufferUsageNone
@@ -292,8 +298,8 @@ func (b *Buffer) GetUsage() gputypes.BufferUsage {
 	return gputypes.BufferUsage(usage)
 }
 
-// GetMapState returns the current mapping state of this buffer.
-func (b *Buffer) GetMapState() BufferMapState {
+// MapState returns the current mapping state of this buffer.
+func (b *Buffer) MapState() BufferMapState {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return BufferMapStateUnmapped

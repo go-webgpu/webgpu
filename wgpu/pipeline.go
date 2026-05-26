@@ -14,11 +14,32 @@ type ProgrammableStageDescriptor struct {
 }
 
 // PipelineLayoutDescriptor describes a pipeline layout.
+// v29: Added ImmediateSize field for immediate data (push constants replacement).
 type PipelineLayoutDescriptor struct {
 	NextInChain          uintptr // *ChainedStruct
 	Label                StringView
 	BindGroupLayoutCount uintptr // size_t
 	BindGroupLayouts     uintptr // *WGPUBindGroupLayout
+	ImmediateSize        uint32  // NEW in v29: bytes of immediate data allocated for shaders (requires NativeFeatureImmediates)
+}
+
+// NativeLimits extends WGPULimits with wgpu-native specific limits.
+// Chain via NextInChain in Limits with SType = STypeNativeLimits.
+// v29 BREAKING: maxPushConstantSize renamed to maxImmediateSize; maxNonSamplerBindings and
+// maxBindingArrayElementsPerShaderStage added.
+type NativeLimits struct {
+	Chain                                ChainedStruct // chain.SType must be STypeNativeLimits
+	MaxImmediateSize                     uint32        // was maxPushConstantSize in v27
+	MaxNonSamplerBindings                uint32        // max live non-sampler bindings (DX12 only)
+	MaxBindingArrayElementsPerShaderStage uint32       // max resources in binding arrays per shader stage
+}
+
+// PipelineLayoutExtras provides wgpu-native specific pipeline layout extensions.
+// Chain via NextInChain in PipelineLayoutDescriptor with SType = STypePipelineLayoutExtras.
+// v29 BREAKING: pushConstantRangeCount/pushConstantRanges replaced by immediateDataSize.
+type PipelineLayoutExtras struct {
+	Chain             ChainedStruct // chain.SType must be STypePipelineLayoutExtras
+	ImmediateDataSize uint32        // bytes of immediate data for shaders (requires NativeFeatureImmediates)
 }
 
 // ComputePipelineDescriptor describes a compute pipeline.
@@ -30,27 +51,36 @@ type ComputePipelineDescriptor struct {
 }
 
 // CreatePipelineLayout creates a pipeline layout.
-func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) *PipelineLayout {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) (*PipelineLayout, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "descriptor is nil"}
 	}
 	handle, _, _ := procDeviceCreatePipelineLayout.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "PipelineLayout")
-	return &PipelineLayout{handle: handle}
+	return &PipelineLayout{handle: handle}, nil
 }
 
 // CreatePipelineLayoutSimple creates a pipeline layout with the given bind group layouts.
-func (d *Device) CreatePipelineLayoutSimple(layouts []*BindGroupLayout) *PipelineLayout {
-	mustInit()
+// Returns an error if the FFI call fails or the device is nil.
+func (d *Device) CreatePipelineLayoutSimple(layouts []*BindGroupLayout) (*PipelineLayout, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if d == nil || d.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "device is nil or released"}
 	}
 	if len(layouts) == 0 {
 		// Create empty pipeline layout
@@ -87,28 +117,40 @@ func (pl *PipelineLayout) Release() {
 func (pl *PipelineLayout) Handle() uintptr { return pl.handle }
 
 // CreateComputePipeline creates a compute pipeline.
-func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) *ComputePipeline {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) (*ComputePipeline, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "descriptor is nil"}
 	}
 	handle, _, _ := procDeviceCreateComputePipeline.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "ComputePipeline")
-	return &ComputePipeline{handle: handle}
+	return &ComputePipeline{handle: handle}, nil
 }
 
 // CreateComputePipelineSimple creates a compute pipeline with the given shader and entry point.
 // If layout is nil, auto layout is used.
-func (d *Device) CreateComputePipelineSimple(layout *PipelineLayout, shader *ShaderModule, entryPoint string) *ComputePipeline {
-	mustInit()
-	if d == nil || d.handle == 0 || shader == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/shader is nil.
+func (d *Device) CreateComputePipelineSimple(layout *PipelineLayout, shader *ShaderModule, entryPoint string) (*ComputePipeline, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "device is nil or released"}
+	}
+	if shader == nil {
+		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "shader is nil"}
 	}
 	entryBytes := []byte(entryPoint)
 	desc := ComputePipelineDescriptor{

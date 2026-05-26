@@ -36,9 +36,9 @@ func TestCreateBindGroupLayout(t *testing.T) {
 			},
 		},
 	}
-	layout := device.CreateBindGroupLayoutSimple(entries)
-	if layout == nil {
-		t.Fatal("CreateBindGroupLayoutSimple returned nil")
+	layout, err := device.CreateBindGroupLayoutSimple(entries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupLayoutSimple failed: %v", err)
 	}
 	defer layout.Release()
 
@@ -75,9 +75,9 @@ func TestCreateBindGroup(t *testing.T) {
 		Size:             256,
 		MappedAtCreation: False,
 	}
-	buffer := device.CreateBuffer(bufferDesc)
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	buffer, err := device.CreateBuffer(bufferDesc)
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 
@@ -92,9 +92,9 @@ func TestCreateBindGroup(t *testing.T) {
 			},
 		},
 	}
-	layout := device.CreateBindGroupLayoutSimple(layoutEntries)
-	if layout == nil {
-		t.Fatal("CreateBindGroupLayoutSimple returned nil")
+	layout, err := device.CreateBindGroupLayoutSimple(layoutEntries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupLayoutSimple failed: %v", err)
 	}
 	defer layout.Release()
 
@@ -103,9 +103,9 @@ func TestCreateBindGroup(t *testing.T) {
 	entries := []BindGroupEntry{
 		BufferBindingEntry(0, buffer, 0, 256),
 	}
-	bindGroup := device.CreateBindGroupSimple(layout, entries)
-	if bindGroup == nil {
-		t.Fatal("CreateBindGroupSimple returned nil")
+	bindGroup, err := device.CreateBindGroupSimple(layout, entries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupSimple failed: %v", err)
 	}
 	defer bindGroup.Release()
 
@@ -136,25 +136,25 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 	defer device.Release()
 
 	// Create buffers
-	inputBuffer := device.CreateBuffer(&BufferDescriptor{
+	inputBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: False,
 	})
-	if inputBuffer == nil {
-		t.Fatal("CreateBuffer (input) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (input) failed: %v", err)
 	}
 	defer inputBuffer.Release()
 
-	outputBuffer := device.CreateBuffer(&BufferDescriptor{
+	outputBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc,
 		Size:             256,
 		MappedAtCreation: False,
 	})
-	if outputBuffer == nil {
-		t.Fatal("CreateBuffer (output) returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer (output) failed: %v", err)
 	}
 	defer outputBuffer.Release()
 
@@ -177,9 +177,9 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 			},
 		},
 	}
-	layout := device.CreateBindGroupLayoutSimple(layoutEntries)
-	if layout == nil {
-		t.Fatal("CreateBindGroupLayoutSimple returned nil")
+	layout, err := device.CreateBindGroupLayoutSimple(layoutEntries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupLayoutSimple failed: %v", err)
 	}
 	defer layout.Release()
 
@@ -189,9 +189,9 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 		BufferBindingEntry(0, inputBuffer, 0, 256),
 		BufferBindingEntry(1, outputBuffer, 0, 256),
 	}
-	bindGroup := device.CreateBindGroupSimple(layout, entries)
-	if bindGroup == nil {
-		t.Fatal("CreateBindGroupSimple returned nil")
+	bindGroup, err := device.CreateBindGroupSimple(layout, entries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupSimple failed: %v", err)
 	}
 	defer bindGroup.Release()
 

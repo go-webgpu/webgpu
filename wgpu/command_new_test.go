@@ -33,16 +33,16 @@ func TestCommandEncoderClearBuffer(t *testing.T) {
 		Size:             256,
 		MappedAtCreation: False,
 	}
-	buffer := device.CreateBuffer(&bufferDesc)
-	if buffer == nil {
-		t.Fatal("Failed to create buffer")
+	buffer, err := device.CreateBuffer(&bufferDesc)
+	if err != nil {
+		t.Fatal("Failed to create buffer:", err)
 	}
 	defer buffer.Release()
 
 	// Create command encoder
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("Failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatal("Failed to create command encoder:", err)
 	}
 	defer encoder.Release()
 
@@ -50,14 +50,14 @@ func TestCommandEncoderClearBuffer(t *testing.T) {
 	encoder.ClearBuffer(buffer, 0, 256)
 
 	// Finish command buffer
-	cmdBuffer := encoder.Finish(nil)
-	if cmdBuffer == nil {
-		t.Fatal("Failed to finish command encoder")
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatal("Failed to finish command encoder:", err)
 	}
 	defer cmdBuffer.Release()
 
 	// Submit
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
 		t.Fatal("Failed to get queue")
 	}
@@ -88,9 +88,9 @@ func TestCommandEncoderDebugMarkers(t *testing.T) {
 	defer device.Release()
 
 	// Create command encoder
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("Failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatal("Failed to create command encoder:", err)
 	}
 	defer encoder.Release()
 
@@ -108,14 +108,14 @@ func TestCommandEncoderDebugMarkers(t *testing.T) {
 	encoder.PopDebugGroup()
 
 	// Finish command buffer
-	cmdBuffer := encoder.Finish(nil)
-	if cmdBuffer == nil {
-		t.Fatal("Failed to finish command encoder")
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatal("Failed to finish command encoder:", err)
 	}
 	defer cmdBuffer.Release()
 
 	// Submit
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
 		t.Fatal("Failed to get queue")
 	}
@@ -158,34 +158,34 @@ func TestTextureQueryAPIs(t *testing.T) {
 		MipLevelCount: 3,
 		SampleCount:   1,
 	}
-	texture := device.CreateTexture(&textureDesc)
-	if texture == nil {
-		t.Fatal("Failed to create texture")
+	texture, err := device.CreateTexture(&textureDesc)
+	if err != nil {
+		t.Fatal("Failed to create texture:", err)
 	}
 	defer texture.Release()
 
 	// Test query methods
-	width := texture.GetWidth()
+	width := texture.Width()
 	if width != 512 {
 		t.Errorf("Expected width 512, got %d", width)
 	}
 
-	height := texture.GetHeight()
+	height := texture.Height()
 	if height != 256 {
 		t.Errorf("Expected height 256, got %d", height)
 	}
 
-	depthOrLayers := texture.GetDepthOrArrayLayers()
+	depthOrLayers := texture.DepthOrArrayLayers()
 	if depthOrLayers != 4 {
 		t.Errorf("Expected depth/layers 4, got %d", depthOrLayers)
 	}
 
-	mipLevels := texture.GetMipLevelCount()
+	mipLevels := texture.MipLevelCount()
 	if mipLevels != 3 {
 		t.Errorf("Expected mip levels 3, got %d", mipLevels)
 	}
 
-	format := texture.GetFormat()
+	format := texture.Format()
 	if format != gputypes.TextureFormatRGBA8Unorm {
 		t.Errorf("Expected format RGBA8Unorm, got %d", format)
 	}
@@ -196,23 +196,23 @@ func TestTextureQueryAPIsNil(t *testing.T) {
 	var texture *Texture
 
 	// All methods should return zero values and not panic
-	if width := texture.GetWidth(); width != 0 {
+	if width := texture.Width(); width != 0 {
 		t.Errorf("Expected width 0 for nil texture, got %d", width)
 	}
 
-	if height := texture.GetHeight(); height != 0 {
+	if height := texture.Height(); height != 0 {
 		t.Errorf("Expected height 0 for nil texture, got %d", height)
 	}
 
-	if depth := texture.GetDepthOrArrayLayers(); depth != 0 {
+	if depth := texture.DepthOrArrayLayers(); depth != 0 {
 		t.Errorf("Expected depth 0 for nil texture, got %d", depth)
 	}
 
-	if mips := texture.GetMipLevelCount(); mips != 0 {
+	if mips := texture.MipLevelCount(); mips != 0 {
 		t.Errorf("Expected mip levels 0 for nil texture, got %d", mips)
 	}
 
-	if format := texture.GetFormat(); format != gputypes.TextureFormatUndefined {
+	if format := texture.Format(); format != gputypes.TextureFormatUndefined {
 		t.Errorf("Expected format Undefined for nil texture, got %d", format)
 	}
 }
@@ -237,9 +237,9 @@ func TestClearBufferNil(t *testing.T) {
 	}
 	defer device.Release()
 
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("Failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatal("Failed to create command encoder:", err)
 	}
 	defer encoder.Release()
 
@@ -267,9 +267,9 @@ func TestDebugMarkersEmptyStrings(t *testing.T) {
 	}
 	defer device.Release()
 
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("Failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatal("Failed to create command encoder:", err)
 	}
 	defer encoder.Release()
 

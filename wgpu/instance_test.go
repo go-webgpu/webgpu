@@ -15,8 +15,10 @@ func TestInit(t *testing.T) {
 
 func TestStructSizes(t *testing.T) {
 	t.Logf("sizeof(ChainedStruct) = %d (expected 16)", unsafe.Sizeof(ChainedStruct{}))
-	t.Logf("sizeof(InstanceCapabilities) = %d (expected 24)", unsafe.Sizeof(InstanceCapabilities{}))
+	// v29: InstanceDescriptor changed layout — nextInChain(8) + requiredFeatureCount(8) + requiredFeatures(8) + requiredLimits(8) = 32
 	t.Logf("sizeof(InstanceDescriptor) = %d (expected 32)", unsafe.Sizeof(InstanceDescriptor{}))
+	// v29: Limits now has nextInChain as first field
+	t.Logf("sizeof(Limits) = %d", unsafe.Sizeof(Limits{}))
 }
 
 func TestCreateInstanceWithNil(t *testing.T) {
@@ -34,13 +36,13 @@ func TestCreateInstanceWithNil(t *testing.T) {
 }
 
 func TestCreateInstanceWithDescriptor(t *testing.T) {
+	// v29: InstanceDescriptor uses RequiredFeatureCount/RequiredFeatures/RequiredLimits,
+	// not InstanceCapabilities. Pass empty descriptor (all zeros = defaults).
 	desc := &InstanceDescriptor{
-		NextInChain: 0,
-		Features: InstanceCapabilities{
-			NextInChain:          0,
-			TimedWaitAnyEnable:   False,
-			TimedWaitAnyMaxCount: 0,
-		},
+		NextInChain:         0,
+		RequiredFeatureCount: 0,
+		RequiredFeatures:    0,
+		RequiredLimits:      0,
 	}
 
 	inst, err := CreateInstance(desc)

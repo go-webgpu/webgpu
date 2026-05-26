@@ -26,7 +26,7 @@ func TestDispatchWorkgroupsIndirect(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	defer queue.Release()
 
 	// Create compute shader
@@ -41,15 +41,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -61,13 +61,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	}
 	bufferSize := uint64(numElements * 4)
 
-	storageBuffer := device.CreateBuffer(&BufferDescriptor{
+	storageBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: True,
 	})
-	if storageBuffer == nil {
-		t.Fatal("CreateBuffer for storage returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer for storage failed: %v", err)
 	}
 	defer storageBuffer.Release()
 
@@ -86,13 +86,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	}
 	indirectSize := uint64(unsafe.Sizeof(indirectArgs))
 
-	indirectBuffer := device.CreateBuffer(&BufferDescriptor{
+	indirectBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
 		MappedAtCreation: True,
 	})
-	if indirectBuffer == nil {
-		t.Fatal("CreateBuffer for indirect returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer for indirect failed: %v", err)
 	}
 	defer indirectBuffer.Release()
 
@@ -109,21 +109,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	}
 	defer bindGroupLayout.Release()
 
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, []BindGroupEntry{
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, []BindGroupEntry{
 		BufferBindingEntry(0, storageBuffer, 0, bufferSize),
 	})
-	if bindGroup == nil {
-		t.Fatal("CreateBindGroupSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateBindGroupSimple failed: %v", err)
 	}
 	defer bindGroup.Release()
 
 	// Create and submit command buffer
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("CreateCommandEncoder returned nil")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
 	}
 
-	computePass := encoder.BeginComputePass(nil)
+	computePass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		t.Fatalf("BeginComputePass failed: %v", err)
+	}
 	computePass.SetPipeline(pipeline)
 	computePass.SetBindGroup(0, bindGroup, nil)
 
@@ -133,7 +136,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	computePass.End()
 	computePass.Release()
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
+	}
 	encoder.Release()
 	queue.Submit(cmdBuffer)
 	cmdBuffer.Release()
@@ -226,13 +232,13 @@ func TestRenderBundleDrawIndirect(t *testing.T) {
 	}
 	indirectSize := uint64(unsafe.Sizeof(indirectArgs))
 
-	indirectBuffer := device.CreateBuffer(&BufferDescriptor{
+	indirectBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage:            gputypes.BufferUsageIndirect | gputypes.BufferUsageCopyDst,
 		Size:             indirectSize,
 		MappedAtCreation: True,
 	})
-	if indirectBuffer == nil {
-		t.Fatal("CreateBuffer for indirect returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer for indirect failed: %v", err)
 	}
 	defer indirectBuffer.Release()
 
@@ -259,20 +265,20 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateRenderPipelineSimple(
+	pipeline, err := device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
 		gputypes.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipelineSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 

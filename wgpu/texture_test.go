@@ -26,7 +26,7 @@ func TestCreateTexture(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating 2D texture...")
-	texture := device.CreateTexture(&TextureDescriptor{
+	texture, err := device.CreateTexture(&TextureDescriptor{
 		Usage:     gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
 		Dimension: gputypes.TextureDimension2D,
 		Size: gputypes.Extent3D{
@@ -38,8 +38,8 @@ func TestCreateTexture(t *testing.T) {
 		MipLevelCount: 1,
 		SampleCount:   1,
 	})
-	if texture == nil {
-		t.Fatal("CreateTexture returned nil")
+	if err != nil {
+		t.Fatalf("CreateTexture: %v", err)
 	}
 	defer texture.Release()
 
@@ -69,7 +69,7 @@ func TestCreateTextureView(t *testing.T) {
 	}
 	defer device.Release()
 
-	texture := device.CreateTexture(&TextureDescriptor{
+	texture, err := device.CreateTexture(&TextureDescriptor{
 		Usage:     gputypes.TextureUsageTextureBinding,
 		Dimension: gputypes.TextureDimension2D,
 		Size: gputypes.Extent3D{
@@ -81,15 +81,15 @@ func TestCreateTextureView(t *testing.T) {
 		MipLevelCount: 1,
 		SampleCount:   1,
 	})
-	if texture == nil {
-		t.Fatal("CreateTexture returned nil")
+	if err != nil {
+		t.Fatalf("CreateTexture: %v", err)
 	}
 	defer texture.Release()
 
 	t.Log("Creating texture view...")
-	view := texture.CreateView(nil)
-	if view == nil {
-		t.Fatal("CreateView returned nil")
+	view, err := texture.CreateView(nil)
+	if err != nil {
+		t.Fatalf("CreateView: %v", err)
 	}
 	defer view.Release()
 
@@ -153,7 +153,7 @@ func TestCreateSampler(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating sampler...")
-	sampler := device.CreateSampler(&SamplerDescriptor{
+	sampler, err := device.CreateSampler(&SamplerDescriptor{
 		AddressModeU:  gputypes.AddressModeRepeat,
 		AddressModeV:  gputypes.AddressModeRepeat,
 		AddressModeW:  gputypes.AddressModeRepeat,
@@ -162,8 +162,8 @@ func TestCreateSampler(t *testing.T) {
 		MipmapFilter:  gputypes.MipmapFilterModeLinear,
 		MaxAnisotropy: 1,
 	})
-	if sampler == nil {
-		t.Fatal("CreateSampler returned nil")
+	if err != nil {
+		t.Fatalf("CreateSampler: %v", err)
 	}
 	defer sampler.Release()
 
@@ -194,11 +194,11 @@ func TestCreateSamplerSimple(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating sampler with minimal settings...")
-	sampler := device.CreateSampler(&SamplerDescriptor{
+	sampler, err := device.CreateSampler(&SamplerDescriptor{
 		MaxAnisotropy: 1, // Required to be >= 1
 	})
-	if sampler == nil {
-		t.Fatal("CreateSampler returned nil")
+	if err != nil {
+		t.Fatalf("CreateSampler: %v", err)
 	}
 	defer sampler.Release()
 

@@ -34,9 +34,9 @@ func TestCreateShaderModuleWGSL(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating shader module from WGSL...")
-	shader := device.CreateShaderModuleWGSL(testComputeShader)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(testComputeShader)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
@@ -84,9 +84,9 @@ func TestCreateShaderModuleVertex(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating vertex/fragment shader module...")
-	shader := device.CreateShaderModuleWGSL(simpleShader)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(simpleShader)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 

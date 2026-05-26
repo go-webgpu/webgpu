@@ -41,21 +41,21 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
 	t.Log("Creating simple render pipeline...")
-	pipeline := device.CreateRenderPipelineSimple(
+	pipeline, err := device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
 		gputypes.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipelineSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipelineSimple: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -101,14 +101,14 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
 	t.Log("Creating render pipeline with descriptor...")
-	pipeline := device.CreateRenderPipeline(&RenderPipelineDescriptor{
+	pipeline, err := device.CreateRenderPipeline(&RenderPipelineDescriptor{
 		Vertex: VertexState{
 			Module:     shader,
 			EntryPoint: "vs_main",
@@ -131,8 +131,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 			Mask:  0xFFFFFFFF,
 		},
 	})
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipeline returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipeline: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -181,20 +181,20 @@ fn fs_main() -> @location(0) vec4<f32> {
     return uniforms.color;
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateRenderPipelineSimple(
+	pipeline, err := device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
 		gputypes.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipelineSimple returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipelineSimple: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -247,14 +247,14 @@ fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(1.0, 0.0, 0.0, 1.0);
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL: %v", err)
 	}
 	defer shader.Release()
 
 	t.Log("Creating render pipeline with depth testing...")
-	pipeline := device.CreateRenderPipeline(&RenderPipelineDescriptor{
+	pipeline, err := device.CreateRenderPipeline(&RenderPipelineDescriptor{
 		Vertex: VertexState{
 			Module:     shader,
 			EntryPoint: "vs_main",
@@ -280,8 +280,8 @@ fn fs_main() -> @location(0) vec4<f32> {
 			Mask:  0xFFFFFFFF,
 		},
 	})
-	if pipeline == nil {
-		t.Fatal("CreateRenderPipeline with depth returned nil")
+	if err != nil {
+		t.Fatalf("CreateRenderPipeline with depth: %v", err)
 	}
 	defer pipeline.Release()
 

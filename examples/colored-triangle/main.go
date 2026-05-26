@@ -10,7 +10,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -280,7 +279,7 @@ func (app *App) initWebGPU() error {
 	app.device = device
 
 	// Get queue
-	app.queue = device.GetQueue()
+	app.queue = device.Queue()
 
 	// Create surface
 	surface, err := inst.CreateSurfaceFromWindowsHWND(uintptr(app.hinstance), uintptr(app.hwnd))
@@ -296,12 +295,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      gputypes.TextureFormatBGRA8Unorm,
-		Usage:       gputypes.TextureUsageRenderAttachment,
+		Format:      wgpu.TextureFormatBGRA8Unorm,
+		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
-		PresentMode: gputypes.PresentModeFifo,
+		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
+		PresentMode: wgpu.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -321,9 +320,9 @@ func (app *App) createVertexBuffer() error {
 	vertexBufferSize := uint64(len(vertices) * 4) // 4 bytes per float32
 
 	// Create buffer with MappedAtCreation = true for easy data upload
-	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
+	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.StringView{},
-		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
+		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: wgpu.True,
 	})
@@ -352,7 +351,7 @@ func (app *App) createVertexBuffer() error {
 // createPipeline creates the render pipeline with vertex buffer layout.
 func (app *App) createPipeline() error {
 	// Create shader module
-	shader := app.device.CreateShaderModuleWGSL(shaderSource)
+	shader, _ := app.device.CreateShaderModuleWGSL(shaderSource)
 	if shader == nil {
 		return fmt.Errorf("failed to create shader module")
 	}
@@ -361,19 +360,19 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         gputypes.VertexFormatFloat32x2, // position: vec2f
+			Format:         wgpu.VertexFormatFloat32x2, // position: vec2f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         gputypes.VertexFormatFloat32x3, // color: vec3f
+			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
 			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}
 
 	// Create render pipeline with vertex buffer layout
-	pipeline := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
+	pipeline, _ := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
 		Label:  "",
 		Layout: nil, // auto layout
 		Vertex: wgpu.VertexState{
@@ -381,15 +380,15 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    20, // 5 floats * 4 bytes = 20 bytes per vertex
-				StepMode:       gputypes.VertexStepModeVertex,
+				StepMode:       wgpu.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  gputypes.PrimitiveTopologyTriangleList,
-			FrontFace: gputypes.FrontFaceCCW,
-			CullMode:  gputypes.CullModeNone,
+			Topology:  wgpu.PrimitiveTopologyTriangleList,
+			FrontFace: wgpu.FrontFaceCCW,
+			CullMode:  wgpu.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -399,8 +398,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    gputypes.TextureFormatBGRA8Unorm,
-				WriteMask: gputypes.ColorWriteMaskAll,
+				Format:    wgpu.TextureFormatBGRA8Unorm,
+				WriteMask: wgpu.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -439,7 +438,7 @@ func (app *App) acquireSurfaceTexture() error {
 	app.surfaceTex = surfaceTex
 
 	// Create texture view
-	view := surfaceTex.Texture.CreateView(nil)
+	view, _ := surfaceTex.Texture.CreateView(nil)
 	if view == nil {
 		return fmt.Errorf("failed to create texture view")
 	}
@@ -449,12 +448,12 @@ func (app *App) acquireSurfaceTexture() error {
 
 // renderTriangle encodes the colored triangle rendering commands with vertex buffer.
 func (app *App) renderTriangle(encoder *wgpu.CommandEncoder, view *wgpu.TextureView) error {
-	pass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	pass, _ := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		Label: "Colored Triangle Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  gputypes.LoadOpClear,
-			StoreOp: gputypes.StoreOpStore,
+			LoadOp:  wgpu.LoadOpClear,
+			StoreOp: wgpu.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,
@@ -494,7 +493,7 @@ func (app *App) render() error {
 	}
 
 	// Create command encoder
-	encoder := app.device.CreateCommandEncoder(nil)
+	encoder, _ := app.device.CreateCommandEncoder(nil)
 	if encoder == nil {
 		return fmt.Errorf("failed to create command encoder")
 	}
@@ -506,7 +505,7 @@ func (app *App) render() error {
 	}
 
 	// Finish encoding
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, _ := encoder.Finish(nil)
 	if cmdBuffer == nil {
 		return fmt.Errorf("failed to finish command encoder")
 	}

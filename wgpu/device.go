@@ -143,8 +143,8 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	}
 }
 
-// GetQueue returns the default queue for the device.
-func (d *Device) GetQueue() *Queue {
+// Queue returns the default queue for the device.
+func (d *Device) Queue() *Queue {
 	mustInit()
 	if d == nil || d.handle == 0 {
 		return nil
@@ -192,21 +192,47 @@ func (q *Queue) Release() {
 	}
 }
 
-// DeviceDescriptor configures device creation.
-// For now, passing nil uses default settings.
-type DeviceDescriptor struct {
+// DeviceLostCallbackInfo configures the device-lost callback.
+type DeviceLostCallbackInfo struct {
 	NextInChain uintptr // *ChainedStruct
-	// Additional fields can be added as needed
+	Mode        CallbackMode
+	Callback    uintptr // Function pointer
+	Userdata1   uintptr
+	Userdata2   uintptr
+}
+
+// UncapturedErrorCallbackInfo configures the uncaptured-error callback.
+type UncapturedErrorCallbackInfo struct {
+	NextInChain uintptr // *ChainedStruct
+	Callback    uintptr // Function pointer
+	Userdata1   uintptr
+	Userdata2   uintptr
+}
+
+// DeviceDescriptor configures device creation.
+// v29: Added Label, RequiredFeatureCount, RequiredFeatures, RequiredLimits,
+// DefaultQueue, DeviceLostCallbackInfo, UncapturedErrorCallbackInfo fields.
+type DeviceDescriptor struct {
+	NextInChain                 uintptr // *ChainedStruct
+	Label                       StringView
+	RequiredFeatureCount        uintptr // size_t
+	RequiredFeatures            uintptr // *FeatureName (const)
+	RequiredLimits              uintptr // *Limits (const, nullable)
+	DefaultQueue                QueueDescriptor
+	DeviceLostCallbackInfo      DeviceLostCallbackInfo
+	UncapturedErrorCallbackInfo UncapturedErrorCallbackInfo
+}
+
+// QueueDescriptor configures queue creation.
+type QueueDescriptor struct {
+	NextInChain uintptr // *ChainedStruct
+	Label       StringView
 }
 
 // CreateDepthTexture creates a depth texture with the specified dimensions and format.
 // This is a convenience function for creating depth buffers for render passes.
+// Returns nil on error (use CreateTexture directly for full error handling).
 func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.TextureFormat) *Texture {
-	mustInit()
-	if d == nil || d.handle == 0 {
-		return nil
-	}
-
 	desc := TextureDescriptor{
 		NextInChain:     0,
 		Label:           EmptyStringView(),
@@ -220,36 +246,36 @@ func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.Textur
 		ViewFormats:     0,
 	}
 
-	return d.CreateTexture(&desc)
+	t, _ := d.CreateTexture(&desc)
+	return t
 }
 
-// GetLimits retrieves the limits of this device.
-// Returns the same Limits struct format as Adapter.GetLimits().
-// The FFI call uses SupportedLimits (which wraps Limits with nextInChain).
-func (d *Device) GetLimits() (*SupportedLimits, error) {
+// Limits retrieves the limits of this device.
+// v29: WGPULimits now has nextInChain as first field; pass *Limits directly.
+func (d *Device) Limits() (*Limits, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
 	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "Device.GetLimits", Message: "device is nil"}
+		return nil, &WGPUError{Op: "Device.Limits", Message: "device is nil"}
 	}
 
-	limits := &SupportedLimits{}
+	limits := &Limits{}
 	status, _, _ := procDeviceGetLimits.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(limits)),
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Device.GetLimits", Message: "operation failed"}
+		return nil, &WGPUError{Op: "Device.Limits", Message: "operation failed"}
 	}
 
 	return limits, nil
 }
 
-// GetFeatures retrieves all features enabled on this device.
+// Features retrieves all features enabled on this device.
 // Returns a slice of FeatureName values.
-func (d *Device) GetFeatures() []FeatureName {
+func (d *Device) Features() []FeatureName {
 	mustInit()
 	if d == nil || d.handle == 0 {
 		return nil

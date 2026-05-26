@@ -34,8 +34,10 @@ type VertexBufferLayout struct {
 }
 
 // vertexBufferLayoutWire is the FFI-compatible structure with converted StepMode.
-// Field order matches webgpu.h: stepMode, arrayStride, attributeCount, attributes
+// v29 BREAKING: nextInChain added as FIRST field in WGPUVertexBufferLayout.
+// Field order matches webgpu.h v29: nextInChain, stepMode, arrayStride, attributeCount, attributes.
 type vertexBufferLayoutWire struct {
+	NextInChain    uintptr // NEW in v29 (must be 0 unless chaining)
 	StepMode       uint32  // converted from gputypes.VertexStepMode
 	_pad           [4]byte // padding to align arrayStride to 8 bytes
 	ArrayStride    uint64
@@ -206,10 +208,16 @@ type RenderPipelineDescriptor struct {
 }
 
 // CreateRenderPipeline creates a render pipeline.
-func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPipeline {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPipeline, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateRenderPipeline", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateRenderPipeline", Message: "descriptor is nil"}
 	}
 
 	// Build vertex state
@@ -257,6 +265,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 				attrsPtr = uintptr(unsafe.Pointer(&allNativeAttrs[i][0]))
 			}
 			nativeBuffers[i] = vertexBufferLayoutWire{
+				NextInChain:    0, // v29: required first field
 				StepMode:       toWGPUVertexStepMode(buf.StepMode),
 				ArrayStride:    buf.ArrayStride,
 				AttributeCount: buf.AttributeCount,
@@ -308,7 +317,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 
 		nativeDepthStencil = depthStencilStateWire{
 			nextInChain:         0,
-			format:              toWGPUTextureFormat(desc.DepthStencil.Format),
+			format:              uint32(desc.DepthStencil.Format),
 			depthWriteEnabled:   depthWriteOpt,
 			depthCompare:        desc.DepthStencil.DepthCompare,
 			stencilFront:        desc.DepthStencil.StencilFront,
@@ -353,17 +362,14 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 		// Build color targets with wire format (uint64 writeMask!)
 		nativeTargets = make([]colorTargetStateWire, len(desc.Fragment.Targets))
 		for i, target := range desc.Fragment.Targets {
-			convertedFormat := toWGPUTextureFormat(target.Format)
 			nativeTargets[i] = colorTargetStateWire{
 				nextInChain: 0,
-				format:      convertedFormat,
+				format:      uint32(target.Format),
 				writeMask:   uint64(target.WriteMask), // widen to uint64
 			}
 			if target.Blend != nil {
 				nativeTargets[i].blend = uintptr(unsafe.Pointer(target.Blend))
 			}
-			// DEBUG: print the target bytes
-			_ = convertedFormat // silence unused warning
 		}
 
 		if len(nativeTargets) > 0 {
@@ -396,14 +402,15 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) *RenderPip
 		uintptr(unsafe.Pointer(&nativeDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateRenderPipeline", Message: "wgpu returned null handle"}
 	}
 
 	trackResource(handle, "RenderPipeline")
-	return &RenderPipeline{handle: handle}
+	return &RenderPipeline{handle: handle}, nil
 }
 
 // CreateRenderPipelineSimple creates a simple render pipeline with common defaults.
+// Returns an error if the FFI call fails or the device/shaders are nil.
 func (d *Device) CreateRenderPipelineSimple(
 	layout *PipelineLayout,
 	vertexShader *ShaderModule,
@@ -411,7 +418,7 @@ func (d *Device) CreateRenderPipelineSimple(
 	fragmentShader *ShaderModule,
 	fragmentEntryPoint string,
 	targetFormat gputypes.TextureFormat,
-) *RenderPipeline {
+) (*RenderPipeline, error) {
 	return d.CreateRenderPipeline(&RenderPipelineDescriptor{
 		Layout: layout,
 		Vertex: VertexState{

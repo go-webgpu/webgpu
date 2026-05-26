@@ -25,13 +25,15 @@ type Future struct {
 }
 
 // RequestAdapterOptions configures adapter selection.
+// v29 BREAKING: CompatibilityMode was never in the C header and has been removed.
+// v29 ADDED: BackendType field.
 type RequestAdapterOptions struct {
 	NextInChain          uintptr // *ChainedStruct
 	FeatureLevel         FeatureLevel
 	PowerPreference      gputypes.PowerPreference
 	ForceFallbackAdapter Bool
-	CompatibilityMode    Bool
-	CompatibleSurface    uintptr // WGPUSurface
+	BackendType          BackendType // v29: select specific backend
+	CompatibleSurface    uintptr    // WGPUSurface
 }
 
 // RequestAdapterCallbackInfo holds callback configuration.
@@ -183,9 +185,15 @@ func (a *Adapter) Release() {
 }
 
 // Limits describes resource limits for an adapter or device.
-// This corresponds to WGPULimits in webgpu.h (no nextInChain field).
-// Used inside SupportedLimits which wraps it with nextInChain for FFI calls.
+// This corresponds to WGPULimits in webgpu.h v29.
+// IMPORTANT: Field order must exactly match C struct layout for correct ABI.
+// v29 BREAKING changes vs v27:
+//   - NextInChain added as FIRST field (was absent in v27 Limits)
+//   - MinUniformBufferOffsetAlignment and MinStorageBufferOffsetAlignment moved
+//     from end to after MaxStorageBufferBindingSize (before MaxVertexBuffers)
+//   - MaxImmediateSize added as LAST field (new in v29)
 type Limits struct {
+	NextInChain                               uintptr // *ChainedStruct — NEW in v29
 	MaxTextureDimension1D                     uint32
 	MaxTextureDimension2D                     uint32
 	MaxTextureDimension3D                     uint32
@@ -202,6 +210,8 @@ type Limits struct {
 	MaxUniformBuffersPerShaderStage           uint32
 	MaxUniformBufferBindingSize               uint64
 	MaxStorageBufferBindingSize               uint64
+	MinUniformBufferOffsetAlignment           uint32 // MOVED: now after MaxStorageBufferBindingSize
+	MinStorageBufferOffsetAlignment           uint32 // MOVED: now after MinUniformBufferOffsetAlignment
 	MaxVertexBuffers                          uint32
 	MaxBufferSize                             uint64
 	MaxVertexAttributes                       uint32
@@ -215,34 +225,32 @@ type Limits struct {
 	MaxComputeWorkgroupSizeY                  uint32
 	MaxComputeWorkgroupSizeZ                  uint32
 	MaxComputeWorkgroupsPerDimension          uint32
-	MinUniformBufferOffsetAlignment           uint32
-	MinStorageBufferOffsetAlignment           uint32
-}
-
-// SupportedLimits contains adapter limits.
-type SupportedLimits struct {
-	NextInChain uintptr // *ChainedStructOut
-	Limits      Limits
+	MaxImmediateSize                          uint32 // NEW in v29 (push constants replacement)
 }
 
 // SupportedFeatures contains features supported by adapter or device.
-// This is the wire format for wgpuAdapterGetFeatures/wgpuDeviceGetFeatures.
+// This is the wire format for wgpuAdapterGetFeatures/wgpuDeviceGetFeatures (v29 single-call API).
+// Call SupportedFeaturesFreeMembers after use to release C-allocated memory.
 type SupportedFeatures struct {
 	FeatureCount uintptr // size_t
-	Features     uintptr // *FeatureName
+	Features     uintptr // *FeatureName (C-allocated, must free with SupportedFeaturesFreeMembers)
 }
 
 // AdapterInfo contains information about the adapter.
+// v29: NextInChain type changed from *ChainedStructOut to *ChainedStruct.
+// v29: SubgroupMinSize and SubgroupMaxSize fields added.
 type AdapterInfo struct {
-	NextInChain  uintptr // *ChainedStructOut
-	Vendor       StringView
-	Architecture StringView
-	Device       StringView
-	Description  StringView
-	BackendType  BackendType
-	AdapterType  AdapterType
-	VendorID     uint32
-	DeviceID     uint32
+	NextInChain   uintptr // *ChainedStruct (was *ChainedStructOut in v27)
+	Vendor        StringView
+	Architecture  StringView
+	Device        StringView
+	Description   StringView
+	BackendType   BackendType
+	AdapterType   AdapterType
+	VendorID      uint32
+	DeviceID      uint32
+	SubgroupMinSize uint32 // NEW in v29
+	SubgroupMaxSize uint32 // NEW in v29
 }
 
 // AdapterInfoGo is the Go-friendly version of AdapterInfo with actual strings.
@@ -257,55 +265,69 @@ type AdapterInfoGo struct {
 	DeviceID     uint32
 }
 
-// GetLimits retrieves the limits of this adapter.
+// Limits retrieves the limits of this adapter.
+// v29: WGPULimits now has nextInChain as first field; pass *Limits directly (no SupportedLimits wrapper).
 // Returns nil if the adapter is nil or if the operation fails.
-func (a *Adapter) GetLimits() (*SupportedLimits, error) {
+func (a *Adapter) Limits() (*Limits, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
 	if a == nil || a.handle == 0 {
-		return nil, &WGPUError{Op: "Adapter.GetLimits", Message: "adapter is nil"}
+		return nil, &WGPUError{Op: "Adapter.Limits", Message: "adapter is nil"}
 	}
 
-	limits := &SupportedLimits{}
+	limits := &Limits{}
 	status, _, _ := procAdapterGetLimits.Call(
 		a.handle,
 		uintptr(unsafe.Pointer(limits)),
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Adapter.GetLimits", Message: "operation failed"}
+		return nil, &WGPUError{Op: "Adapter.Limits", Message: "operation failed"}
 	}
 
 	return limits, nil
 }
 
-// EnumerateFeatures retrieves all features supported by this adapter.
-// Returns a slice of FeatureName values.
-func (a *Adapter) EnumerateFeatures() []FeatureName {
+// Features retrieves all features supported by this adapter.
+// v29: Uses single-call wgpuAdapterGetFeatures with SupportedFeatures struct (replaces two-call EnumerateFeatures).
+// The returned slice is copied from C memory; the underlying C allocation is freed automatically.
+func (a *Adapter) Features() []FeatureName {
 	mustInit()
 	if a == nil || a.handle == 0 {
 		return nil
 	}
 
-	// First call: get count
-	count, _, _ := procAdapterEnumerateFeatures.Call(
+	// Single call: wgpu fills WGPUSupportedFeatures with C-allocated array
+	var sf SupportedFeatures
+	procAdapterGetFeatures.Call( //nolint:errcheck
 		a.handle,
-		0, // null pointer to get count
+		uintptr(unsafe.Pointer(&sf)),
 	)
 
-	if count == 0 {
+	if sf.FeatureCount == 0 || sf.Features == 0 {
 		return nil
 	}
 
-	// Second call: get features
+	// Copy features from C memory to Go slice
+	count := int(sf.FeatureCount)
 	features := make([]FeatureName, count)
-	procAdapterEnumerateFeatures.Call( //nolint:errcheck
-		a.handle,
-		uintptr(unsafe.Pointer(&features[0])),
-	)
+	for i := range features {
+		// Each FeatureName is uint32 (4 bytes)
+		ptr := (*FeatureName)(ptrFromUintptr(sf.Features + uintptr(i)*4))
+		features[i] = *ptr
+	}
+
+	// Free C-allocated memory
+	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(&sf))) //nolint:errcheck
 
 	return features
+}
+
+// EnumerateFeatures is a deprecated alias for Features.
+// Deprecated: Use Features instead. This method was renamed in wgpu-native v29.
+func (a *Adapter) EnumerateFeatures() []FeatureName {
+	return a.Features()
 }
 
 // HasFeature checks if the adapter supports a specific feature.
@@ -323,15 +345,15 @@ func (a *Adapter) HasFeature(feature FeatureName) bool {
 	return Bool(result) == True
 }
 
-// GetInfo retrieves information about this adapter.
+// Info retrieves information about this adapter.
 // The returned AdapterInfoGo contains Go strings copied from C memory.
 // Returns nil if the adapter is nil or if the operation fails.
-func (a *Adapter) GetInfo() (*AdapterInfoGo, error) {
+func (a *Adapter) Info() (*AdapterInfoGo, error) {
 	if err := checkInit(); err != nil {
 		return nil, err
 	}
 	if a == nil || a.handle == 0 {
-		return nil, &WGPUError{Op: "Adapter.GetInfo", Message: "adapter is nil"}
+		return nil, &WGPUError{Op: "Adapter.Info", Message: "adapter is nil"}
 	}
 
 	// Get native adapter info
@@ -342,7 +364,7 @@ func (a *Adapter) GetInfo() (*AdapterInfoGo, error) {
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Adapter.GetInfo", Message: "operation failed"}
+		return nil, &WGPUError{Op: "Adapter.Info", Message: "operation failed"}
 	}
 
 	// Convert StringViews to Go strings

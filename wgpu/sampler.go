@@ -24,10 +24,15 @@ type SamplerDescriptor struct {
 }
 
 // CreateSampler creates a sampler with the specified descriptor.
-func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateSampler", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateSampler", Message: "descriptor is nil"}
 	}
 
 	// wgpu-native requires MaxAnisotropy >= 1
@@ -41,14 +46,14 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) *Sampler {
 		uintptr(unsafe.Pointer(&descCopy)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateSampler", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Sampler")
-	return &Sampler{handle: handle}
+	return &Sampler{handle: handle}, nil
 }
 
 // CreateLinearSampler creates a sampler with linear filtering.
-func (d *Device) CreateLinearSampler() *Sampler {
+func (d *Device) CreateLinearSampler() (*Sampler, error) {
 	desc := SamplerDescriptor{
 		Label:        EmptyStringView(),
 		AddressModeU: gputypes.AddressModeClampToEdge,
@@ -64,7 +69,7 @@ func (d *Device) CreateLinearSampler() *Sampler {
 }
 
 // CreateNearestSampler creates a sampler with nearest filtering.
-func (d *Device) CreateNearestSampler() *Sampler {
+func (d *Device) CreateNearestSampler() (*Sampler, error) {
 	desc := SamplerDescriptor{
 		Label:        EmptyStringView(),
 		AddressModeU: gputypes.AddressModeClampToEdge,

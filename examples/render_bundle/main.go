@@ -11,7 +11,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -322,7 +321,7 @@ func (app *App) initWebGPU() error {
 	}
 	app.device = device
 
-	app.queue = device.GetQueue()
+	app.queue = device.Queue()
 
 	surface, err := inst.CreateSurfaceFromWindowsHWND(uintptr(app.hinstance), uintptr(app.hwnd))
 	if err != nil {
@@ -337,12 +336,12 @@ func (app *App) initWebGPU() error {
 func (app *App) configureSurface() error {
 	app.surface.Configure(&wgpu.SurfaceConfiguration{
 		Device:      app.device,
-		Format:      gputypes.TextureFormatBGRA8Unorm,
-		Usage:       gputypes.TextureUsageRenderAttachment,
+		Format:      wgpu.TextureFormatBGRA8Unorm,
+		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
-		PresentMode: gputypes.PresentModeFifo,
+		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
+		PresentMode: wgpu.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -350,17 +349,17 @@ func (app *App) configureSurface() error {
 
 // createPipeline creates the render pipeline.
 func (app *App) createPipeline() error {
-	shader := app.device.CreateShaderModuleWGSL(shaderSource)
+	shader, _ := app.device.CreateShaderModuleWGSL(shaderSource)
 	if shader == nil {
 		return fmt.Errorf("failed to create shader module")
 	}
 	defer shader.Release()
 
-	pipeline := app.device.CreateRenderPipelineSimple(
+	pipeline, _ := app.device.CreateRenderPipelineSimple(
 		nil,
 		shader, "vs_main",
 		shader, "fs_main",
-		gputypes.TextureFormatBGRA8Unorm,
+		wgpu.TextureFormatBGRA8Unorm,
 	)
 	if pipeline == nil {
 		return fmt.Errorf("failed to create render pipeline")
@@ -375,10 +374,10 @@ func (app *App) createRenderBundle() error {
 	fmt.Println("Creating RenderBundle with 3 triangles...")
 
 	// Create render bundle encoder with matching format
-	colorFormats := []gputypes.TextureFormat{gputypes.TextureFormatBGRA8Unorm}
+	colorFormats := []wgpu.TextureFormat{wgpu.TextureFormatBGRA8Unorm}
 	bundleEncoder := app.device.CreateRenderBundleEncoderSimple(
 		colorFormats,
-		gputypes.TextureFormatUndefined, // no depth
+		wgpu.TextureFormatUndefined, // no depth
 		1,                               // sample count
 	)
 	if bundleEncoder == nil {
@@ -426,7 +425,7 @@ func (app *App) acquireSurfaceTexture() error {
 	}
 	app.surfaceTex = surfaceTex
 
-	view := surfaceTex.Texture.CreateView(nil)
+	view, _ := surfaceTex.Texture.CreateView(nil)
 	if view == nil {
 		return fmt.Errorf("failed to create texture view")
 	}
@@ -451,19 +450,19 @@ func (app *App) render() error {
 		return nil
 	}
 
-	encoder := app.device.CreateCommandEncoder(nil)
+	encoder, _ := app.device.CreateCommandEncoder(nil)
 	if encoder == nil {
 		return fmt.Errorf("failed to create command encoder")
 	}
 	defer encoder.Release()
 
 	// Begin render pass
-	pass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	pass, _ := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		Label: "RenderBundle Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    app.surfaceTexView,
-			LoadOp:  gputypes.LoadOpClear,
-			StoreOp: gputypes.StoreOpStore,
+			LoadOp:  wgpu.LoadOpClear,
+			StoreOp: wgpu.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.1,
@@ -483,7 +482,7 @@ func (app *App) render() error {
 
 	pass.End()
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, _ := encoder.Finish(nil)
 	if cmdBuffer == nil {
 		return fmt.Errorf("failed to finish command encoder")
 	}

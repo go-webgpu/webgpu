@@ -30,7 +30,7 @@ type Adapter struct{ handle uintptr }
 type Device struct{ handle uintptr }
 
 // Queue is used to submit command buffers and write data to buffers/textures.
-// Obtained via [Device.GetQueue], release with [Queue.Release].
+// Obtained via [Device.Queue], release with [Queue.Release].
 type Queue struct{ handle uintptr }
 
 // Buffer represents a block of GPU-accessible memory.

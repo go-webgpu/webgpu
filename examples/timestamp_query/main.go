@@ -10,7 +10,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -52,12 +51,12 @@ func run() error {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	defer queue.Release()
 
-	// Try to create a timestamp query set
-	// This will fail if TIMESTAMP_QUERY feature is not enabled
-	querySet := device.CreateQuerySet(&wgpu.QuerySetDescriptor{
+	// Try to create a timestamp query set.
+	// This will fail if TIMESTAMP_QUERY feature is not enabled.
+	querySet, _ := device.CreateQuerySet(&wgpu.QuerySetDescriptor{
 		Type:  wgpu.QueryTypeTimestamp,
 		Count: 2,
 	})
@@ -82,22 +81,22 @@ func runWithTimestamps(device *wgpu.Device, queue *wgpu.Queue, querySet *wgpu.Qu
 
 	// Create buffer to resolve query results (2 timestamps * 8 bytes each)
 	queryResultSize := uint64(16)
-	queryResultBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: gputypes.BufferUsageQueryResolve | gputypes.BufferUsageCopySrc,
+	queryResultBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage: wgpu.BufferUsageQueryResolve | wgpu.BufferUsageCopySrc,
 		Size:  queryResultSize,
 	})
-	if queryResultBuffer == nil {
-		return fmt.Errorf("failed to create query result buffer")
+	if err != nil {
+		return fmt.Errorf("create query result buffer: %w", err)
 	}
 	defer queryResultBuffer.Release()
 
 	// Create staging buffer for CPU read
-	stagingBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
+	stagingBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage: wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:  queryResultSize,
 	})
-	if stagingBuffer == nil {
-		return fmt.Errorf("failed to create staging buffer")
+	if err != nil {
+		return fmt.Errorf("create staging buffer: %w", err)
 	}
 	defer stagingBuffer.Release()
 
@@ -117,15 +116,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		return fmt.Errorf("failed to create shader")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		return fmt.Errorf("create shader: %w", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		return fmt.Errorf("failed to create pipeline")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		return fmt.Errorf("create pipeline: %w", err)
 	}
 	defer pipeline.Release()
 
@@ -133,12 +132,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	const numElements = 1024 * 1024
 	bufferSize := uint64(numElements * 4)
 
-	dataBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: gputypes.BufferUsageStorage,
+	dataBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage: wgpu.BufferUsageStorage,
 		Size:  bufferSize,
 	})
-	if dataBuffer == nil {
-		return fmt.Errorf("failed to create data buffer")
+	if err != nil {
+		return fmt.Errorf("create data buffer: %w", err)
 	}
 	defer dataBuffer.Release()
 
@@ -146,25 +145,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	bindGroupLayout := pipeline.GetBindGroupLayout(0)
 	defer bindGroupLayout.Release()
 
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
 		wgpu.BufferBindingEntry(0, dataBuffer, 0, bufferSize),
 	})
-	if bindGroup == nil {
-		return fmt.Errorf("failed to create bind group")
+	if err != nil {
+		return fmt.Errorf("create bind group: %w", err)
 	}
 	defer bindGroup.Release()
 
 	// Record commands with timestamps
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		return fmt.Errorf("failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		return fmt.Errorf("create command encoder: %w", err)
 	}
 
 	// Write start timestamp
 	encoder.WriteTimestamp(querySet, 0)
 
 	// Execute compute pass
-	pass := encoder.BeginComputePass(nil)
+	pass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		return fmt.Errorf("begin compute pass: %w", err)
+	}
 	pass.SetPipeline(pipeline)
 	pass.SetBindGroup(0, bindGroup, nil)
 	pass.DispatchWorkgroups(numElements/256, 1, 1)
@@ -180,7 +182,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	// Copy to staging buffer
 	encoder.CopyBufferToBuffer(queryResultBuffer, 0, stagingBuffer, 0, queryResultSize)
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		return fmt.Errorf("finish encoder: %w", err)
+	}
 	encoder.Release()
 
 	queue.Submit(cmdBuffer)
@@ -206,13 +211,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
 	stagingBuffer.Unmap()
 
-	// Calculate elapsed ticks
+	// Calculate elapsed ticks.
 	// Note: To convert to nanoseconds, you need the timestamp period
-	// from the adapter (typically 1 ns/tick, but varies by GPU)
+	// from the adapter (typically 1 ns/tick, but varies by GPU).
 	elapsedTicks := endTimestamp - startTimestamp
 
-	// Assume 1 ns/tick (common on most GPUs)
-	// For accurate conversion, use adapter.GetTimestampPeriod() if available
+	// Assume 1 ns/tick (common on most GPUs).
 	const assumedPeriodNs = 1.0
 	elapsedNs := float64(elapsedTicks) * assumedPeriodNs
 
@@ -248,15 +252,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 }
 `
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		return fmt.Errorf("failed to create shader")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		return fmt.Errorf("create shader: %w", err)
 	}
 	defer shader.Release()
 
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		return fmt.Errorf("failed to create pipeline")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		return fmt.Errorf("create pipeline: %w", err)
 	}
 	defer pipeline.Release()
 
@@ -264,12 +268,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	const numElements = 1024 * 1024
 	bufferSize := uint64(numElements * 4)
 
-	buffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage: gputypes.BufferUsageStorage,
+	buffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage: wgpu.BufferUsageStorage,
 		Size:  bufferSize,
 	})
-	if buffer == nil {
-		return fmt.Errorf("failed to create buffer")
+	if err != nil {
+		return fmt.Errorf("create buffer: %w", err)
 	}
 	defer buffer.Release()
 
@@ -277,30 +281,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	bindGroupLayout := pipeline.GetBindGroupLayout(0)
 	defer bindGroupLayout.Release()
 
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
 		wgpu.BufferBindingEntry(0, buffer, 0, bufferSize),
 	})
-	if bindGroup == nil {
-		return fmt.Errorf("failed to create bind group")
+	if err != nil {
+		return fmt.Errorf("create bind group: %w", err)
 	}
 	defer bindGroup.Release()
 
 	// Time the GPU work with CPU timer
 	start := time.Now()
 
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		return fmt.Errorf("failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		return fmt.Errorf("create command encoder: %w", err)
 	}
 
-	pass := encoder.BeginComputePass(nil)
+	pass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		return fmt.Errorf("begin compute pass: %w", err)
+	}
 	pass.SetPipeline(pipeline)
 	pass.SetBindGroup(0, bindGroup, nil)
 	pass.DispatchWorkgroups(numElements/256, 1, 1)
 	pass.End()
 	pass.Release()
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		return fmt.Errorf("finish encoder: %w", err)
+	}
 	encoder.Release()
 
 	queue.Submit(cmdBuffer)

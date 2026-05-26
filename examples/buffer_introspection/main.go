@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 )
 
 func main() {
@@ -19,7 +18,7 @@ func main() {
 
 	// Request adapter
 	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{
-		PowerPreference: gputypes.PowerPreferenceHighPerformance,
+		PowerPreference: wgpu.PowerPreferenceHighPerformance,
 	})
 	if err != nil {
 		log.Fatalf("Failed to request adapter: %v", err)
@@ -35,13 +34,13 @@ func main() {
 
 	// Create a storage buffer
 	bufferSize := uint64(1024 * 1024) // 1MB
-	buffer := device.CreateBuffer(&wgpu.BufferDescriptor{
+	buffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label: wgpu.EmptyStringView(),
-		Usage: gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
+		Usage: wgpu.BufferUsageStorage | wgpu.BufferUsageCopySrc | wgpu.BufferUsageCopyDst,
 		Size:  bufferSize,
 	})
-	if buffer == nil {
-		log.Fatal("Failed to create buffer")
+	if err != nil {
+		log.Fatalf("create buffer: %v", err)
 	}
 	defer buffer.Release()
 
@@ -49,39 +48,39 @@ func main() {
 	fmt.Println("=== Buffer Introspection ===")
 
 	// Get buffer size
-	size := buffer.GetSize()
+	size := buffer.Size()
 	fmt.Printf("Buffer size: %d bytes (%.2f MB)\n", size, float64(size)/(1024*1024))
 
 	// Get buffer usage
-	usage := buffer.GetUsage()
+	usage := buffer.Usage()
 	fmt.Printf("Buffer usage: %s\n", usageToString(usage))
 
 	// Get buffer map state
-	mapState := buffer.GetMapState()
+	mapState := buffer.MapState()
 	fmt.Printf("Buffer map state: %s\n", mapStateToString(mapState))
 
 	// Create a mappable buffer
 	fmt.Println("\n=== Mappable Buffer Example ===")
-	mappableBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
+	mappableBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
 		Label:            wgpu.EmptyStringView(),
-		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
+		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:             1024,
 		MappedAtCreation: wgpu.True,
 	})
-	if mappableBuffer == nil {
-		log.Fatal("Failed to create mappable buffer")
+	if err != nil {
+		log.Fatalf("create mappable buffer: %v", err)
 	}
 	defer mappableBuffer.Release()
 
 	// Check state when mapped at creation
-	mapState = mappableBuffer.GetMapState()
+	mapState = mappableBuffer.MapState()
 	fmt.Printf("Initial map state (MappedAtCreation): %s\n", mapStateToString(mapState))
 
 	// Unmap the buffer
 	mappableBuffer.Unmap()
 
 	// Check state after unmap
-	mapState = mappableBuffer.GetMapState()
+	mapState = mappableBuffer.MapState()
 	fmt.Printf("Map state after Unmap(): %s\n", mapStateToString(mapState))
 
 	// Map async
@@ -90,12 +89,12 @@ func main() {
 	if err != nil {
 		log.Printf("MapAsync failed: %v", err)
 	} else {
-		mapState = mappableBuffer.GetMapState()
+		mapState = mappableBuffer.MapState()
 		fmt.Printf("Map state after MapAsync(): %s\n", mapStateToString(mapState))
 
 		// Unmap again
 		mappableBuffer.Unmap()
-		mapState = mappableBuffer.GetMapState()
+		mapState = mappableBuffer.MapState()
 		fmt.Printf("Map state after final Unmap(): %s\n", mapStateToString(mapState))
 	}
 
@@ -107,37 +106,37 @@ func main() {
 	fmt.Println("- Debug buffer lifecycle issues")
 }
 
-func usageToString(usage gputypes.BufferUsage) string {
+func usageToString(usage wgpu.BufferUsage) string {
 	var flags []string
 
-	if usage&gputypes.BufferUsageMapRead != 0 {
+	if usage&wgpu.BufferUsageMapRead != 0 {
 		flags = append(flags, "MapRead")
 	}
-	if usage&gputypes.BufferUsageMapWrite != 0 {
+	if usage&wgpu.BufferUsageMapWrite != 0 {
 		flags = append(flags, "MapWrite")
 	}
-	if usage&gputypes.BufferUsageCopySrc != 0 {
+	if usage&wgpu.BufferUsageCopySrc != 0 {
 		flags = append(flags, "CopySrc")
 	}
-	if usage&gputypes.BufferUsageCopyDst != 0 {
+	if usage&wgpu.BufferUsageCopyDst != 0 {
 		flags = append(flags, "CopyDst")
 	}
-	if usage&gputypes.BufferUsageIndex != 0 {
+	if usage&wgpu.BufferUsageIndex != 0 {
 		flags = append(flags, "Index")
 	}
-	if usage&gputypes.BufferUsageVertex != 0 {
+	if usage&wgpu.BufferUsageVertex != 0 {
 		flags = append(flags, "Vertex")
 	}
-	if usage&gputypes.BufferUsageUniform != 0 {
+	if usage&wgpu.BufferUsageUniform != 0 {
 		flags = append(flags, "Uniform")
 	}
-	if usage&gputypes.BufferUsageStorage != 0 {
+	if usage&wgpu.BufferUsageStorage != 0 {
 		flags = append(flags, "Storage")
 	}
-	if usage&gputypes.BufferUsageIndirect != 0 {
+	if usage&wgpu.BufferUsageIndirect != 0 {
 		flags = append(flags, "Indirect")
 	}
-	if usage&gputypes.BufferUsageQueryResolve != 0 {
+	if usage&wgpu.BufferUsageQueryResolve != 0 {
 		flags = append(flags, "QueryResolve")
 	}
 

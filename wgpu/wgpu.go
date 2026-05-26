@@ -19,14 +19,15 @@ var (
 	procInstanceProcessEvents Proc
 
 	// Function pointers - Adapter
-	procAdapterRelease           Proc
-	procInstanceRequestAdapter   Proc
-	procAdapterRequestDevice     Proc
-	procAdapterGetLimits         Proc
-	procAdapterEnumerateFeatures Proc
-	procAdapterHasFeature        Proc
-	procAdapterGetInfo           Proc
-	procAdapterInfoFreeMembers   Proc
+	procAdapterRelease              Proc
+	procInstanceRequestAdapter      Proc
+	procAdapterRequestDevice        Proc
+	procAdapterGetLimits            Proc
+	procAdapterGetFeatures          Proc // v29: replaces EnumerateFeatures (single-call with SupportedFeatures)
+	procSupportedFeaturesFreeMembers Proc
+	procAdapterHasFeature           Proc
+	procAdapterGetInfo              Proc
+	procAdapterInfoFreeMembers      Proc
 
 	// Function pointers - Device
 	procDeviceRelease        Proc
@@ -43,15 +44,22 @@ var (
 	procQueueRelease     Proc
 	procQueueWriteBuffer Proc
 
+	// Function pointers - Instance (global)
+	procGetInstanceFeatures Proc // v29: global instance feature query
+	procGetInstanceLimits   Proc // v29: global instance limits query
+	procHasInstanceFeature  Proc // v29: check a single instance feature
+
 	// Function pointers - Buffer
-	procBufferRelease        Proc
-	procBufferDestroy        Proc
-	procBufferGetMappedRange Proc
-	procBufferUnmap          Proc
-	procBufferGetSize        Proc
-	procBufferMapAsync       Proc
-	procBufferGetUsage       Proc
-	procBufferGetMapState    Proc
+	procBufferRelease          Proc
+	procBufferDestroy          Proc
+	procBufferGetMappedRange   Proc
+	procBufferReadMappedRange  Proc // v29: explicit read mapped range
+	procBufferWriteMappedRange Proc // v29: explicit write mapped range
+	procBufferUnmap            Proc
+	procBufferGetSize          Proc
+	procBufferMapAsync         Proc
+	procBufferGetUsage         Proc
+	procBufferGetMapState      Proc
 
 	// Function pointers - ShaderModule
 	procDeviceCreateShaderModule Proc
@@ -113,16 +121,19 @@ var (
 	procSurfacePresent                 Proc
 
 	// Function pointers - Texture
-	procDeviceCreateTexture          Proc
-	procTextureRelease               Proc
-	procTextureDestroy               Proc
-	procTextureCreateView            Proc
-	procTextureViewRelease           Proc
-	procTextureGetWidth              Proc
-	procTextureGetHeight             Proc
-	procTextureGetDepthOrArrayLayers Proc
-	procTextureGetMipLevelCount      Proc
-	procTextureGetFormat             Proc
+	procDeviceCreateTexture                    Proc
+	procTextureRelease                         Proc
+	procTextureDestroy                         Proc
+	procTextureCreateView                      Proc
+	procTextureViewRelease                     Proc
+	procTextureGetWidth                        Proc
+	procTextureGetHeight                       Proc
+	procTextureGetDepthOrArrayLayers           Proc
+	procTextureGetMipLevelCount                Proc
+	procTextureGetFormat                       Proc
+	procTextureGetSampleCount                  Proc // v29: new getter
+	procTextureGetUsage                        Proc // v29: new getter
+	procTextureGetTextureBindingViewDimension  Proc // v29: new getter
 
 	// Function pointers - Sampler
 	procDeviceCreateSampler Proc
@@ -228,7 +239,8 @@ func initSymbols() {
 	procInstanceRequestAdapter = wgpuLib.NewProc("wgpuInstanceRequestAdapter")
 	procAdapterRequestDevice = wgpuLib.NewProc("wgpuAdapterRequestDevice")
 	procAdapterGetLimits = wgpuLib.NewProc("wgpuAdapterGetLimits")
-	procAdapterEnumerateFeatures = wgpuLib.NewProc("wgpuAdapterEnumerateFeatures")
+	procAdapterGetFeatures = wgpuLib.NewProc("wgpuAdapterGetFeatures")                 // v29: replaces wgpuAdapterEnumerateFeatures
+	procSupportedFeaturesFreeMembers = wgpuLib.NewProc("wgpuSupportedFeaturesFreeMembers")
 	procAdapterHasFeature = wgpuLib.NewProc("wgpuAdapterHasFeature")
 	procAdapterGetInfo = wgpuLib.NewProc("wgpuAdapterGetInfo")
 	procAdapterInfoFreeMembers = wgpuLib.NewProc("wgpuAdapterInfoFreeMembers")
@@ -248,10 +260,17 @@ func initSymbols() {
 	procQueueRelease = wgpuLib.NewProc("wgpuQueueRelease")
 	procQueueWriteBuffer = wgpuLib.NewProc("wgpuQueueWriteBuffer")
 
+	// Instance global queries (v29)
+	procGetInstanceFeatures = wgpuLib.NewProc("wgpuGetInstanceFeatures")
+	procGetInstanceLimits = wgpuLib.NewProc("wgpuGetInstanceLimits")
+	procHasInstanceFeature = wgpuLib.NewProc("wgpuHasInstanceFeature")
+
 	// Buffer
 	procBufferRelease = wgpuLib.NewProc("wgpuBufferRelease")
 	procBufferDestroy = wgpuLib.NewProc("wgpuBufferDestroy")
 	procBufferGetMappedRange = wgpuLib.NewProc("wgpuBufferGetMappedRange")
+	procBufferReadMappedRange = wgpuLib.NewProc("wgpuBufferReadMappedRange")   // v29
+	procBufferWriteMappedRange = wgpuLib.NewProc("wgpuBufferWriteMappedRange") // v29
 	procBufferUnmap = wgpuLib.NewProc("wgpuBufferUnmap")
 	procBufferGetSize = wgpuLib.NewProc("wgpuBufferGetSize")
 	procBufferMapAsync = wgpuLib.NewProc("wgpuBufferMapAsync")
@@ -328,6 +347,9 @@ func initSymbols() {
 	procTextureGetDepthOrArrayLayers = wgpuLib.NewProc("wgpuTextureGetDepthOrArrayLayers")
 	procTextureGetMipLevelCount = wgpuLib.NewProc("wgpuTextureGetMipLevelCount")
 	procTextureGetFormat = wgpuLib.NewProc("wgpuTextureGetFormat")
+	procTextureGetSampleCount = wgpuLib.NewProc("wgpuTextureGetSampleCount")                               // v29
+	procTextureGetUsage = wgpuLib.NewProc("wgpuTextureGetUsage")                                           // v29
+	procTextureGetTextureBindingViewDimension = wgpuLib.NewProc("wgpuTextureGetTextureBindingViewDimension") // v29
 
 	// Sampler
 	procDeviceCreateSampler = wgpuLib.NewProc("wgpuDeviceCreateSampler")

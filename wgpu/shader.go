@@ -17,10 +17,16 @@ type ShaderSourceWGSL struct {
 }
 
 // CreateShaderModuleWGSL creates a shader module from WGSL source code.
-func (d *Device) CreateShaderModuleWGSL(code string) *ShaderModule {
-	mustInit()
+// Returns an error if the FFI call fails or the device is nil.
+func (d *Device) CreateShaderModuleWGSL(code string) (*ShaderModule, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if d == nil || d.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateShaderModuleWGSL", Message: "device is nil or released"}
+	}
+	if code == "" {
+		return nil, &WGPUError{Op: "CreateShaderModuleWGSL", Message: "shader source is empty"}
 	}
 
 	// Create WGSL source with embedded string data
@@ -47,28 +53,34 @@ func (d *Device) CreateShaderModuleWGSL(code string) *ShaderModule {
 		uintptr(unsafe.Pointer(&desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateShaderModuleWGSL", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "ShaderModule")
-	return &ShaderModule{handle: handle}
+	return &ShaderModule{handle: handle}, nil
 }
 
 // CreateShaderModule creates a shader module from a descriptor.
-// For WGSL shaders, use CreateShaderModuleWGSL instead.
-func (d *Device) CreateShaderModule(desc *ShaderModuleDescriptor) *ShaderModule {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// For WGSL shaders, prefer CreateShaderModuleWGSL.
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateShaderModule(desc *ShaderModuleDescriptor) (*ShaderModule, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateShaderModule", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateShaderModule", Message: "descriptor is nil"}
 	}
 	handle, _, _ := procDeviceCreateShaderModule.Call(
 		d.handle,
 		uintptr(unsafe.Pointer(desc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateShaderModule", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "ShaderModule")
-	return &ShaderModule{handle: handle}
+	return &ShaderModule{handle: handle}, nil
 }
 
 // Release releases the shader module resources.

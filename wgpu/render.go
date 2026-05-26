@@ -78,20 +78,27 @@ type renderPassDepthStencilAttachment struct {
 	stencilReadOnly   Bool
 }
 
-// renderPassTimestampWrites is the native structure for timestamp writes (24 bytes).
-type renderPassTimestampWrites struct {
+// passTimestampWrites is the native structure for v29 WGPUPassTimestampWrites.
+// v29: nextInChain added as FIRST field; unifies former RenderPassTimestampWrites and ComputePassTimestampWrites.
+// Layout: nextInChain(8) + querySet(8) + beginningOfPassWriteIndex(4) + endOfPassWriteIndex(4) = 24 bytes.
+type passTimestampWrites struct {
+	nextInChain               uintptr // 8 bytes (NEW in v29)
 	querySet                  uintptr // 8 bytes (WGPUQuerySet)
 	beginningOfPassWriteIndex uint32  // 4 bytes
 	endOfPassWriteIndex       uint32  // 4 bytes
-	_pad                      [8]byte // 8 bytes padding for alignment
 }
 
-// RenderPassTimestampWrites describes timestamp writes for a render pass.
-type RenderPassTimestampWrites struct {
+// PassTimestampWrites describes timestamp writes for a render or compute pass.
+// v29: Unified struct — replaces separate RenderPassTimestampWrites and ComputePassTimestampWrites.
+type PassTimestampWrites struct {
 	QuerySet                  *QuerySet
 	BeginningOfPassWriteIndex uint32 // Use TimestampLocationUndefined to disable
 	EndOfPassWriteIndex       uint32 // Use TimestampLocationUndefined to disable
 }
+
+// RenderPassTimestampWrites is a deprecated alias for PassTimestampWrites.
+// Deprecated: Use PassTimestampWrites. Renamed in wgpu-native v29.
+type RenderPassTimestampWrites = PassTimestampWrites
 
 // RenderPassDescriptor describes a render pass.
 type RenderPassDescriptor struct {
@@ -102,10 +109,19 @@ type RenderPassDescriptor struct {
 }
 
 // BeginRenderPass begins a render pass.
-func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPassEncoder {
-	mustInit()
-	if enc == nil || enc.handle == 0 || desc == nil || len(desc.ColorAttachments) == 0 {
-		return nil
+// Returns an error if the FFI call fails, encoder is nil, or desc has no color attachments.
+func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) (*RenderPassEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if enc == nil || enc.handle == 0 {
+		return nil, &WGPUError{Op: "BeginRenderPass", Message: "encoder is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "BeginRenderPass", Message: "descriptor is nil"}
+	}
+	if len(desc.ColorAttachments) == 0 {
+		return nil, &WGPUError{Op: "BeginRenderPass", Message: "no color attachments"}
 	}
 
 	// Build native color attachments
@@ -126,8 +142,8 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 			view:          viewHandle,
 			depthSlice:    DepthSliceUndefined, // CRITICAL for 2D textures!
 			resolveTarget: resolveHandle,
-			loadOp:        toWGPULoadOp(ca.LoadOp),
-			storeOp:       toWGPUStoreOp(ca.StoreOp),
+			loadOp:        uint32(ca.LoadOp),
+			storeOp:       uint32(ca.StoreOp),
 			clearValue:    ca.ClearValue,
 		}
 	}
@@ -147,23 +163,24 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 
 		nativeDepthStencil = renderPassDepthStencilAttachment{
 			view:              desc.DepthStencilAttachment.View.handle,
-			depthLoadOp:       toWGPULoadOp(desc.DepthStencilAttachment.DepthLoadOp),
-			depthStoreOp:      toWGPUStoreOp(desc.DepthStencilAttachment.DepthStoreOp),
+			depthLoadOp:       uint32(desc.DepthStencilAttachment.DepthLoadOp),
+			depthStoreOp:      uint32(desc.DepthStencilAttachment.DepthStoreOp),
 			depthClearValue:   desc.DepthStencilAttachment.DepthClearValue,
 			depthReadOnly:     depthRO,
-			stencilLoadOp:     toWGPULoadOp(desc.DepthStencilAttachment.StencilLoadOp),
-			stencilStoreOp:    toWGPUStoreOp(desc.DepthStencilAttachment.StencilStoreOp),
+			stencilLoadOp:     uint32(desc.DepthStencilAttachment.StencilLoadOp),
+			stencilStoreOp:    uint32(desc.DepthStencilAttachment.StencilStoreOp),
 			stencilClearValue: desc.DepthStencilAttachment.StencilClearValue,
 			stencilReadOnly:   stencilRO,
 		}
 		depthStencilPtr = uintptr(unsafe.Pointer(&nativeDepthStencil))
 	}
 
-	// Build timestamp writes if present
+	// Build timestamp writes if present (v29: passTimestampWrites with nextInChain)
 	var timestampWritesPtr uintptr
-	var nativeTimestampWrites renderPassTimestampWrites
+	var nativeTimestampWrites passTimestampWrites
 	if desc.TimestampWrites != nil {
-		nativeTimestampWrites = renderPassTimestampWrites{
+		nativeTimestampWrites = passTimestampWrites{
+			nextInChain:               0,
 			querySet:                  desc.TimestampWrites.QuerySet.handle,
 			beginningOfPassWriteIndex: desc.TimestampWrites.BeginningOfPassWriteIndex,
 			endOfPassWriteIndex:       desc.TimestampWrites.EndOfPassWriteIndex,
@@ -186,10 +203,10 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) *RenderPa
 		uintptr(unsafe.Pointer(&nativeDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "BeginRenderPass", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "RenderPassEncoder")
-	return &RenderPassEncoder{handle: handle}
+	return &RenderPassEncoder{handle: handle}, nil
 }
 
 // SetPipeline sets the render pipeline for this pass.

@@ -51,9 +51,9 @@ func TestDeviceGetQueue(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Getting queue...")
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
@@ -84,25 +84,25 @@ func TestDeviceGetLimits(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Getting device limits...")
-	deviceLimits, err := device.GetLimits()
+	deviceLimits, err := device.Limits()
 
 	// NOTE: Currently wgpu-native v27 returns error from wgpuDeviceGetLimits
 	// See issue #3 - waiting for wgpu-native webgpu-headers update
 	if err != nil {
-		t.Logf("Device GetLimits returned expected error (wgpu-native v27 limitation): %v", err)
-		t.Skip("Skipping test - Device.GetLimits not yet supported in wgpu-native v27")
+		t.Logf("Device Limits returned expected error (wgpu-native v27 limitation): %v", err)
+		t.Skip("Skipping test - Device.Limits not yet supported in wgpu-native v27")
 		return
 	}
 
 	// If we get here, wgpu-native was updated and the function works!
-	// Verify limits are non-zero
-	if deviceLimits.Limits.MaxTextureDimension2D == 0 {
+	// Verify limits are non-zero (v29: GetLimits returns *Limits directly, no SupportedLimits wrapper)
+	if deviceLimits.MaxTextureDimension2D == 0 {
 		t.Error("MaxTextureDimension2D is zero")
 	}
 
 	t.Logf("Device limits: MaxTextureDimension2D=%d, MaxBindGroups=%d",
-		deviceLimits.Limits.MaxTextureDimension2D,
-		deviceLimits.Limits.MaxBindGroups)
+		deviceLimits.MaxTextureDimension2D,
+		deviceLimits.MaxBindGroups)
 }
 
 func TestDeviceGetFeatures(t *testing.T) {
@@ -125,7 +125,7 @@ func TestDeviceGetFeatures(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Getting device features...")
-	features := device.GetFeatures()
+	features := device.Features()
 
 	// Result can be nil (no optional features) - this is ok
 	if features == nil {
@@ -166,11 +166,11 @@ func TestDeviceHasFeature(t *testing.T) {
 
 func TestDeviceGetLimits_Nil(t *testing.T) {
 	var d *Device
-	_, err := d.GetLimits()
+	_, err := d.Limits()
 	if err == nil {
 		t.Error("Expected error for nil device")
 	}
-	if err.Error() != "wgpu: Device.GetLimits: device is nil" {
+	if err.Error() != "wgpu: Device.Limits: device is nil" {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }

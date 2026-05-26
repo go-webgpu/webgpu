@@ -42,31 +42,32 @@ func (i *Instance) ProcessEvents() {
 	procInstanceProcessEvents.Call(i.handle) //nolint:errcheck
 }
 
-// ChainedStruct is used for struct chaining (input).
+// ChainedStruct is used for struct chaining (both input and output).
+// In v29 ChainedStructOut was unified with ChainedStruct — use ChainedStruct everywhere.
 type ChainedStruct struct {
 	Next  uintptr // *ChainedStruct
 	SType uint32
 }
 
-// ChainedStructOut is used for struct chaining (output).
-type ChainedStructOut struct {
-	Next  uintptr // *ChainedStructOut
-	SType uint32
-}
+// ChainedStructOut is kept for backward compatibility.
+// Deprecated: Use ChainedStruct. In v29 there is no separate ChainedStructOut in C header.
+type ChainedStructOut = ChainedStruct
 
-// InstanceCapabilities describes instance capabilities.
-// Note: This struct has specific padding requirements to match C layout.
-type InstanceCapabilities struct {
-	NextInChain          uintptr // *ChainedStructOut
-	TimedWaitAnyEnable   Bool
-	_pad                 uint32 // padding to align TimedWaitAnyMaxCount
-	TimedWaitAnyMaxCount uint64
-}
-
-// InstanceDescriptor describes an Instance.
+// InstanceDescriptor describes a WebGPU instance.
+// v29 layout: nextInChain, requiredFeatureCount, requiredFeatures, requiredLimits.
+// The v27 InstanceCapabilities/Features field is removed.
 type InstanceDescriptor struct {
-	NextInChain uintptr // *ChainedStruct
-	Features    InstanceCapabilities
+	NextInChain         uintptr // *ChainedStruct
+	RequiredFeatureCount uintptr // size_t
+	RequiredFeatures    uintptr // *InstanceFeatureName (const)
+	RequiredLimits      uintptr // *InstanceLimits (const, nullable)
+}
+
+// InstanceLimits describes the limits required at instance creation.
+// New in v29 — passed as RequiredLimits in InstanceDescriptor.
+type InstanceLimits struct {
+	NextInChain           uintptr // *ChainedStruct (nullable)
+	TimedWaitAnyMaxCount  uint64
 }
 
 // Bool is a WebGPU boolean (uint32).
