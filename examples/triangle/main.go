@@ -10,7 +10,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -266,7 +265,7 @@ func (app *App) initWebGPU() error {
 	app.device = device
 
 	// Get queue
-	app.queue = device.GetQueue()
+	app.queue = device.Queue()
 
 	// Create surface
 	surface, err := inst.CreateSurfaceFromWindowsHWND(uintptr(app.hinstance), uintptr(app.hwnd))
@@ -280,14 +279,13 @@ func (app *App) initWebGPU() error {
 
 // configureSurface configures the surface for rendering.
 func (app *App) configureSurface() error {
-	app.surface.Configure(&wgpu.SurfaceConfiguration{
-		Device:      app.device,
-		Format:      gputypes.TextureFormatBGRA8Unorm,
-		Usage:       gputypes.TextureUsageRenderAttachment,
+	_ = app.surface.Configure(app.device, &wgpu.SurfaceConfiguration{
+		Format:      wgpu.TextureFormatBGRA8Unorm,
+		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
-		PresentMode: gputypes.PresentModeFifo,
+		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
+		PresentMode: wgpu.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -296,21 +294,21 @@ func (app *App) configureSurface() error {
 // createPipeline creates the render pipeline.
 func (app *App) createPipeline() error {
 	// Create shader module
-	shader := app.device.CreateShaderModuleWGSL(shaderSource)
-	if shader == nil {
-		return fmt.Errorf("failed to create shader module")
+	shader, err := app.device.CreateShaderModuleWGSL(shaderSource)
+	if err != nil {
+		return fmt.Errorf("create shader module: %w", err)
 	}
 	defer shader.Release()
 
 	// Create render pipeline
-	pipeline := app.device.CreateRenderPipelineSimple(
+	pipeline, err := app.device.CreateRenderPipelineSimple(
 		nil, // auto layout
 		shader, "vs_main",
 		shader, "fs_main",
-		gputypes.TextureFormatBGRA8Unorm,
+		wgpu.TextureFormatBGRA8Unorm,
 	)
-	if pipeline == nil {
-		return fmt.Errorf("failed to create render pipeline")
+	if err != nil {
+		return fmt.Errorf("create render pipeline: %w", err)
 	}
 
 	app.pipeline = pipeline
@@ -331,7 +329,7 @@ func (app *App) releasePreviousFrame() {
 
 // acquireSurfaceTexture gets the current surface texture.
 func (app *App) acquireSurfaceTexture() error {
-	surfaceTex, err := app.surface.GetCurrentTexture()
+	surfaceTex, _, err := app.surface.GetCurrentTexture()
 	if err != nil {
 		// Handle common surface errors
 		if err == wgpu.ErrSurfaceLost || err == wgpu.ErrSurfaceNeedsReconfigure {
@@ -343,9 +341,9 @@ func (app *App) acquireSurfaceTexture() error {
 	app.surfaceTex = surfaceTex
 
 	// Create texture view
-	view := surfaceTex.Texture.CreateView(nil)
-	if view == nil {
-		return fmt.Errorf("failed to create texture view")
+	view, err := surfaceTex.Texture.CreateView(nil)
+	if err != nil {
+		return fmt.Errorf("create texture view: %w", err)
 	}
 	app.surfaceTexView = view
 	return nil
@@ -353,12 +351,12 @@ func (app *App) acquireSurfaceTexture() error {
 
 // renderTriangle encodes the triangle rendering commands.
 func (app *App) renderTriangle(encoder *wgpu.CommandEncoder, view *wgpu.TextureView) error {
-	pass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	pass, err := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		Label: "Triangle Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  gputypes.LoadOpClear,
-			StoreOp: gputypes.StoreOpStore,
+			LoadOp:  wgpu.LoadOpClear,
+			StoreOp: wgpu.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.1,
 				G: 0.2,
@@ -367,8 +365,8 @@ func (app *App) renderTriangle(encoder *wgpu.CommandEncoder, view *wgpu.TextureV
 			},
 		}},
 	})
-	if pass == nil {
-		return fmt.Errorf("failed to begin render pass")
+	if err != nil {
+		return fmt.Errorf("begin render pass: %w", err)
 	}
 	defer pass.Release()
 
@@ -396,9 +394,9 @@ func (app *App) render() error {
 	}
 
 	// Create command encoder
-	encoder := app.device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		return fmt.Errorf("failed to create command encoder")
+	encoder, err := app.device.CreateCommandEncoder(nil)
+	if err != nil {
+		return fmt.Errorf("create command encoder: %w", err)
 	}
 	defer encoder.Release()
 
@@ -408,15 +406,17 @@ func (app *App) render() error {
 	}
 
 	// Finish encoding
-	cmdBuffer := encoder.Finish(nil)
-	if cmdBuffer == nil {
-		return fmt.Errorf("failed to finish command encoder")
+	cmdBuffer, err := encoder.Finish()
+	if err != nil {
+		return fmt.Errorf("finish command encoder: %w", err)
 	}
 	defer cmdBuffer.Release()
 
 	// Submit commands and present
-	app.queue.Submit(cmdBuffer)
-	app.surface.Present()
+	if _, err = app.queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
+	_ = app.surface.Present()
 
 	return nil
 }

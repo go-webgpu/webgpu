@@ -10,7 +10,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 	"golang.org/x/sys/windows"
 )
 
@@ -305,7 +304,7 @@ func (app *App) initWebGPU() error {
 	app.device = device
 
 	// Get queue
-	app.queue = device.GetQueue()
+	app.queue = device.Queue()
 
 	// Create surface
 	surface, err := inst.CreateSurfaceFromWindowsHWND(uintptr(app.hinstance), uintptr(app.hwnd))
@@ -319,14 +318,13 @@ func (app *App) initWebGPU() error {
 
 // configureSurface configures the surface for rendering.
 func (app *App) configureSurface() error {
-	app.surface.Configure(&wgpu.SurfaceConfiguration{
-		Device:      app.device,
-		Format:      gputypes.TextureFormatBGRA8Unorm,
-		Usage:       gputypes.TextureUsageRenderAttachment,
+	_ = app.surface.Configure(app.device, &wgpu.SurfaceConfiguration{
+		Format:      wgpu.TextureFormatBGRA8Unorm,
+		Usage:       wgpu.TextureUsageRenderAttachment,
 		Width:       app.width,
 		Height:      app.height,
-		AlphaMode:   gputypes.CompositeAlphaModeOpaque,
-		PresentMode: gputypes.PresentModeFifo,
+		AlphaMode:   wgpu.CompositeAlphaModeOpaque,
+		PresentMode: wgpu.PresentModeFifo,
 	})
 	app.needsRecreate = false
 	return nil
@@ -368,20 +366,20 @@ func (app *App) createTexture() error {
 
 	// Create texture
 	textureDesc := wgpu.TextureDescriptor{
-		Label:     wgpu.EmptyStringView(),
-		Usage:     gputypes.TextureUsageTextureBinding | gputypes.TextureUsageCopyDst,
-		Dimension: gputypes.TextureDimension2D,
-		Size: gputypes.Extent3D{
+		Label:     "",
+		Usage:     wgpu.TextureUsageTextureBinding | wgpu.TextureUsageCopyDst,
+		Dimension: wgpu.TextureDimension2D,
+		Size: wgpu.Extent3D{
 			Width:              size,
 			Height:             size,
 			DepthOrArrayLayers: 1,
 		},
-		Format:        gputypes.TextureFormatRGBA8Unorm,
+		Format:        wgpu.TextureFormatRGBA8Unorm,
 		MipLevelCount: 1,
 		SampleCount:   1,
 	}
 
-	app.texture = app.device.CreateTexture(&textureDesc)
+	app.texture, _ = app.device.CreateTexture(&textureDesc)
 	if app.texture == nil {
 		return fmt.Errorf("failed to create texture")
 	}
@@ -391,29 +389,29 @@ func (app *App) createTexture() error {
 	const bytesPerRow = size * bytesPerPixel
 	const alignedBytesPerRow = ((bytesPerRow + 255) / 256) * 256
 
-	destInfo := wgpu.TexelCopyTextureInfo{
-		Texture:  app.texture.Handle(),
+	destInfo := wgpu.ImageCopyTexture{
+		Texture:  app.texture,
 		MipLevel: 0,
-		Origin:   gputypes.Origin3D{X: 0, Y: 0, Z: 0},
+		Origin:   wgpu.Origin3D{X: 0, Y: 0, Z: 0},
 		Aspect:   wgpu.TextureAspectAll,
 	}
 
-	layout := wgpu.TexelCopyBufferLayout{
+	layout := wgpu.ImageDataLayout{
 		Offset:       0,
 		BytesPerRow:  alignedBytesPerRow,
 		RowsPerImage: size,
 	}
 
-	extent := gputypes.Extent3D{
+	extent := wgpu.Extent3D{
 		Width:              size,
 		Height:             size,
 		DepthOrArrayLayers: 1,
 	}
 
-	app.queue.WriteTexture(&destInfo, textureData, &layout, &extent)
+	_ = app.queue.WriteTexture(&destInfo, textureData, &layout, &extent)
 
 	// Create texture view
-	app.textureView = app.texture.CreateView(nil)
+	app.textureView, _ = app.texture.CreateView(nil)
 	if app.textureView == nil {
 		return fmt.Errorf("failed to create texture view")
 	}
@@ -423,7 +421,7 @@ func (app *App) createTexture() error {
 
 // createSampler creates a linear sampler.
 func (app *App) createSampler() error {
-	app.sampler = app.device.CreateLinearSampler()
+	app.sampler, _ = app.device.CreateLinearSampler()
 	if app.sampler == nil {
 		return fmt.Errorf("failed to create sampler")
 	}
@@ -436,23 +434,22 @@ func (app *App) createBindGroup() error {
 	layoutEntries := []wgpu.BindGroupLayoutEntry{
 		{
 			Binding:    0,
-			Visibility: gputypes.ShaderStageFragment,
-			Sampler: wgpu.SamplerBindingLayout{
-				Type: gputypes.SamplerBindingTypeFiltering,
+			Visibility: wgpu.ShaderStageFragment,
+			Sampler: &wgpu.SamplerBindingLayout{
+				Type: wgpu.SamplerBindingTypeFiltering,
 			},
 		},
 		{
 			Binding:    1,
-			Visibility: gputypes.ShaderStageFragment,
-			Texture: wgpu.TextureBindingLayout{
-				SampleType:    gputypes.TextureSampleTypeFloat,
-				ViewDimension: gputypes.TextureViewDimension2D,
-				Multisampled:  wgpu.False,
+			Visibility: wgpu.ShaderStageFragment,
+			Texture: &wgpu.TextureBindingLayout{
+				SampleType:    wgpu.TextureSampleTypeFloat,
+				ViewDimension: wgpu.TextureViewDimension2D,
 			},
 		},
 	}
 
-	app.bindGroupLyt = app.device.CreateBindGroupLayoutSimple(layoutEntries)
+	app.bindGroupLyt, _ = app.device.CreateBindGroupLayoutSimple(layoutEntries)
 	if app.bindGroupLyt == nil {
 		return fmt.Errorf("failed to create bind group layout")
 	}
@@ -463,7 +460,7 @@ func (app *App) createBindGroup() error {
 		wgpu.TextureBindingEntry(1, app.textureView),
 	}
 
-	app.bindGroup = app.device.CreateBindGroupSimple(app.bindGroupLyt, entries)
+	app.bindGroup, _ = app.device.CreateBindGroupSimple(app.bindGroupLyt, entries)
 	if app.bindGroup == nil {
 		return fmt.Errorf("failed to create bind group")
 	}
@@ -492,11 +489,11 @@ func (app *App) createBuffers() error {
 	// Create vertex buffer
 	// nolint:gosec // len(vertices) is 16, * 4 = 64 bytes - no overflow risk
 	vertexBufferSize := uint64(len(vertices) * 4)
-	app.vertexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.EmptyStringView(),
-		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
+	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
+		Label:            "",
+		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.vertexBuffer == nil {
 		return fmt.Errorf("failed to create vertex buffer")
@@ -515,11 +512,11 @@ func (app *App) createBuffers() error {
 	// Create index buffer
 	// nolint:gosec // len(indices) is 6, * 2 = 12 bytes - no overflow risk
 	indexBufferSize := uint64(len(indices) * 2)
-	app.indexBuffer = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label:            wgpu.EmptyStringView(),
-		Usage:            gputypes.BufferUsageIndex | gputypes.BufferUsageCopyDst,
+	app.indexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
+		Label:            "",
+		Usage:            wgpu.BufferUsageIndex | wgpu.BufferUsageCopyDst,
 		Size:             indexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
 	if app.indexBuffer == nil {
 		return fmt.Errorf("failed to create index buffer")
@@ -542,14 +539,14 @@ func (app *App) createBuffers() error {
 // nolint:funlen // FFI descriptor builders with detailed pipeline configuration
 func (app *App) createPipeline() error {
 	// Create shader module
-	shader := app.device.CreateShaderModuleWGSL(shaderSource)
+	shader, _ := app.device.CreateShaderModuleWGSL(shaderSource)
 	if shader == nil {
 		return fmt.Errorf("failed to create shader module")
 	}
 	defer shader.Release()
 
 	// Create pipeline layout with bind group layout
-	pipelineLayout := app.device.CreatePipelineLayoutSimple([]*wgpu.BindGroupLayout{app.bindGroupLyt})
+	pipelineLayout, _ := app.device.CreatePipelineLayoutSimple([]*wgpu.BindGroupLayout{app.bindGroupLyt})
 	if pipelineLayout == nil {
 		return fmt.Errorf("failed to create pipeline layout")
 	}
@@ -559,19 +556,19 @@ func (app *App) createPipeline() error {
 	// Define vertex attributes
 	attributes := []wgpu.VertexAttribute{
 		{
-			Format:         gputypes.VertexFormatFloat32x2, // position: vec2f
+			Format:         wgpu.VertexFormatFloat32x2, // position: vec2f
 			Offset:         0,
 			ShaderLocation: 0,
 		},
 		{
-			Format:         gputypes.VertexFormatFloat32x2, // uv: vec2f
-			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
+			Format:         wgpu.VertexFormatFloat32x2, // uv: vec2f
+			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}
 
 	// Create render pipeline
-	pipeline := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
+	pipeline, _ := app.device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
 		Label:  "",
 		Layout: pipelineLayout,
 		Vertex: wgpu.VertexState{
@@ -579,15 +576,15 @@ func (app *App) createPipeline() error {
 			EntryPoint: "vs_main",
 			Buffers: []wgpu.VertexBufferLayout{{
 				ArrayStride:    16, // 4 floats * 4 bytes = 16 bytes per vertex
-				StepMode:       gputypes.VertexStepModeVertex,
+				StepMode:       wgpu.VertexStepModeVertex,
 				AttributeCount: 2,
 				Attributes:     &attributes[0],
 			}},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  gputypes.PrimitiveTopologyTriangleList,
-			FrontFace: gputypes.FrontFaceCCW,
-			CullMode:  gputypes.CullModeNone,
+			Topology:  wgpu.PrimitiveTopologyTriangleList,
+			FrontFace: wgpu.FrontFaceCCW,
+			CullMode:  wgpu.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
@@ -597,8 +594,8 @@ func (app *App) createPipeline() error {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{{
-				Format:    gputypes.TextureFormatBGRA8Unorm,
-				WriteMask: gputypes.ColorWriteMaskAll,
+				Format:    wgpu.TextureFormatBGRA8Unorm,
+				WriteMask: wgpu.ColorWriteMaskAll,
 			}},
 		},
 	})
@@ -625,7 +622,7 @@ func (app *App) releasePreviousFrame() {
 
 // acquireSurfaceTexture gets the current surface texture.
 func (app *App) acquireSurfaceTexture() error {
-	surfaceTex, err := app.surface.GetCurrentTexture()
+	surfaceTex, _, err := app.surface.GetCurrentTexture()
 	if err != nil {
 		// Handle common surface errors
 		if err == wgpu.ErrSurfaceLost || err == wgpu.ErrSurfaceNeedsReconfigure {
@@ -637,7 +634,7 @@ func (app *App) acquireSurfaceTexture() error {
 	app.surfaceTex = surfaceTex
 
 	// Create texture view
-	view := surfaceTex.Texture.CreateView(nil)
+	view, _ := surfaceTex.Texture.CreateView(nil)
 	if view == nil {
 		return fmt.Errorf("failed to create texture view")
 	}
@@ -647,12 +644,12 @@ func (app *App) acquireSurfaceTexture() error {
 
 // renderQuad encodes the textured quad rendering commands.
 func (app *App) renderQuad(encoder *wgpu.CommandEncoder, view *wgpu.TextureView) error {
-	pass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	pass, _ := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		Label: "Textured Quad Render Pass",
 		ColorAttachments: []wgpu.RenderPassColorAttachment{{
 			View:    view,
-			LoadOp:  gputypes.LoadOpClear,
-			StoreOp: gputypes.StoreOpStore,
+			LoadOp:  wgpu.LoadOpClear,
+			StoreOp: wgpu.StoreOpStore,
 			ClearValue: wgpu.Color{
 				R: 0.05,
 				G: 0.05,
@@ -668,8 +665,8 @@ func (app *App) renderQuad(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 
 	pass.SetPipeline(app.pipeline)
 	pass.SetBindGroup(0, app.bindGroup, nil)
-	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                       // 16 floats * 4 bytes
-	pass.SetIndexBuffer(app.indexBuffer, gputypes.IndexFormatUint16, 0, uint64(6*2)) // 6 indices * 2 bytes
+	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                   // 16 floats * 4 bytes
+	pass.SetIndexBuffer(app.indexBuffer, wgpu.IndexFormatUint16, 0, uint64(6*2)) // 6 indices * 2 bytes
 	pass.DrawIndexed(6, 1, 0, 0, 0)
 	pass.End()
 	return nil
@@ -693,7 +690,7 @@ func (app *App) render() error {
 	}
 
 	// Create command encoder
-	encoder := app.device.CreateCommandEncoder(nil)
+	encoder, _ := app.device.CreateCommandEncoder(nil)
 	if encoder == nil {
 		return fmt.Errorf("failed to create command encoder")
 	}
@@ -705,15 +702,17 @@ func (app *App) render() error {
 	}
 
 	// Finish encoding
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, _ := encoder.Finish()
 	if cmdBuffer == nil {
 		return fmt.Errorf("failed to finish command encoder")
 	}
 	defer cmdBuffer.Release()
 
 	// Submit commands and present
-	app.queue.Submit(cmdBuffer)
-	app.surface.Present()
+	if _, err := app.queue.Submit(cmdBuffer); err != nil {
+		return fmt.Errorf("submit: %w", err)
+	}
+	_ = app.surface.Present()
 
 	return nil
 }

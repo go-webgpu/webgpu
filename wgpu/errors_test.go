@@ -46,9 +46,9 @@ func TestErrorScopeNoError(t *testing.T) {
 	device.PushErrorScope(ErrorFilterValidation)
 
 	// Do some valid operation (no error expected)
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
-		t.Fatal("GetQueue returned nil")
+		t.Fatal("Queue returned nil")
 	}
 	defer queue.Release()
 
@@ -88,13 +88,11 @@ func TestErrorScopeValidation(t *testing.T) {
 
 	// Try to create an invalid buffer (size 0 should be invalid)
 	desc := BufferDescriptor{
-		NextInChain:      0,
-		Label:            EmptyStringView(),
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             0, // Invalid: size must be > 0
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
-	buffer := device.CreateBuffer(&desc)
+	buffer, _ := device.CreateBuffer(&desc)
 	if buffer != nil {
 		defer buffer.Release()
 	}

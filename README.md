@@ -22,7 +22,10 @@ Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgp
 |---------|--------|
 | Instance, Adapter, Device | ✅ |
 | Buffers (vertex, index, uniform, storage) | ✅ |
+| Buffer Mapping (Map with context, async MapPending, type-safe MappedRange) | ✅ |
+| Queue Submission Index Tracking | ✅ |
 | Textures, Samplers, Storage Textures | ✅ |
+| Region-Based Copy Operations (CopyTextureToBuffer) | ✅ |
 | Render Pipelines | ✅ |
 | Compute Pipelines | ✅ |
 | Depth Buffer | ✅ |
@@ -39,7 +42,7 @@ Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgp
 ## Requirements
 
 - Go 1.25+
-- wgpu-native v27.0.4.0 ([download](https://github.com/gfx-rs/wgpu-native/releases))
+- wgpu-native v29.0.0.0 ([download](https://github.com/gfx-rs/wgpu-native/releases))
 
 ## Installation
 
@@ -56,18 +59,28 @@ export WGPU_NATIVE_PATH=/path/to/libwgpu_native.so
 
 ## Type System
 
-This library uses [gputypes](https://github.com/gogpu/gputypes) for WebGPU type definitions, ensuring compatibility with the [gogpu ecosystem](https://github.com/gogpu) and webgpu.h specification.
+WebGPU types from [gputypes](https://github.com/gogpu/gputypes) are re-exported as type aliases in the `wgpu` package. A single import is sufficient:
+
+```go
+import "github.com/go-webgpu/webgpu/wgpu"
+
+// gputypes constants available directly via wgpu package
+config.Format = wgpu.TextureFormatBGRA8Unorm
+buffer.Usage = wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst
+```
+
+If you use multiple gogpu ecosystem packages, importing `gputypes` directly also works and is fully compatible:
 
 ```go
 import (
     "github.com/go-webgpu/webgpu/wgpu"
-    "github.com/gogpu/gputypes"
+    "github.com/gogpu/gputypes" // optional — for ecosystem interop
 )
 
-// Use gputypes for WebGPU enums
-config.Format = gputypes.TextureFormatBGRA8Unorm
-buffer.Usage = gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst
+config.Format = gputypes.TextureFormatBGRA8Unorm // same underlying type
 ```
+
+go-webgpu API is designed to be compatible with gogpu/wgpu, enabling future backend switching within the gogpu ecosystem.
 
 ## Quick Start
 
@@ -132,16 +145,25 @@ cd examples/triangle && go run .
 ```
 ┌─────────────────────────────────────────┐
 │            Your Go Application          │
+│    (uses wgpu.TextureFormatBGRA8Unorm)  │
 ├─────────────────────────────────────────┤
-│     go-webgpu (this package)            │
-│     - Zero CGO                          │
-│     - Pure Go FFI via goffi             │
+│     go-webgpu/wgpu (this package)       │
+│     - Go-idiomatic API                  │
+│     - gputypes type aliases             │
+│     - Error returns on all operations   │
 ├─────────────────────────────────────────┤
-│     wgpu-native (Rust WebGPU)           │
+│     Internal FFI layer                  │
+│     - Wire structs (C-layout)           │
+│     - convert.go (enum translation)     │
+│     - goffi (Pure Go FFI)               │
+├─────────────────────────────────────────┤
+│     wgpu-native v29 (Rust WebGPU)       │
 ├─────────────────────────────────────────┤
 │     Vulkan / Metal / DX12 / OpenGL      │
 └─────────────────────────────────────────┘
 ```
+
+For a detailed explanation of the architecture, including why convert.go exists and the FFI wire struct contract, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Looking for Pure Go WebGPU?
 
@@ -158,8 +180,9 @@ This project uses FFI bindings to wgpu-native. If you're looking for a **100% Pu
 
 ## Dependencies
 
-- [goffi](https://github.com/go-webgpu/goffi) — Pure Go FFI for callbacks
-- [wgpu-native](https://github.com/gfx-rs/wgpu-native) — Rust WebGPU implementation
+- [goffi](https://github.com/go-webgpu/goffi) — Pure Go FFI (callbacks, cross-platform loading)
+- [gputypes](https://github.com/gogpu/gputypes) — Shared WebGPU type definitions for the gogpu ecosystem
+- [wgpu-native](https://github.com/gfx-rs/wgpu-native) — Rust WebGPU implementation (runtime binary, not a Go dependency)
 - [golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys) — Platform-specific syscalls
 
 ## License

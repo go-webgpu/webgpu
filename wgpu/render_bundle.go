@@ -6,15 +6,14 @@ import (
 	"github.com/gogpu/gputypes"
 )
 
-// RenderBundleEncoderDescriptor describes a render bundle encoder.
+// RenderBundleEncoderDescriptor describes a render bundle encoder to create.
 type RenderBundleEncoderDescriptor struct {
-	Label              StringView
-	ColorFormatCount   uintptr // size_t
-	ColorFormats       *gputypes.TextureFormat
+	Label              string
+	ColorFormats       []gputypes.TextureFormat
 	DepthStencilFormat gputypes.TextureFormat
 	SampleCount        uint32
-	DepthReadOnly      Bool
-	StencilReadOnly    Bool
+	DepthReadOnly      bool
+	StencilReadOnly    bool
 }
 
 // RenderBundleDescriptor describes a render bundle.
@@ -23,69 +22,72 @@ type RenderBundleDescriptor struct {
 	Label       StringView
 }
 
+// renderBundleEncoderDescriptorWire is the FFI-compatible C-layout struct.
+// nextInChain(8)+label(16)+colorFormatCount(8)+colorFormats(8)+
+// depthStencilFormat(4)+sampleCount(4)+depthReadOnly(4)+stencilReadOnly(4) = 56 bytes.
+type renderBundleEncoderDescriptorWire struct {
+	nextInChain        uintptr
+	label              StringView
+	colorFormatCount   uintptr
+	colorFormats       uintptr // *uint32 (converted from gputypes.TextureFormat)
+	depthStencilFormat uint32
+	sampleCount        uint32
+	depthReadOnly      Bool
+	stencilReadOnly    Bool
+}
+
 // CreateRenderBundleEncoder creates a render bundle encoder for pre-recording render commands.
 // Render bundles allow you to pre-record a sequence of render commands that can be replayed
 // multiple times, which is useful for static geometry.
-func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) *RenderBundleEncoder {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) (*RenderBundleEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateRenderBundleEncoder", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateRenderBundleEncoder", Message: "descriptor is nil"}
 	}
 
-	// Build the native descriptor with converted format values
-	type nativeDesc struct {
-		nextInChain        uintptr
-		label              StringView
-		colorFormatCount   uintptr
-		colorFormats       uintptr
-		depthStencilFormat uint32 // converted from gputypes
-		sampleCount        uint32
-		depthReadOnly      Bool
-		stencilReadOnly    Bool
-	}
-
-	nd := nativeDesc{
-		label:              desc.Label,
-		colorFormatCount:   desc.ColorFormatCount,
-		depthStencilFormat: toWGPUTextureFormat(desc.DepthStencilFormat),
+	wire := renderBundleEncoderDescriptorWire{
+		label:              stringToStringView(desc.Label),
+		colorFormatCount:   uintptr(len(desc.ColorFormats)),
+		depthStencilFormat: uint32(desc.DepthStencilFormat),
 		sampleCount:        desc.SampleCount,
-		depthReadOnly:      desc.DepthReadOnly,
-		stencilReadOnly:    desc.StencilReadOnly,
+		depthReadOnly:      boolToWGPU(desc.DepthReadOnly),
+		stencilReadOnly:    boolToWGPU(desc.StencilReadOnly),
 	}
 
-	// Convert color formats to wgpu-native values
+	// Convert color formats to uint32 (gputypes v0.3.0 values equal wgpu-native v29 values)
 	var convertedFormats []uint32
-	if desc.ColorFormats != nil && desc.ColorFormatCount > 0 {
-		formats := unsafe.Slice(desc.ColorFormats, desc.ColorFormatCount)
-		convertedFormats = make([]uint32, desc.ColorFormatCount)
-		for i, f := range formats {
-			convertedFormats[i] = toWGPUTextureFormat(f)
+	if len(desc.ColorFormats) > 0 {
+		convertedFormats = make([]uint32, len(desc.ColorFormats))
+		for i, f := range desc.ColorFormats {
+			convertedFormats[i] = uint32(f)
 		}
-		nd.colorFormats = uintptr(unsafe.Pointer(&convertedFormats[0]))
+		wire.colorFormats = uintptr(unsafe.Pointer(&convertedFormats[0]))
 	}
 
 	handle, _, _ := procDeviceCreateRenderBundleEncoder.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&nd)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateRenderBundleEncoder", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "RenderBundleEncoder")
-	return &RenderBundleEncoder{handle: handle}
+	return &RenderBundleEncoder{handle: handle}, nil
 }
 
 // CreateRenderBundleEncoderSimple creates a render bundle encoder with common settings.
 func (d *Device) CreateRenderBundleEncoderSimple(colorFormats []gputypes.TextureFormat, depthFormat gputypes.TextureFormat, sampleCount uint32) *RenderBundleEncoder {
-	desc := &RenderBundleEncoderDescriptor{
-		ColorFormatCount:   uintptr(len(colorFormats)),
+	enc, _ := d.CreateRenderBundleEncoder(&RenderBundleEncoderDescriptor{
+		ColorFormats:       colorFormats,
 		DepthStencilFormat: depthFormat,
 		SampleCount:        sampleCount,
-	}
-	if len(colorFormats) > 0 {
-		desc.ColorFormats = &colorFormats[0]
-	}
-	return d.CreateRenderBundleEncoder(desc)
+	})
+	return enc
 }
 
 // SetPipeline sets the render pipeline for subsequent draw calls.
@@ -204,15 +206,16 @@ func (rbe *RenderBundleEncoder) DrawIndexedIndirect(indirectBuffer *Buffer, indi
 }
 
 // Finish completes recording and returns the render bundle.
-func (rbe *RenderBundleEncoder) Finish(desc *RenderBundleDescriptor) *RenderBundle {
+// The optional desc parameter allows specifying a label; if omitted, nil is used.
+func (rbe *RenderBundleEncoder) Finish(desc ...*RenderBundleDescriptor) *RenderBundle {
 	mustInit()
 	if rbe == nil || rbe.handle == 0 {
 		return nil
 	}
 
 	var descPtr uintptr
-	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+	if len(desc) > 0 && desc[0] != nil {
+		descPtr = uintptr(unsafe.Pointer(desc[0]))
 	}
 
 	handle, _, _ := procRenderBundleEncoderFinish.Call(rbe.handle, descPtr)

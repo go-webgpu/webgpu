@@ -56,7 +56,7 @@ jobs:
     - name: Download wgpu-native
       shell: bash
       env:
-        WGPU_VERSION: "v27.0.4.0"
+        WGPU_VERSION: "v29.0.0.0"
       run: |
         set -e
         case "${{ matrix.os }}" in
@@ -107,9 +107,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" != "windows-latest" ]; then
-          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
+          CGO_ENABLED=0 go test -v -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "TestABI|Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         else
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./wgpu/... -run "TestABI|Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         fi
 
     - name: Upload coverage to Codecov

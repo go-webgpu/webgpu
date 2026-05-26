@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 (Unreleased)
+
+### Breaking Changes
+- **wgpu-native v29.0.0.0**: Migrated from v27.0.4.0 to v29.0.0.0 with stable webgpu-headers
+- **API redesign**: All `Create*` methods now return `(*T, error)` instead of `*T`
+- **Method renames**: `GetQueue()` → `Queue()`, `GetSize()` → `Size()`, `GetLimits()` → `Limits()`, etc.
+- **Struct layout changes**: `Limits` field order fixed (ABI-breaking), `VertexBufferLayout` gains `nextInChain`
+- **Removed types**: `SupportedLimits`, `ChainedStructOut`, `InstanceCapabilities`
+- **Enum changes**: `SurfaceGetCurrentTextureStatus` simplified, `InstanceFlag_Default` semantic change
+- **gputypes aliases**: Types re-exported for single-import ergonomics
+- **Buffer.MapAsync** signature changed: `(mode, offset, size) (*MapPending, error)` — device argument removed, now stored in Buffer
+- **Buffer.Unmap()** returns `error` (always nil per WebGPU spec; signature matches gogpu/wgpu)
+- **Queue.Submit** returns `(uint64, error)` — submission index via `wgpuQueueSubmitForIndex` extension
+- **Adapter.Limits()** returns `Limits` value (not pointer, no error) — cached at creation
+- **Device.Limits()** returns `Limits` value (not pointer, no error) — cached at creation
+- **BindGroupLayoutEntry** uses pointer sub-layouts (`*BufferBindingLayout`, `*SamplerBindingLayout`, etc.)
+- **SamplerDescriptor.MaxAnisotropy** renamed to **Anisotropy**
+- **Surface.Configure(device, config) error** — device is now a separate first argument
+- **Surface.GetCurrentTexture()** returns `(*SurfaceTexture, bool, error)` — added suboptimal flag
+- **Surface.Present(texture ...*SurfaceTexture) error** — takes optional texture argument
+
+### Added
+- 271 enterprise ABI verification tests (`TestABI*`)
+- gputypes type aliases and constant re-exports in `wgpu` package
+- New v29 API functions: `GetFeatures`, `GetInstanceFeatures`, `BufferReadMappedRange`, etc.
+- New enums: `InstanceFeatureName`, `ComponentSwizzle`, `PredefinedColorSpace`, `ToneMappingMode`
+- New instance flags: `GPUBasedValidation`, `Debugging`, `AdvancedDebugging`, `WithEnv`
+- **`Buffer.Map(ctx, mode, offset, size) error`** — context-aware blocking mapping; drives Device.Poll internally
+- **`Buffer.MapAsync(mode, offset, size) (*MapPending, error)`** — truly non-blocking, resolves on next Device.Poll
+- **`Buffer.MappedRange(offset, size) (*MappedRange, error)`** — type-safe view over mapped memory
+- **`MapPending`** type with `Status() (ready bool, err error)` and `Wait(ctx) error` methods
+- **`MappedRange`** type with `Bytes() []byte`, `Len() int`, and `Offset() uint64` methods
+- **`Queue.Submit`** returns submission index `uint64` via `wgpuQueueSubmitForIndex` wgpu-native extension
+- **`ImageCopyTexture`** — Go-typed descriptor for texture copy/write source (holds `*Texture`)
+- **`ImageDataLayout`** — Go-typed buffer layout descriptor for WriteTexture / copy operations
+- **`BufferTextureCopy`** — region descriptor combining `ImageCopyTexture` + `ImageDataLayout` + extent
+- **`TextureCopy`** — region descriptor for texture-to-texture copies
+- **`CommandEncoder.CopyTextureToBuffer(src *Texture, dst *Buffer, regions []BufferTextureCopy)`** — region-based copy
+
+### Changed
+- `convert.go`: Removed 6 identity converters (TextureFormat now matches v29 natively)
+- `wgpuAdapterEnumerateFeatures` → `wgpuAdapterGetFeatures` (single-call pattern)
+- PushConstants → Immediates rename throughout
+- `Buffer` now stores `*Device` reference internally for Poll-driven blocking Map
+- All public descriptors use Go-idiomatic types: `string` labels, `bool` flags, pointer sub-structs, slice fields
+
+### Removed
+- `SupportedLimits` wrapper struct
+- `ChainedStructOut` type (aliased to `ChainedStruct`)
+- `InstanceCapabilities` struct
+- DX11 backend support (`InstanceBackendDX11`)
+- `SurfaceGetCurrentTextureStatusOutOfMemory`, `SurfaceGetCurrentTextureStatusDeviceLost`
+
+### Dependencies
+- wgpu-native: v27.0.4.0 → v29.0.0.0
+- goffi: v0.5.0 (unchanged)
+- gputypes: v0.3.0 (unchanged)
+
+---
+
 ## [0.4.3] - 2026-03-29
 
 ### Changed

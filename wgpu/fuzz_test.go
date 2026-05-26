@@ -65,74 +65,25 @@ func FuzzToWGPUStorageTextureAccess(f *testing.F) {
 	})
 }
 
-func FuzzToWGPUTextureFormat(f *testing.F) {
-	// Seed with all known format values
-	for i := uint32(0); i <= 49; i++ {
+// FuzzTextureFormatDirectCast verifies that direct uint32 cast of TextureFormat
+// never panics. gputypes v0.3.0 and wgpu-native v29 share identical format values.
+func FuzzTextureFormatDirectCast(f *testing.F) {
+	for i := uint32(0); i <= 0x65; i++ {
 		f.Add(i)
 	}
-	f.Add(uint32(100))
 	f.Add(uint32(0xFFFFFFFF))
 	f.Fuzz(func(t *testing.T, v uint32) {
-		// Must not panic
-		_ = toWGPUTextureFormat(gputypes.TextureFormat(v))
-	})
-}
-
-func FuzzFromWGPUTextureFormat(f *testing.F) {
-	for i := uint32(0); i <= 43; i++ {
-		f.Add(i)
-	}
-	f.Add(uint32(100))
-	f.Add(uint32(0xFFFFFFFF))
-	f.Fuzz(func(t *testing.T, v uint32) {
-		// Must not panic
-		_ = fromWGPUTextureFormat(v)
-	})
-}
-
-func FuzzTextureFormatRoundTrip(f *testing.F) {
-	// Seed with all gputypes format values that have valid round-trip
-	validFormats := []uint32{
-		0,          // Undefined
-		1, 2, 3, 4, // R8
-		7, 8, 9, // R16 Uint/Sint/Float (skip 5,6 = R16 Unorm/Snorm not in wgpu)
-		10, 11, 12, 13, // RG8
-		14, 15, 16, // R32
-		19, 20, 21, // RG16 Uint/Sint/Float (skip 17,18 = RG16 Unorm/Snorm)
-		22, 23, 24, 25, 26, // RGBA8
-		27, 28, // BGRA8
-		29, 30, 31, 32, // packed
-		33, 34, 35, // RG32
-		38, 39, 40, // RGBA16 Uint/Sint/Float (skip 36,37 = RGBA16 Unorm/Snorm)
-		41, 42, 43, // RGBA32
-		44, 45, 46, 47, 48, 49, // depth/stencil
-	}
-	for _, v := range validFormats {
-		f.Add(v)
-	}
-
-	f.Fuzz(func(t *testing.T, v uint32) {
+		// Direct cast must be identity: gputypes matches v29 exactly.
 		gf := gputypes.TextureFormat(v)
-		wf := toWGPUTextureFormat(gf)
-		back := fromWGPUTextureFormat(wf)
-		// For known formats, round-trip must be identity
-		// Skip formats removed from wgpu-native (R16Unorm/Snorm, RG16Unorm/Snorm, RGBA16Unorm/Snorm)
-		removedFormats := map[uint32]bool{5: true, 6: true, 17: true, 18: true, 36: true, 37: true}
-		if !removedFormats[v] && v <= 49 {
-			if back != gf {
-				t.Errorf("round-trip failed for gputypes format %d: toWGPU=%d, fromWGPU=%d", v, wf, back)
-			}
+		wire := uint32(gf)
+		if wire != v {
+			t.Errorf("direct cast changed value: input %d, got %d", v, wire)
 		}
-	})
-}
-
-func FuzzToWGPULoadOp(f *testing.F) {
-	f.Add(uint32(0))
-	f.Add(uint32(1))
-	f.Add(uint32(2))
-	f.Add(uint32(0xFFFFFFFF))
-	f.Fuzz(func(t *testing.T, v uint32) {
-		_ = toWGPULoadOp(gputypes.LoadOp(v))
+		// Round-trip from wire back to gputypes must also be identity.
+		back := gputypes.TextureFormat(wire)
+		if back != gf {
+			t.Errorf("round-trip failed for format %d", v)
+		}
 	})
 }
 

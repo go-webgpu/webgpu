@@ -11,8 +11,8 @@
 //   - [Adapter.RequestDevice] (callback registry protected by mutex)
 //   - [Device.PopErrorScopeAsync] (callback registry protected by mutex)
 //   - [Buffer.MapAsync] (callback registry protected by mutex)
-//   - Read-only queries: [Adapter.GetLimits], [Adapter.GetInfo], [Adapter.EnumerateFeatures], [Adapter.HasFeature]
-//   - Read-only queries: [Device.GetLimits], [Device.GetFeatures], [Device.HasFeature]
+//   - Read-only queries: [Adapter.Limits], [Adapter.Info], [Adapter.Features], [Adapter.HasFeature]
+//   - Read-only queries: [Device.Limits], [Device.Features], [Device.HasFeature]
 //   - Read-only queries: [Surface.GetCapabilities]
 //
 // The following operations are NOT safe for concurrent use on the same object:

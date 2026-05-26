@@ -100,11 +100,24 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	deviceRequests[reqID] = req
 	deviceRequestsMu.Unlock()
 
-	// Prepare options
+	// Convert Go-idiomatic descriptor to wire format.
 	var optionsPtr uintptr
+	var reqLimitsWire limitsWire // kept alive for the duration of the FFI call
 	if options != nil {
-		optionsPtr = uintptr(unsafe.Pointer(options))
+		wire := deviceDescriptorWire{
+			Label: stringToStringView(options.Label),
+		}
+		if len(options.RequiredFeatures) > 0 {
+			wire.RequiredFeatureCount = uintptr(len(options.RequiredFeatures))
+			wire.RequiredFeatures = uintptr(unsafe.Pointer(&options.RequiredFeatures[0]))
+		}
+		if options.RequiredLimits != nil {
+			reqLimitsWire = limitsToWire(options.RequiredLimits)
+			wire.RequiredLimits = uintptr(unsafe.Pointer(&reqLimitsWire))
+		}
+		optionsPtr = uintptr(unsafe.Pointer(&wire))
 	}
+	_ = reqLimitsWire // ensure not optimised away before the call below
 
 	// Prepare callback info
 	callbackInfo := RequestDeviceCallbackInfo{
@@ -123,7 +136,6 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	)
 
 	// Process events until callback fires
-	// We need an instance to call ProcessEvents - get it from global or use a busy loop
 	for {
 		select {
 		case <-req.done:
@@ -135,6 +147,10 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 				}
 				return nil, &WGPUError{Op: "RequestDevice", Message: msg}
 			}
+			// Cache limits at creation time so Limits() returns value without FFI.
+			if req.device != nil {
+				req.device.limits = fetchDeviceLimits(req.device.handle)
+			}
 			return req.device, nil
 		default:
 			// Brief pause to avoid busy spinning
@@ -143,8 +159,22 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	}
 }
 
-// GetQueue returns the default queue for the device.
-func (d *Device) GetQueue() *Queue {
+// fetchDeviceLimits calls wgpuDeviceGetLimits and converts the wire struct to public Limits.
+// Returns zero-value Limits on failure (non-fatal: limits remain valid defaults).
+func fetchDeviceLimits(handle uintptr) Limits {
+	var wire limitsWire
+	status, _, _ := procDeviceGetLimits.Call(
+		handle,
+		uintptr(unsafe.Pointer(&wire)),
+	)
+	if WGPUStatus(status) != WGPUStatusSuccess {
+		return Limits{}
+	}
+	return limitsFromWire(&wire)
+}
+
+// Queue returns the default queue for the device.
+func (d *Device) Queue() *Queue {
 	mustInit()
 	if d == nil || d.handle == 0 {
 		return nil
@@ -192,64 +222,128 @@ func (q *Queue) Release() {
 	}
 }
 
-// DeviceDescriptor configures device creation.
-// For now, passing nil uses default settings.
-type DeviceDescriptor struct {
+// DeviceLostCallbackInfo configures the device-lost callback.
+type DeviceLostCallbackInfo struct {
 	NextInChain uintptr // *ChainedStruct
-	// Additional fields can be added as needed
+	Mode        CallbackMode
+	Callback    uintptr // Function pointer
+	Userdata1   uintptr
+	Userdata2   uintptr
+}
+
+// UncapturedErrorCallbackInfo configures the uncaptured-error callback.
+type UncapturedErrorCallbackInfo struct {
+	NextInChain uintptr // *ChainedStruct
+	Callback    uintptr // Function pointer
+	Userdata1   uintptr
+	Userdata2   uintptr
+}
+
+// DeviceDescriptor configures device creation.
+// Matches the gogpu/wgpu API for cross-project compatibility.
+type DeviceDescriptor struct {
+	// Label is an optional debug label for the device.
+	Label string
+	// RequiredFeatures lists GPU features that the device must support.
+	RequiredFeatures []FeatureName
+	// RequiredLimits, if non-nil, specifies minimum resource limits the device must meet.
+	// Pass nil to use the adapter's default limits.
+	RequiredLimits *Limits
+}
+
+// limitsToWire converts public Limits to the FFI-compatible limitsWire struct.
+// Used when passing required limits to wgpuAdapterRequestDevice.
+func limitsToWire(l *Limits) limitsWire {
+	if l == nil {
+		return limitsWire{}
+	}
+	return limitsWire{
+		MaxTextureDimension1D:                     l.MaxTextureDimension1D,
+		MaxTextureDimension2D:                     l.MaxTextureDimension2D,
+		MaxTextureDimension3D:                     l.MaxTextureDimension3D,
+		MaxTextureArrayLayers:                     l.MaxTextureArrayLayers,
+		MaxBindGroups:                             l.MaxBindGroups,
+		MaxBindGroupsPlusVertexBuffers:            l.MaxBindGroupsPlusVertexBuffers,
+		MaxBindingsPerBindGroup:                   l.MaxBindingsPerBindGroup,
+		MaxDynamicUniformBuffersPerPipelineLayout: l.MaxDynamicUniformBuffersPerPipelineLayout,
+		MaxDynamicStorageBuffersPerPipelineLayout: l.MaxDynamicStorageBuffersPerPipelineLayout,
+		MaxSampledTexturesPerShaderStage:          l.MaxSampledTexturesPerShaderStage,
+		MaxSamplersPerShaderStage:                 l.MaxSamplersPerShaderStage,
+		MaxStorageBuffersPerShaderStage:           l.MaxStorageBuffersPerShaderStage,
+		MaxStorageTexturesPerShaderStage:          l.MaxStorageTexturesPerShaderStage,
+		MaxUniformBuffersPerShaderStage:           l.MaxUniformBuffersPerShaderStage,
+		MaxUniformBufferBindingSize:               l.MaxUniformBufferBindingSize,
+		MaxStorageBufferBindingSize:               l.MaxStorageBufferBindingSize,
+		MinUniformBufferOffsetAlignment:           l.MinUniformBufferOffsetAlignment,
+		MinStorageBufferOffsetAlignment:           l.MinStorageBufferOffsetAlignment,
+		MaxVertexBuffers:                          l.MaxVertexBuffers,
+		MaxBufferSize:                             l.MaxBufferSize,
+		MaxVertexAttributes:                       l.MaxVertexAttributes,
+		MaxVertexBufferArrayStride:                l.MaxVertexBufferArrayStride,
+		MaxInterStageShaderVariables:              l.MaxInterStageShaderVariables,
+		MaxColorAttachments:                       l.MaxColorAttachments,
+		MaxColorAttachmentBytesPerSample:          l.MaxColorAttachmentBytesPerSample,
+		MaxComputeWorkgroupStorageSize:            l.MaxComputeWorkgroupStorageSize,
+		MaxComputeInvocationsPerWorkgroup:         l.MaxComputeInvocationsPerWorkgroup,
+		MaxComputeWorkgroupSizeX:                  l.MaxComputeWorkgroupSizeX,
+		MaxComputeWorkgroupSizeY:                  l.MaxComputeWorkgroupSizeY,
+		MaxComputeWorkgroupSizeZ:                  l.MaxComputeWorkgroupSizeZ,
+		MaxComputeWorkgroupsPerDimension:          l.MaxComputeWorkgroupsPerDimension,
+	}
+}
+
+// deviceDescriptorWire is the FFI-compatible C-layout struct for wgpuAdapterRequestDevice.
+// v29: Added Label, RequiredFeatureCount, RequiredFeatures, RequiredLimits,
+// DefaultQueue, DeviceLostCallbackInfo, UncapturedErrorCallbackInfo fields.
+type deviceDescriptorWire struct {
+	NextInChain                 uintptr // *ChainedStruct
+	Label                       StringView
+	RequiredFeatureCount        uintptr // size_t
+	RequiredFeatures            uintptr // *FeatureName (const)
+	RequiredLimits              uintptr // *Limits (const, nullable)
+	DefaultQueue                QueueDescriptor
+	DeviceLostCallbackInfo      DeviceLostCallbackInfo
+	UncapturedErrorCallbackInfo UncapturedErrorCallbackInfo
+}
+
+// QueueDescriptor configures queue creation.
+type QueueDescriptor struct {
+	NextInChain uintptr // *ChainedStruct
+	Label       StringView
 }
 
 // CreateDepthTexture creates a depth texture with the specified dimensions and format.
 // This is a convenience function for creating depth buffers for render passes.
+// Returns nil on error (use CreateTexture directly for full error handling).
 func (d *Device) CreateDepthTexture(width, height uint32, format gputypes.TextureFormat) *Texture {
-	mustInit()
-	if d == nil || d.handle == 0 {
-		return nil
-	}
-
 	desc := TextureDescriptor{
-		NextInChain:     0,
-		Label:           EmptyStringView(),
-		Usage:           gputypes.TextureUsageRenderAttachment,
-		Dimension:       gputypes.TextureDimension2D,
-		Size:            gputypes.Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
-		Format:          format,
-		MipLevelCount:   1,
-		SampleCount:     1,
-		ViewFormatCount: 0,
-		ViewFormats:     0,
+		Usage:         gputypes.TextureUsageRenderAttachment,
+		Dimension:     gputypes.TextureDimension2D,
+		Size:          gputypes.Extent3D{Width: width, Height: height, DepthOrArrayLayers: 1},
+		Format:        format,
+		MipLevelCount: 1,
+		SampleCount:   1,
 	}
 
-	return d.CreateTexture(&desc)
+	t, _ := d.CreateTexture(&desc)
+	return t
 }
 
-// GetLimits retrieves the limits of this device.
-// Returns the same Limits struct format as Adapter.GetLimits().
-// The FFI call uses SupportedLimits (which wraps Limits with nextInChain).
-func (d *Device) GetLimits() (*SupportedLimits, error) {
-	if err := checkInit(); err != nil {
-		return nil, err
-	}
+// Limits returns the resource limits of this device.
+//
+// Limits are cached at device creation time and returned by value.
+// No FFI call is made. Returns zero-value Limits if the device is nil.
+// This matches the gogpu/wgpu API signature for cross-project compatibility.
+func (d *Device) Limits() Limits {
 	if d == nil || d.handle == 0 {
-		return nil, &WGPUError{Op: "Device.GetLimits", Message: "device is nil"}
+		return Limits{}
 	}
-
-	limits := &SupportedLimits{}
-	status, _, _ := procDeviceGetLimits.Call(
-		d.handle,
-		uintptr(unsafe.Pointer(limits)),
-	)
-
-	if WGPUStatus(status) != WGPUStatusSuccess {
-		return nil, &WGPUError{Op: "Device.GetLimits", Message: "operation failed"}
-	}
-
-	return limits, nil
+	return d.limits
 }
 
-// GetFeatures retrieves all features enabled on this device.
+// Features retrieves all features enabled on this device.
 // Returns a slice of FeatureName values.
-func (d *Device) GetFeatures() []FeatureName {
+func (d *Device) Features() []FeatureName {
 	mustInit()
 	if d == nil || d.handle == 0 {
 		return nil
@@ -273,6 +367,9 @@ func (d *Device) GetFeatures() []FeatureName {
 	// Copy to new slice (don't keep pointer to C memory)
 	result := make([]FeatureName, supported.FeatureCount)
 	copy(result, features)
+
+	// Free C-allocated memory (pass pointer to struct, not individual fields)
+	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(&supported))) //nolint:errcheck
 
 	return result
 }

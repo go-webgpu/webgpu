@@ -40,23 +40,23 @@ func TestCreatePipelineLayout(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},
 	}
-	bindGroupLayout := device.CreateBindGroupLayoutSimple(layoutEntries)
-	if bindGroupLayout == nil {
-		t.Fatal("CreateBindGroupLayoutSimple returned nil")
+	bindGroupLayout, err := device.CreateBindGroupLayoutSimple(layoutEntries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupLayoutSimple failed: %v", err)
 	}
 	defer bindGroupLayout.Release()
 
 	// Create pipeline layout
 	t.Log("Creating pipeline layout...")
-	pipelineLayout := device.CreatePipelineLayoutSimple([]*BindGroupLayout{bindGroupLayout})
-	if pipelineLayout == nil {
-		t.Fatal("CreatePipelineLayoutSimple returned nil")
+	pipelineLayout, err := device.CreatePipelineLayoutSimple([]*BindGroupLayout{bindGroupLayout})
+	if err != nil {
+		t.Fatalf("CreatePipelineLayoutSimple failed: %v", err)
 	}
 	defer pipelineLayout.Release()
 
@@ -87,17 +87,17 @@ func TestCreateComputePipeline(t *testing.T) {
 	defer device.Release()
 
 	// Create shader
-	shader := device.CreateShaderModuleWGSL(computeShaderDouble)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(computeShaderDouble)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
 	// Create pipeline with auto layout
 	t.Log("Creating compute pipeline with auto layout...")
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -128,16 +128,16 @@ func TestComputePipelineGetBindGroupLayout(t *testing.T) {
 	defer device.Release()
 
 	// Create shader
-	shader := device.CreateShaderModuleWGSL(computeShaderDouble)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(computeShaderDouble)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
 	// Create pipeline with auto layout
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -172,9 +172,9 @@ func TestCreateComputePipelineWithExplicitLayout(t *testing.T) {
 	defer device.Release()
 
 	// Create shader
-	shader := device.CreateShaderModuleWGSL(computeShaderDouble)
-	if shader == nil {
-		t.Fatal("CreateShaderModuleWGSL returned nil")
+	shader, err := device.CreateShaderModuleWGSL(computeShaderDouble)
+	if err != nil {
+		t.Fatalf("CreateShaderModuleWGSL failed: %v", err)
 	}
 	defer shader.Release()
 
@@ -183,30 +183,30 @@ func TestCreateComputePipelineWithExplicitLayout(t *testing.T) {
 		{
 			Binding:    0,
 			Visibility: gputypes.ShaderStageCompute,
-			Buffer: BufferBindingLayout{
+			Buffer: &BufferBindingLayout{
 				Type:           gputypes.BufferBindingTypeStorage,
 				MinBindingSize: 0,
 			},
 		},
 	}
-	bindGroupLayout := device.CreateBindGroupLayoutSimple(layoutEntries)
-	if bindGroupLayout == nil {
-		t.Fatal("CreateBindGroupLayoutSimple returned nil")
+	bindGroupLayout, err := device.CreateBindGroupLayoutSimple(layoutEntries)
+	if err != nil {
+		t.Fatalf("CreateBindGroupLayoutSimple failed: %v", err)
 	}
 	defer bindGroupLayout.Release()
 
 	// Create pipeline layout
-	pipelineLayout := device.CreatePipelineLayoutSimple([]*BindGroupLayout{bindGroupLayout})
-	if pipelineLayout == nil {
-		t.Fatal("CreatePipelineLayoutSimple returned nil")
+	pipelineLayout, err := device.CreatePipelineLayoutSimple([]*BindGroupLayout{bindGroupLayout})
+	if err != nil {
+		t.Fatalf("CreatePipelineLayoutSimple failed: %v", err)
 	}
 	defer pipelineLayout.Release()
 
 	// Create pipeline with explicit layout
 	t.Log("Creating compute pipeline with explicit layout...")
-	pipeline := device.CreateComputePipelineSimple(pipelineLayout, shader, "main")
-	if pipeline == nil {
-		t.Fatal("CreateComputePipelineSimple returned nil")
+	pipeline, err := device.CreateComputePipelineSimple(pipelineLayout, shader, "main")
+	if err != nil {
+		t.Fatalf("CreateComputePipelineSimple failed: %v", err)
 	}
 	defer pipeline.Release()
 

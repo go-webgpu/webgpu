@@ -18,15 +18,20 @@ type QuerySetDescriptor struct {
 }
 
 // CreateQuerySet creates a new QuerySet for GPU profiling/timestamps.
-func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) *QuerySet {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) (*QuerySet, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateQuerySet", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateQuerySet", Message: "descriptor is nil"}
 	}
 
 	nativeDesc := querySetDescriptor{
 		nextInChain: 0,
-		label:       EmptyStringView(),
+		label:       stringToStringView(desc.Label),
 		queryType:   desc.Type,
 		count:       desc.Count,
 	}
@@ -36,10 +41,10 @@ func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) *QuerySet {
 		uintptr(unsafe.Pointer(&nativeDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateQuerySet", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "QuerySet")
-	return &QuerySet{handle: handle}
+	return &QuerySet{handle: handle}, nil
 }
 
 // Destroy destroys the QuerySet, making it invalid.

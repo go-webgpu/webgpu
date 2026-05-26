@@ -28,14 +28,14 @@ func TestCreateBuffer(t *testing.T) {
 
 	t.Log("Creating buffer...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
-	buffer := device.CreateBuffer(desc)
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	buffer, err := device.CreateBuffer(desc)
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 
@@ -45,8 +45,8 @@ func TestCreateBuffer(t *testing.T) {
 
 	t.Logf("Buffer created: handle=%#x", buffer.Handle())
 
-	// Test GetSize
-	size := buffer.GetSize()
+	// Test Size
+	size := buffer.Size()
 	if size != 256 {
 		t.Errorf("Buffer size = %d, want 256", size)
 	}
@@ -74,14 +74,14 @@ func TestBufferMappedAtCreation(t *testing.T) {
 
 	t.Log("Creating buffer with MappedAtCreation...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopySrc,
 		Size:             64,
-		MappedAtCreation: True,
+		MappedAtCreation: true,
 	}
-	buffer := device.CreateBuffer(desc)
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	buffer, err := device.CreateBuffer(desc)
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 
@@ -123,7 +123,7 @@ func TestQueueWriteBuffer(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
 		t.Fatal("GetQueue returned nil")
 	}
@@ -131,14 +131,14 @@ func TestQueueWriteBuffer(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBuffer test...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
-	buffer := device.CreateBuffer(desc)
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	buffer, err := device.CreateBuffer(desc)
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 
@@ -172,7 +172,7 @@ func TestQueueWriteBufferRaw(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	if queue == nil {
 		t.Fatal("GetQueue returned nil")
 	}
@@ -180,14 +180,14 @@ func TestQueueWriteBufferRaw(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBufferRaw test...")
 	desc := &BufferDescriptor{
-		Label:            EmptyStringView(),
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
-		MappedAtCreation: False,
+		MappedAtCreation: false,
 	}
-	buffer := device.CreateBuffer(desc)
-	if buffer == nil {
-		t.Fatal("CreateBuffer returned nil")
+	buffer, err := device.CreateBuffer(desc)
+	if err != nil {
+		t.Fatalf("CreateBuffer failed: %v", err)
 	}
 	defer buffer.Release()
 

@@ -8,16 +8,14 @@ import (
 
 // TextureDescriptor describes a texture to create.
 type TextureDescriptor struct {
-	NextInChain     uintptr
-	Label           StringView
-	Usage           gputypes.TextureUsage
-	Dimension       gputypes.TextureDimension
-	Size            gputypes.Extent3D
-	Format          gputypes.TextureFormat
-	MipLevelCount   uint32
-	SampleCount     uint32
-	ViewFormatCount uintptr
-	ViewFormats     uintptr
+	Label         string
+	Usage         gputypes.TextureUsage
+	Dimension     gputypes.TextureDimension
+	Size          gputypes.Extent3D
+	Format        gputypes.TextureFormat
+	MipLevelCount uint32
+	SampleCount   uint32
+	ViewFormats   []gputypes.TextureFormat
 }
 
 // textureDescriptorWire is the FFI-compatible struct with wgpu-native enum values.
@@ -37,8 +35,7 @@ type textureDescriptorWire struct {
 
 // TextureViewDescriptor describes a texture view to create.
 type TextureViewDescriptor struct {
-	NextInChain     uintptr
-	Label           StringView
+	Label           string
 	Format          gputypes.TextureFormat
 	Dimension       gputypes.TextureViewDimension
 	BaseMipLevel    uint32
@@ -46,7 +43,6 @@ type TextureViewDescriptor struct {
 	BaseArrayLayer  uint32
 	ArrayLayerCount uint32
 	Aspect          TextureAspect
-	_pad            [4]byte //nolint:unused // padding for FFI alignment
 	Usage           gputypes.TextureUsage
 }
 
@@ -69,20 +65,22 @@ type textureViewDescriptorWire struct {
 // CreateView creates a view into this texture.
 // Pass nil for default view parameters.
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
-func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
-	mustInit()
+// Returns an error if the FFI call fails or the texture is nil.
+func (t *Texture) CreateView(desc *TextureViewDescriptor) (*TextureView, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if t == nil || t.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateView", Message: "texture is nil or released"}
 	}
 
 	var descPtr uintptr
 	if desc != nil {
-		// Convert to wire format with wgpu-native enum values
+		// Convert Go-idiomatic descriptor to FFI wire format
 		wireDesc := textureViewDescriptorWire{
-			NextInChain:     desc.NextInChain,
-			Label:           desc.Label,
-			Format:          toWGPUTextureFormat(desc.Format),
-			Dimension:       toWGPUTextureViewDimension(desc.Dimension),
+			Label:           stringToStringView(desc.Label),
+			Format:          uint32(desc.Format),
+			Dimension:       uint32(desc.Dimension),
 			BaseMipLevel:    desc.BaseMipLevel,
 			MipLevelCount:   desc.MipLevelCount,
 			BaseArrayLayer:  desc.BaseArrayLayer,
@@ -98,10 +96,10 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) *TextureView {
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateView", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "TextureView")
-	return &TextureView{handle: handle}
+	return &TextureView{handle: handle}, nil
 }
 
 // Destroy destroys the texture.
@@ -124,8 +122,8 @@ func (t *Texture) Release() {
 // Handle returns the underlying handle. For advanced use only.
 func (t *Texture) Handle() uintptr { return t.handle }
 
-// GetWidth returns the width of the texture in texels.
-func (t *Texture) GetWidth() uint32 {
+// Width returns the width of the texture in texels.
+func (t *Texture) Width() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -134,8 +132,8 @@ func (t *Texture) GetWidth() uint32 {
 	return uint32(result)
 }
 
-// GetHeight returns the height of the texture in texels.
-func (t *Texture) GetHeight() uint32 {
+// Height returns the height of the texture in texels.
+func (t *Texture) Height() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -144,8 +142,8 @@ func (t *Texture) GetHeight() uint32 {
 	return uint32(result)
 }
 
-// GetDepthOrArrayLayers returns the depth (for 3D textures) or array layer count.
-func (t *Texture) GetDepthOrArrayLayers() uint32 {
+// DepthOrArrayLayers returns the depth (for 3D textures) or array layer count.
+func (t *Texture) DepthOrArrayLayers() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -154,8 +152,8 @@ func (t *Texture) GetDepthOrArrayLayers() uint32 {
 	return uint32(result)
 }
 
-// GetMipLevelCount returns the number of mip levels.
-func (t *Texture) GetMipLevelCount() uint32 {
+// MipLevelCount returns the number of mip levels.
+func (t *Texture) MipLevelCount() uint32 {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return 0
@@ -164,16 +162,15 @@ func (t *Texture) GetMipLevelCount() uint32 {
 	return uint32(result)
 }
 
-// GetFormat returns the texture format.
-// The format is converted from wgpu-native enum to gputypes enum.
-func (t *Texture) GetFormat() gputypes.TextureFormat {
+// Format returns the texture format.
+// TextureFormat values match between gputypes v0.3.0 and wgpu-native v29 exactly.
+func (t *Texture) Format() gputypes.TextureFormat {
 	mustInit()
 	if t == nil || t.handle == 0 {
 		return gputypes.TextureFormatUndefined
 	}
 	result, _, _ := procTextureGetFormat.Call(t.handle)
-	// Convert from wgpu-native enum to gputypes
-	return fromWGPUTextureFormat(uint32(result))
+	return gputypes.TextureFormat(result)
 }
 
 // Release releases the texture view reference.
@@ -190,10 +187,16 @@ func (tv *TextureView) Handle() uintptr { return tv.handle }
 
 // CreateTexture creates a texture with the specified descriptor.
 // Enum values are converted from gputypes to wgpu-native values before FFI call.
-func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateTexture", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateTexture", Message: "descriptor is nil"}
 	}
 
 	// wgpu-native requires MipLevelCount >= 1 and SampleCount >= 1
@@ -206,18 +209,30 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 		sampleCount = 1
 	}
 
+	// Convert []TextureFormat → []uint32 for FFI (values match, but wire struct needs uint32 pointer)
+	var viewFormatCount uintptr
+	var viewFormatsPtr uintptr
+	if len(desc.ViewFormats) > 0 {
+		// Convert to uint32 slice (gputypes values equal wgpu-native values)
+		wireFormats := make([]uint32, len(desc.ViewFormats))
+		for i, f := range desc.ViewFormats {
+			wireFormats[i] = uint32(f)
+		}
+		viewFormatCount = uintptr(len(wireFormats))
+		viewFormatsPtr = uintptr(unsafe.Pointer(&wireFormats[0]))
+	}
+
 	// Convert to wire format with wgpu-native enum values
 	wireDesc := textureDescriptorWire{
-		NextInChain:     desc.NextInChain,
-		Label:           desc.Label,
+		Label:           stringToStringView(desc.Label),
 		Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
-		Dimension:       toWGPUTextureDimension(desc.Dimension),
+		Dimension:       uint32(desc.Dimension),
 		Size:            desc.Size,
-		Format:          toWGPUTextureFormat(desc.Format),
+		Format:          uint32(desc.Format),
 		MipLevelCount:   mipLevelCount,
 		SampleCount:     sampleCount,
-		ViewFormatCount: desc.ViewFormatCount,
-		ViewFormats:     desc.ViewFormats,
+		ViewFormatCount: viewFormatCount,
+		ViewFormats:     viewFormatsPtr,
 	}
 
 	handle, _, _ := procDeviceCreateTexture.Call(
@@ -225,13 +240,14 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) *Texture {
 		uintptr(unsafe.Pointer(&wireDesc)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateTexture", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Texture")
-	return &Texture{handle: handle}
+	return &Texture{handle: handle}, nil
 }
 
-// TexelCopyTextureInfo describes a texture for WriteTexture.
+// TexelCopyTextureInfo describes a texture for WriteTexture (low-level wire type).
+// Prefer [ImageCopyTexture] for new code — it holds a *Texture handle.
 type TexelCopyTextureInfo struct {
 	Texture  uintptr
 	MipLevel uint32
@@ -239,7 +255,8 @@ type TexelCopyTextureInfo struct {
 	Aspect   TextureAspect
 }
 
-// TexelCopyBufferLayout describes buffer layout for WriteTexture.
+// TexelCopyBufferLayout describes buffer layout for WriteTexture (low-level wire type).
+// Prefer [ImageDataLayout] for new code.
 type TexelCopyBufferLayout struct {
 	Offset       uint64
 	BytesPerRow  uint32
@@ -252,11 +269,74 @@ type TexelCopyBufferInfo struct {
 	Buffer uintptr // Buffer handle
 }
 
+// ImageCopyTexture describes a texture subresource and origin for copy/write operations.
+// Matches gogpu/wgpu ImageCopyTexture.
+type ImageCopyTexture struct {
+	Texture  *Texture
+	MipLevel uint32
+	Origin   gputypes.Origin3D
+	Aspect   TextureAspect
+}
+
+// toWire converts to the FFI wire format (TexelCopyTextureInfo).
+func (i *ImageCopyTexture) toWire() TexelCopyTextureInfo {
+	if i == nil {
+		return TexelCopyTextureInfo{}
+	}
+	var handle uintptr
+	if i.Texture != nil {
+		handle = i.Texture.handle
+	}
+	return TexelCopyTextureInfo{
+		Texture:  handle,
+		MipLevel: i.MipLevel,
+		Origin:   i.Origin,
+		Aspect:   i.Aspect,
+	}
+}
+
+// ImageDataLayout describes the layout of image data in a buffer.
+// Matches gogpu/wgpu ImageDataLayout.
+type ImageDataLayout struct {
+	Offset       uint64
+	BytesPerRow  uint32
+	RowsPerImage uint32
+}
+
 // WriteTexture writes data to a texture.
-func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) {
+// Returns nil on success. In this FFI implementation errors are surfaced through
+// the Device uncaptured-error callback; the signature matches gogpu/wgpu for API compatibility.
+//
+// Accepts either [ImageCopyTexture] or [TexelCopyTextureInfo] as dest (via overloads below).
+// This overload takes the high-level [ImageCopyTexture] type.
+func (q *Queue) WriteTexture(dest *ImageCopyTexture, data []byte, layout *ImageDataLayout, size *gputypes.Extent3D) error {
 	mustInit()
 	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
-		return
+		return nil
+	}
+	wire := dest.toWire()
+	wireLayout := TexelCopyBufferLayout{
+		Offset:       layout.Offset,
+		BytesPerRow:  layout.BytesPerRow,
+		RowsPerImage: layout.RowsPerImage,
+	}
+	procQueueWriteTexture.Call( //nolint:errcheck
+		q.handle,
+		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(len(data)),
+		uintptr(unsafe.Pointer(&wireLayout)),
+		uintptr(unsafe.Pointer(size)),
+	)
+	return nil
+}
+
+// WriteTextureRaw writes data to a texture using the low-level wire types.
+// Prefer [WriteTexture] for new code.
+func (q *Queue) WriteTextureRaw(dest *TexelCopyTextureInfo, data []byte, layout *TexelCopyBufferLayout, size *gputypes.Extent3D) error {
+	mustInit()
+	if q == nil || q.handle == 0 || dest == nil || layout == nil || size == nil || len(data) == 0 {
+		return nil
 	}
 	procQueueWriteTexture.Call( //nolint:errcheck
 		q.handle,
@@ -266,4 +346,27 @@ func (q *Queue) WriteTexture(dest *TexelCopyTextureInfo, data []byte, layout *Te
 		uintptr(unsafe.Pointer(layout)),
 		uintptr(unsafe.Pointer(size)),
 	)
+	return nil
+}
+
+// BufferTextureCopy defines a buffer-texture copy region.
+// Matches gogpu/wgpu BufferTextureCopy.
+type BufferTextureCopy struct {
+	// BufferLayout describes the memory layout of the buffer data.
+	BufferLayout ImageDataLayout
+	// TextureBase describes the texture subresource and origin.
+	TextureBase ImageCopyTexture
+	// Size is the extent of the copy operation.
+	Size gputypes.Extent3D
+}
+
+// TextureCopy describes a texture-to-texture copy region.
+// Matches gogpu/wgpu TextureCopy.
+type TextureCopy struct {
+	// Source describes the source texture subresource and origin.
+	Source ImageCopyTexture
+	// Destination describes the destination texture subresource and origin.
+	Destination ImageCopyTexture
+	// Size is the extent of the copy operation.
+	Size gputypes.Extent3D
 }

@@ -155,7 +155,7 @@ perf: optimize command encoder batch submission
 
 - Go 1.25 or later
 - golangci-lint v2
-- wgpu-native shared libraries (download script provided)
+- wgpu-native v29.0.0.0 shared libraries (download script provided)
 
 ### Platform Requirements
 
@@ -196,6 +196,20 @@ go test -v ./wgpu/... -run "TestDeviceCreation"
 
 # Run benchmarks
 go test -bench=. -benchmem ./wgpu/...
+```
+
+Tests are organized into three tiers:
+
+| Tier | Filter | GPU required | Runs in CI |
+|------|--------|-------------|-----------|
+| **ABI tests** | `-run "TestABI"` | No | Yes |
+| **Safe tests** | `-run "Mat4\|Vec3\|StructSizes\|CheckInit\|WGPUError\|Fuzz\|NullGuard"` | No | Yes |
+| **GPU tests** | `-run "TestAdapter\|TestDevice\|TestBuffer\|TestSurface\|TestLeak\|TestErrorScope"` | Yes | No |
+
+**`abi_test.go`** contains 271 assertions that verify Go wire struct sizes and field offsets match the C ABI defined in wgpu-native v29 `webgpu.h`. These tests catch silent ABI regressions (wrong struct size, missing padding, field reorder) that would cause memory corruption at runtime. Run them after any struct change:
+
+```bash
+go test -v -run "TestABI" ./wgpu/...
 ```
 
 ### Running Linter
@@ -262,18 +276,102 @@ webgpu/
 └── README.md             # Main documentation
 ```
 
+## Adding a New FFI Function
+
+When wrapping a new wgpu-native function, follow this pattern exactly:
+
+**Step 1: Add the procedure handle** (`wgpu/wgpu.go` or the relevant `*.go` file)
+
+```go
+var procDeviceNewFunction = loadProc("wgpuDeviceNewFunction")
+```
+
+**Step 2: Add the wire struct** (if the function takes a descriptor)
+
+The wire struct must match the C struct layout from `webgpu.h` exactly:
+```go
+// wireNewFunctionDescriptor must match WGPUNewFunctionDescriptor in webgpu.h exactly.
+type newFunctionDescriptorWire struct {
+    NextInChain uintptr    // *WGPUChainedStruct — always 8 bytes
+    Label       StringView // {Data uintptr, Length uintptr} — always 16 bytes
+    SomeField   uint32     // matches C uint32_t
+    _           [4]byte    // explicit padding to match C struct alignment
+}
+```
+
+**Step 3: Add the public method** on the appropriate receiver type
+
+```go
+// NewFunction creates a new thing. Returns an error if the device is nil or
+// wgpu-native reports a validation error.
+func (d *Device) NewFunction(desc *NewFunctionDescriptor) (*NewFunction, error) {
+    if err := d.checkInit(); err != nil {
+        return nil, err
+    }
+    wire := newFunctionDescriptorWire{
+        Label:     toStringView(desc.Label),
+        SomeField: toWGPUSomeEnum(desc.SomeField), // use converter if needed
+    }
+    handle := procDeviceNewFunction.callUintptr(d.handle, uintptr(unsafe.Pointer(&wire)))
+    if handle == 0 {
+        return nil, fmt.Errorf("wgpu: DeviceNewFunction failed")
+    }
+    f := &NewFunction{handle: handle}
+    trackResource(handle, "NewFunction")
+    return f, nil
+}
+```
+
+**Step 4: Add Release method** on the new type
+
+```go
+// Release releases the GPU resource. Safe to call on a nil or already-released handle.
+func (f *NewFunction) Release() {
+    if f == nil || f.handle == 0 {
+        return
+    }
+    untrackResource(f.handle)
+    procNewFunctionRelease.call(f.handle)
+    f.handle = 0
+}
+```
+
+**Step 5: Update `abi_test.go`**
+
+Add size and offset assertions for the new wire struct:
+```go
+{"newFunctionDescriptorWire", unsafe.Sizeof(newFunctionDescriptorWire{}), expectedSize},
+```
+
+Run `go test -run TestABI ./wgpu/...` to verify before pushing.
+
+**Step 6: Add a test**
+
+Even a basic null-guard test is required:
+```go
+func TestNullGuard_NewFunction(t *testing.T) {
+    var f *NewFunction
+    f.Release() // must not panic
+}
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full explanation of the FFI layer design, wire structs, and the enum conversion rules.
+
+---
+
 ## Adding New Features
 
 1. Check if issue exists, if not create one
 2. Discuss approach in the issue
-3. Create feature branch from `develop`
-4. Implement feature with tests
-5. Update documentation and examples
-6. Run quality checks (`bash scripts/pre-release-check.sh`)
-7. Create pull request to `develop`
-8. Wait for code review
-9. Address feedback
-10. Merge when approved
+3. Create feature branch from `main`
+4. Implement feature with tests (follow the FFI pattern above)
+5. Update `abi_test.go` for any new wire structs
+6. Update documentation and examples
+7. Run quality checks (`bash scripts/pre-release-check.sh`)
+8. Create pull request to `main`
+9. Wait for code review
+10. Address feedback
+11. Merge when approved
 
 ## Code Style Guidelines
 
@@ -361,6 +459,12 @@ See [STABILITY.md](STABILITY.md) for the API stability policy. When deprecating 
 // Deprecated: Use NewFunction instead.
 func OldFunction() { ... }
 ```
+
+## Architecture Reference
+
+For a deep dive into the internal design — wire structs vs public structs, the enum conversion layer, async callback pattern, and testing strategy — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
 
 ## Platform-Specific Notes
 

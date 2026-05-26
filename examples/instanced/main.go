@@ -10,7 +10,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 )
 
 // Vertex data: position (x, y) + color (r, g, b)
@@ -111,13 +110,13 @@ func main() {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	defer queue.Release()
 
 	// Create shader module
-	shader := device.CreateShaderModuleWGSL(shaderCode)
-	if shader == nil {
-		log.Fatal("failed to create shader module")
+	shader, err := device.CreateShaderModuleWGSL(shaderCode)
+	if err != nil {
+		log.Fatalf("create shader module: %v", err)
 	}
 	defer shader.Release()
 
@@ -130,13 +129,13 @@ func main() {
 
 	// Create vertex buffer (per-vertex data)
 	vertexBufferSize := uint64(len(triangleVertices)) * uint64(unsafe.Sizeof(triangleVertices[0]))
-	vertexBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
+	vertexBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
-	if vertexBuffer == nil {
-		log.Fatal("failed to create vertex buffer")
+	if err != nil {
+		log.Fatalf("create vertex buffer: %v", err)
 	}
 	defer vertexBuffer.Release()
 
@@ -150,13 +149,13 @@ func main() {
 
 	// Create instance buffer (per-instance data)
 	instanceBufferSize := uint64(len(instanceData)) * uint64(unsafe.Sizeof(instanceData[0]))
-	instanceBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            gputypes.BufferUsageVertex | gputypes.BufferUsageCopyDst,
+	instanceBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             instanceBufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
-	if instanceBuffer == nil {
-		log.Fatal("failed to create instance buffer")
+	if err != nil {
+		log.Fatalf("create instance buffer: %v", err)
 	}
 	defer instanceBuffer.Release()
 
@@ -170,20 +169,20 @@ func main() {
 
 	// Define vertex attributes for per-vertex buffer
 	vertexAttributes := []wgpu.VertexAttribute{
-		{Format: gputypes.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 0}, // position
-		{Format: gputypes.VertexFormatFloat32x3, Offset: 8, ShaderLocation: 1}, // color
+		{Format: wgpu.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 0}, // position
+		{Format: wgpu.VertexFormatFloat32x3, Offset: 8, ShaderLocation: 1}, // color
 	}
 
 	// Define vertex attributes for per-instance buffer
 	instanceAttributes := []wgpu.VertexAttribute{
-		{Format: gputypes.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 2}, // offset
-		{Format: gputypes.VertexFormatFloat32, Offset: 8, ShaderLocation: 3},   // scale
+		{Format: wgpu.VertexFormatFloat32x2, Offset: 0, ShaderLocation: 2}, // offset
+		{Format: wgpu.VertexFormatFloat32, Offset: 8, ShaderLocation: 3},   // scale
 	}
 
 	// Create render pipeline with two vertex buffer layouts:
 	// - Slot 0: Per-vertex data (position, color) with VertexStepModeVertex
 	// - Slot 1: Per-instance data (offset, scale) with VertexStepModeInstance
-	pipeline := device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
+	pipeline, err := device.CreateRenderPipeline(&wgpu.RenderPipelineDescriptor{
 		Vertex: wgpu.VertexState{
 			Module:     shader,
 			EntryPoint: "vs_main",
@@ -191,14 +190,14 @@ func main() {
 				// Per-vertex buffer (slot 0)
 				{
 					ArrayStride:    uint64(unsafe.Sizeof(Vertex{})),
-					StepMode:       gputypes.VertexStepModeVertex,
+					StepMode:       wgpu.VertexStepModeVertex,
 					AttributeCount: uintptr(len(vertexAttributes)),
 					Attributes:     &vertexAttributes[0],
 				},
 				// Per-instance buffer (slot 1)
 				{
 					ArrayStride:    uint64(unsafe.Sizeof(InstanceData{})),
-					StepMode:       gputypes.VertexStepModeInstance, // Key: advances per instance, not per vertex
+					StepMode:       wgpu.VertexStepModeInstance, // Key: advances per instance, not per vertex
 					AttributeCount: uintptr(len(instanceAttributes)),
 					Attributes:     &instanceAttributes[0],
 				},
@@ -208,55 +207,61 @@ func main() {
 			Module:     shader,
 			EntryPoint: "fs_main",
 			Targets: []wgpu.ColorTargetState{
-				{Format: gputypes.TextureFormatRGBA8Unorm, WriteMask: gputypes.ColorWriteMaskAll},
+				{Format: wgpu.TextureFormatRGBA8Unorm, WriteMask: wgpu.ColorWriteMaskAll},
 			},
 		},
 		Primitive: wgpu.PrimitiveState{
-			Topology:  gputypes.PrimitiveTopologyTriangleList,
-			FrontFace: gputypes.FrontFaceCCW,
-			CullMode:  gputypes.CullModeNone,
+			Topology:  wgpu.PrimitiveTopologyTriangleList,
+			FrontFace: wgpu.FrontFaceCCW,
+			CullMode:  wgpu.CullModeNone,
 		},
 		Multisample: wgpu.MultisampleState{
 			Count: 1,
 			Mask:  0xFFFFFFFF,
 		},
 	})
-	if pipeline == nil {
-		log.Fatal("failed to create render pipeline")
+	if err != nil {
+		log.Fatalf("create render pipeline: %v", err)
 	}
 	defer pipeline.Release()
 
 	// Create output texture
-	outputTexture := device.CreateTexture(&wgpu.TextureDescriptor{
-		Size:   gputypes.Extent3D{Width: 256, Height: 256, DepthOrArrayLayers: 1},
-		Format: gputypes.TextureFormatRGBA8Unorm,
-		Usage:  gputypes.TextureUsageRenderAttachment | gputypes.TextureUsageCopySrc,
+	outputTexture, err := device.CreateTexture(&wgpu.TextureDescriptor{
+		Size:   wgpu.Extent3D{Width: 256, Height: 256, DepthOrArrayLayers: 1},
+		Format: wgpu.TextureFormatRGBA8Unorm,
+		Usage:  wgpu.TextureUsageRenderAttachment | wgpu.TextureUsageCopySrc,
 	})
-	if outputTexture == nil {
-		log.Fatal("failed to create output texture")
+	if err != nil {
+		log.Fatalf("create output texture: %v", err)
 	}
 	defer outputTexture.Release()
 
-	outputView := outputTexture.CreateView(nil)
+	outputView, err := outputTexture.CreateView(nil)
+	if err != nil {
+		log.Fatalf("create texture view: %v", err)
+	}
 	defer outputView.Release()
 
 	// Create command encoder
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		log.Fatal("failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		log.Fatalf("create command encoder: %v", err)
 	}
 
 	// Begin render pass
-	renderPass := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
+	renderPass, err := encoder.BeginRenderPass(&wgpu.RenderPassDescriptor{
 		ColorAttachments: []wgpu.RenderPassColorAttachment{
 			{
 				View:       outputView,
-				LoadOp:     gputypes.LoadOpClear,
-				StoreOp:    gputypes.StoreOpStore,
+				LoadOp:     wgpu.LoadOpClear,
+				StoreOp:    wgpu.StoreOpStore,
 				ClearValue: wgpu.Color{R: 0.1, G: 0.1, B: 0.1, A: 1.0},
 			},
 		},
 	})
+	if err != nil {
+		log.Fatalf("begin render pass: %v", err)
+	}
 
 	renderPass.SetPipeline(pipeline)
 	renderPass.SetVertexBuffer(0, vertexBuffer, 0, vertexBufferSize)     // Per-vertex data
@@ -270,10 +275,15 @@ func main() {
 	renderPass.Release()
 
 	// Submit
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
+	if err != nil {
+		log.Fatalf("finish encoder: %v", err)
+	}
 	encoder.Release()
 
-	queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		log.Fatalf("submit: %v", err)
+	}
 	cmdBuffer.Release()
 
 	fmt.Println("Instanced rendering complete!")

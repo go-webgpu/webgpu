@@ -9,7 +9,6 @@ import (
 	"unsafe"
 
 	"github.com/go-webgpu/webgpu/wgpu"
-	"github.com/gogpu/gputypes"
 )
 
 // Compute shader that doubles each element in the array
@@ -49,20 +48,20 @@ func main() {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	defer queue.Release()
 
 	// Create shader module
-	shader := device.CreateShaderModuleWGSL(computeShader)
-	if shader == nil {
-		log.Fatal("failed to create compute shader")
+	shader, err := device.CreateShaderModuleWGSL(computeShader)
+	if err != nil {
+		log.Fatalf("create compute shader: %v", err)
 	}
 	defer shader.Release()
 
 	// Create compute pipeline with auto layout
-	pipeline := device.CreateComputePipelineSimple(nil, shader, "main")
-	if pipeline == nil {
-		log.Fatal("failed to create compute pipeline")
+	pipeline, err := device.CreateComputePipelineSimple(nil, shader, "main")
+	if err != nil {
+		log.Fatalf("create compute pipeline: %v", err)
 	}
 	defer pipeline.Release()
 
@@ -79,13 +78,13 @@ func main() {
 
 	// Create storage buffer
 	bufferSize := uint64(numElements * 4) // 4 bytes per float32
-	storageBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
+	storageBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage:            wgpu.BufferUsageStorage | wgpu.BufferUsageCopySrc | wgpu.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: wgpu.True,
+		MappedAtCreation: true,
 	})
-	if storageBuffer == nil {
-		log.Fatal("failed to create storage buffer")
+	if err != nil {
+		log.Fatalf("create storage buffer: %v", err)
 	}
 	defer storageBuffer.Release()
 
@@ -98,13 +97,13 @@ func main() {
 	storageBuffer.Unmap()
 
 	// Create readback buffer for results
-	readbackBuffer := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
+	readbackBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
+		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:             bufferSize,
-		MappedAtCreation: wgpu.False,
+		MappedAtCreation: false,
 	})
-	if readbackBuffer == nil {
-		log.Fatal("failed to create readback buffer")
+	if err != nil {
+		log.Fatalf("create readback buffer: %v", err)
 	}
 	defer readbackBuffer.Release()
 
@@ -116,22 +115,25 @@ func main() {
 	defer bindGroupLayout.Release()
 
 	// Create bind group
-	bindGroup := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
+	bindGroup, err := device.CreateBindGroupSimple(bindGroupLayout, []wgpu.BindGroupEntry{
 		wgpu.BufferBindingEntry(0, storageBuffer, 0, bufferSize),
 	})
-	if bindGroup == nil {
-		log.Fatal("failed to create bind group")
+	if err != nil {
+		log.Fatalf("create bind group: %v", err)
 	}
 	defer bindGroup.Release()
 
 	// Create command encoder
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		log.Fatal("failed to create command encoder")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		log.Fatalf("create command encoder: %v", err)
 	}
 
 	// Begin compute pass
-	computePass := encoder.BeginComputePass(nil)
+	computePass, err := encoder.BeginComputePass(nil)
+	if err != nil {
+		log.Fatalf("begin compute pass: %v", err)
+	}
 	computePass.SetPipeline(pipeline)
 	computePass.SetBindGroup(0, bindGroup, nil)
 
@@ -146,16 +148,32 @@ func main() {
 	encoder.CopyBufferToBuffer(storageBuffer, 0, readbackBuffer, 0, bufferSize)
 
 	// Submit commands
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish()
+	if err != nil {
+		log.Fatalf("finish encoder: %v", err)
+	}
 	encoder.Release()
-	queue.Submit(cmdBuffer)
+	if _, err = queue.Submit(cmdBuffer); err != nil {
+		log.Fatalf("queue submit: %v", err)
+	}
 	cmdBuffer.Release()
 
 	// Map readback buffer and read results
-	err = readbackBuffer.MapAsync(device, wgpu.MapModeRead, 0, bufferSize)
+	mapPending, err := readbackBuffer.MapAsync(wgpu.MapModeRead, 0, bufferSize)
 	if err != nil {
 		log.Fatalf("MapAsync failed: %v", err)
 	}
+	// Drive polling until the map resolves.
+	for {
+		if ready, werr := mapPending.Status(); ready {
+			if werr != nil {
+				log.Fatalf("MapAsync resolved with error: %v", werr)
+			}
+			break
+		}
+		device.Poll(false)
+	}
+	mapPending.Release()
 
 	resultPtr := readbackBuffer.GetMappedRange(0, bufferSize)
 	if resultPtr != nil {

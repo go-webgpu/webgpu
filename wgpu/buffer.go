@@ -1,6 +1,7 @@
 package wgpu
 
 import (
+	"context"
 	"sync"
 	"unsafe"
 
@@ -26,14 +27,15 @@ type MapAsyncStatus uint32
 const (
 	// MapAsyncStatusSuccess indicates the buffer was successfully mapped.
 	MapAsyncStatusSuccess MapAsyncStatus = 0x00000001
-	// MapAsyncStatusInstanceDropped indicates the instance was dropped before completion.
-	MapAsyncStatusInstanceDropped MapAsyncStatus = 0x00000002
+	// MapAsyncStatusCallbackCancelled indicates the callback was cancelled.
+	MapAsyncStatusCallbackCancelled MapAsyncStatus = 0x00000002
 	// MapAsyncStatusError indicates a mapping error occurred.
 	MapAsyncStatusError MapAsyncStatus = 0x00000003
 	// MapAsyncStatusAborted indicates the mapping was aborted (e.g., buffer destroyed).
 	MapAsyncStatusAborted MapAsyncStatus = 0x00000004
-	// MapAsyncStatusUnknown indicates an unknown mapping error.
-	MapAsyncStatusUnknown MapAsyncStatus = 0x00000005
+
+	// Deprecated: use MapAsyncStatusCallbackCancelled.
+	MapAsyncStatusInstanceDropped = MapAsyncStatusCallbackCancelled
 )
 
 // BufferMapCallbackInfo holds callback configuration for MapAsync.
@@ -98,30 +100,53 @@ func initMapCallback() {
 	mapCallbackPtr = ffi.NewCallback(mapCallbackHandler)
 }
 
-// BufferDescriptor describes a buffer to create.
+// BufferDescriptor describes a GPU buffer to create.
 type BufferDescriptor struct {
+	Label            string               // Buffer label for debugging
+	Usage            gputypes.BufferUsage // How the buffer will be used
+	Size             uint64               // Size in bytes
+	MappedAtCreation bool                 // If true, buffer is mapped when created
+}
+
+// bufferDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// CRITICAL: layout must match WGPUBufferDescriptor exactly.
+// nextInChain(8)+label(16)+usage(8)+size(8)+mappedAtCreation(4)+pad(4) = 48 bytes.
+type bufferDescriptorWire struct {
 	NextInChain      uintptr              // *ChainedStruct
 	Label            StringView           // Buffer label for debugging
 	Usage            gputypes.BufferUsage // How the buffer will be used
 	Size             uint64               // Size in bytes
 	MappedAtCreation Bool                 // If true, buffer is mapped when created
+	_pad             [4]byte              //nolint:unused // padding for FFI alignment
 }
 
 // CreateBuffer creates a new GPU buffer.
-func (d *Device) CreateBuffer(desc *BufferDescriptor) *Buffer {
-	mustInit()
-	if d == nil || d.handle == 0 || desc == nil {
-		return nil
+// Returns an error if the FFI call fails or the device/descriptor is nil.
+func (d *Device) CreateBuffer(desc *BufferDescriptor) (*Buffer, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
+	if d == nil || d.handle == 0 {
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "device is nil or released"}
+	}
+	if desc == nil {
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "descriptor is nil"}
+	}
+	wire := bufferDescriptorWire{
+		Label:            stringToStringView(desc.Label),
+		Usage:            desc.Usage,
+		Size:             desc.Size,
+		MappedAtCreation: boolToWGPU(desc.MappedAtCreation),
 	}
 	handle, _, _ := procDeviceCreateBuffer.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(desc)),
+		uintptr(unsafe.Pointer(&wire)),
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateBuffer", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "Buffer")
-	return &Buffer{handle: handle}
+	return &Buffer{handle: handle, device: d}, nil
 }
 
 // GetMappedRange returns a pointer to the mapped buffer data.
@@ -146,16 +171,19 @@ func (b *Buffer) GetMappedRange(offset, size uint64) unsafe.Pointer {
 
 // Unmap unmaps the buffer, making the mapped memory inaccessible.
 // For buffers created with MappedAtCreation, this commits the data to the GPU.
-func (b *Buffer) Unmap() {
+// Returns nil on success. Matches gogpu/wgpu Buffer.Unmap() error signature.
+func (b *Buffer) Unmap() error {
 	mustInit()
 	if b == nil || b.handle == 0 {
-		return
+		return nil
 	}
 	procBufferUnmap.Call(b.handle) //nolint:errcheck
+	// wgpu-native returns void for wgpuBufferUnmap; always nil per WebGPU spec.
+	return nil
 }
 
-// GetSize returns the size of the buffer in bytes.
-func (b *Buffer) GetSize() uint64 {
+// Size returns the size of the buffer in bytes.
+func (b *Buffer) Size() uint64 {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return 0
@@ -164,73 +192,14 @@ func (b *Buffer) GetSize() uint64 {
 	return uint64(size)
 }
 
-// MapAsync maps a buffer for reading or writing.
-// This is a synchronous wrapper that blocks until the mapping is complete.
-// The device parameter is used to poll for completion.
-// After MapAsync succeeds, use GetMappedRange to access the data.
-// Call Unmap when done to release the mapping.
-func (b *Buffer) MapAsync(device *Device, mode MapMode, offset, size uint64) error {
-	if err := checkInit(); err != nil {
-		return err
+// MapAsyncBlocking maps a buffer for reading or writing, blocking until complete.
+// Deprecated: Use [Buffer.Map] for blocking mapping or [Buffer.MapAsync] for non-blocking.
+// This method is retained for backward compatibility.
+func (b *Buffer) MapAsyncBlocking(device *Device, mode MapMode, offset, size uint64) error {
+	if device != nil && b.device == nil {
+		b.device = device
 	}
-	if b == nil || b.handle == 0 {
-		return &WGPUError{Op: "Buffer.MapAsync", Message: "buffer is nil or released"}
-	}
-	if device == nil || device.handle == 0 {
-		return &WGPUError{Op: "Buffer.MapAsync", Message: "device is nil or released"}
-	}
-
-	// Initialize callback once
-	mapCallbackOnce.Do(initMapCallback)
-
-	// Create request state
-	req := &mapRequest{
-		done: make(chan struct{}),
-	}
-
-	// Register request
-	mapRequestsMu.Lock()
-	mapRequestID++
-	reqID := mapRequestID
-	mapRequests[reqID] = req
-	mapRequestsMu.Unlock()
-
-	// Prepare callback info
-	callbackInfo := BufferMapCallbackInfo{
-		NextInChain: 0,
-		Mode:        CallbackModeAllowProcessEvents,
-		Callback:    mapCallbackPtr,
-		Userdata1:   reqID,
-		Userdata2:   0,
-	}
-
-	// Call wgpuBufferMapAsync
-	procBufferMapAsync.Call( //nolint:errcheck
-		b.handle,
-		uintptr(mode),
-		uintptr(offset),
-		uintptr(size),
-		uintptr(unsafe.Pointer(&callbackInfo)),
-	)
-
-	// Poll device until callback fires
-	for {
-		select {
-		case <-req.done:
-			// Callback completed
-			if req.status != MapAsyncStatusSuccess {
-				msg := req.message
-				if msg == "" {
-					msg = "buffer map failed"
-				}
-				return &WGPUError{Op: "Buffer.MapAsync", Message: msg}
-			}
-			return nil
-		default:
-			// Poll device to process callbacks
-			device.Poll(false)
-		}
-	}
+	return b.Map(context.Background(), mode, offset, size)
 }
 
 // Destroy destroys the buffer, making it invalid.
@@ -251,11 +220,12 @@ func (b *Buffer) Release() {
 }
 
 // WriteBuffer writes data to a buffer.
-// This is a convenience method that stages data for upload to the GPU.
-func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
+// Returns nil on success. In this FFI implementation errors are surfaced through
+// the Device uncaptured-error callback; the signature matches gogpu/wgpu for API compatibility.
+func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) error {
 	mustInit()
 	if q == nil || q.handle == 0 || buffer == nil || buffer.handle == 0 || len(data) == 0 {
-		return
+		return nil
 	}
 	procQueueWriteBuffer.Call( //nolint:errcheck
 		q.handle,
@@ -264,6 +234,7 @@ func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) {
 		uintptr(unsafe.Pointer(&data[0])),
 		uintptr(len(data)),
 	)
+	return nil
 }
 
 // WriteBufferTyped writes typed data to a buffer.
@@ -282,8 +253,8 @@ func (q *Queue) WriteBufferRaw(buffer *Buffer, offset uint64, data unsafe.Pointe
 	)
 }
 
-// GetUsage returns the usage flags of this buffer.
-func (b *Buffer) GetUsage() gputypes.BufferUsage {
+// Usage returns the usage flags of this buffer.
+func (b *Buffer) Usage() gputypes.BufferUsage {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return gputypes.BufferUsageNone
@@ -292,8 +263,8 @@ func (b *Buffer) GetUsage() gputypes.BufferUsage {
 	return gputypes.BufferUsage(usage)
 }
 
-// GetMapState returns the current mapping state of this buffer.
-func (b *Buffer) GetMapState() BufferMapState {
+// MapState returns the current mapping state of this buffer.
+func (b *Buffer) MapState() BufferMapState {
 	mustInit()
 	if b == nil || b.handle == 0 {
 		return BufferMapStateUnmapped

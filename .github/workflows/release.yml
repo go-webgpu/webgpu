@@ -35,7 +35,7 @@ jobs:
     - name: Download wgpu-native
       shell: bash
       env:
-        WGPU_VERSION: "v27.0.4.0"
+        WGPU_VERSION: "v29.0.0.0"
       run: |
         set -e
         case "${{ matrix.os }}" in
@@ -74,9 +74,9 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
+          go test -v ./wgpu/... -run "TestABI|Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         else
-          CGO_ENABLED=0 go test -v ./wgpu/... -run "Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
+          CGO_ENABLED=0 go test -v ./wgpu/... -run "TestABI|Mat4|Vec3|StructSizes|CheckInit|WGPUError|Fuzz|NullGuard"
         fi
 
     - name: Run fuzz tests (seed corpus only)

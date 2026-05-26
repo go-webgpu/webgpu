@@ -33,12 +33,12 @@ func TestCreateQuerySet(t *testing.T) {
 	defer device.Release()
 
 	t.Log("Creating timestamp query set...")
-	querySet := device.CreateQuerySet(&QuerySetDescriptor{
+	querySet, err := device.CreateQuerySet(&QuerySetDescriptor{
 		Type:  QueryTypeTimestamp,
 		Count: 2,
 	})
-	if querySet == nil {
-		t.Fatal("CreateQuerySet returned nil")
+	if err != nil {
+		t.Fatalf("CreateQuerySet failed: %v", err)
 	}
 	defer querySet.Release()
 
@@ -70,12 +70,12 @@ func TestQuerySetDestroy(t *testing.T) {
 	}
 	defer device.Release()
 
-	querySet := device.CreateQuerySet(&QuerySetDescriptor{
+	querySet, err := device.CreateQuerySet(&QuerySetDescriptor{
 		Type:  QueryTypeTimestamp,
 		Count: 4,
 	})
-	if querySet == nil {
-		t.Fatal("CreateQuerySet returned nil")
+	if err != nil {
+		t.Fatalf("CreateQuerySet failed: %v", err)
 	}
 
 	t.Log("Destroying query set...")
@@ -106,32 +106,32 @@ func TestWriteTimestamp(t *testing.T) {
 	}
 	defer device.Release()
 
-	queue := device.GetQueue()
+	queue := device.Queue()
 	defer queue.Release()
 
 	// Create query set for timestamps
-	querySet := device.CreateQuerySet(&QuerySetDescriptor{
+	querySet, err := device.CreateQuerySet(&QuerySetDescriptor{
 		Type:  QueryTypeTimestamp,
 		Count: 2,
 	})
-	if querySet == nil {
-		t.Fatal("CreateQuerySet returned nil")
+	if err != nil {
+		t.Fatalf("CreateQuerySet failed: %v", err)
 	}
 	defer querySet.Release()
 
 	// Create buffer to resolve query results
-	resultBuffer := device.CreateBuffer(&BufferDescriptor{
+	resultBuffer, err := device.CreateBuffer(&BufferDescriptor{
 		Usage: gputypes.BufferUsageQueryResolve | gputypes.BufferUsageCopySrc,
 		Size:  16, // 2 timestamps * 8 bytes each
 	})
-	if resultBuffer == nil {
-		t.Fatal("CreateBuffer for query results returned nil")
+	if err != nil {
+		t.Fatalf("CreateBuffer for query results failed: %v", err)
 	}
 	defer resultBuffer.Release()
 
-	encoder := device.CreateCommandEncoder(nil)
-	if encoder == nil {
-		t.Fatal("CreateCommandEncoder returned nil")
+	encoder, err := device.CreateCommandEncoder(nil)
+	if err != nil {
+		t.Fatalf("CreateCommandEncoder failed: %v", err)
 	}
 
 	t.Log("Writing timestamps...")
@@ -141,7 +141,10 @@ func TestWriteTimestamp(t *testing.T) {
 	t.Log("Resolving query set...")
 	encoder.ResolveQuerySet(querySet, 0, 2, resultBuffer, 0)
 
-	cmdBuffer := encoder.Finish(nil)
+	cmdBuffer, err := encoder.Finish(nil)
+	if err != nil {
+		t.Fatalf("Finish failed: %v", err)
+	}
 	encoder.Release()
 
 	queue.Submit(cmdBuffer)

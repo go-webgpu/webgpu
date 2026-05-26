@@ -6,10 +6,16 @@ import (
 	"github.com/gogpu/gputypes"
 )
 
-// CommandEncoderDescriptor describes a command encoder.
+// CommandEncoderDescriptor describes a command encoder to create.
 type CommandEncoderDescriptor struct {
-	NextInChain uintptr // *ChainedStruct
-	Label       StringView
+	Label string
+}
+
+// commandEncoderDescriptorWire is the FFI-compatible C-layout struct for wgpu-native.
+// nextInChain(8)+label(16) = 24 bytes.
+type commandEncoderDescriptorWire struct {
+	NextInChain uintptr    // *ChainedStruct
+	Label       StringView // 16 bytes
 }
 
 // CommandBufferDescriptor describes a command buffer.
@@ -18,53 +24,97 @@ type CommandBufferDescriptor struct {
 	Label       StringView
 }
 
-// ComputePassDescriptor describes a compute pass.
+// ComputePassTimestampWrites is a deprecated alias for PassTimestampWrites.
+// Deprecated: Use PassTimestampWrites. Renamed in wgpu-native v29.
+type ComputePassTimestampWrites = PassTimestampWrites
+
+// computePassDescriptorWire is the native FFI structure for ComputePassDescriptor.
+// v29: timestampWrites field is *WGPUPassTimestampWrites (unified, not separate ComputePassTimestampWrites).
+type computePassDescriptorWire struct {
+	nextInChain     uintptr    // 8 bytes
+	label           StringView // 16 bytes
+	timestampWrites uintptr    // 8 bytes (*passTimestampWrites, nullable)
+}
+
+// ComputePassDescriptor describes a compute pass (user-facing API).
 type ComputePassDescriptor struct {
-	NextInChain     uintptr // *ChainedStruct
-	Label           StringView
-	TimestampWrites uintptr // *ComputePassTimestampWrites (nullable)
+	Label           string
+	TimestampWrites *PassTimestampWrites // optional; use PassTimestampWrites (was ComputePassTimestampWrites)
 }
 
 // CreateCommandEncoder creates a command encoder.
-func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) *CommandEncoder {
-	mustInit()
+// Returns an error if the FFI call fails or the device is nil.
+func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) (*CommandEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if d == nil || d.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateCommandEncoder", Message: "device is nil or released"}
 	}
 	var descPtr uintptr
 	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+		wire := commandEncoderDescriptorWire{
+			Label: stringToStringView(desc.Label),
+		}
+		descPtr = uintptr(unsafe.Pointer(&wire))
 	}
 	handle, _, _ := procDeviceCreateCommandEncoder.Call(
 		d.handle,
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CreateCommandEncoder", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "CommandEncoder")
-	return &CommandEncoder{handle: handle}
+	return &CommandEncoder{handle: handle}, nil
 }
 
 // BeginComputePass begins a compute pass.
-func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) *ComputePassEncoder {
-	mustInit()
+// Returns an error if the FFI call fails or the encoder is nil.
+func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) (*ComputePassEncoder, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if enc == nil || enc.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "BeginComputePass", Message: "encoder is nil or released"}
 	}
+
+	var wireDesc computePassDescriptorWire
+	var wireTimestamp passTimestampWrites
 	var descPtr uintptr
+
 	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+		wireDesc.nextInChain = 0
+		if desc.Label != "" {
+			labelBytes := []byte(desc.Label)
+			wireDesc.label = StringView{
+				Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+				Length: uintptr(len(labelBytes)),
+			}
+		} else {
+			wireDesc.label = EmptyStringView()
+		}
+		if desc.TimestampWrites != nil {
+			wireTimestamp = passTimestampWrites{
+				nextInChain:               0,
+				querySet:                  desc.TimestampWrites.QuerySet.handle,
+				beginningOfPassWriteIndex: desc.TimestampWrites.BeginningOfPassWriteIndex,
+				endOfPassWriteIndex:       desc.TimestampWrites.EndOfPassWriteIndex,
+			}
+			wireDesc.timestampWrites = uintptr(unsafe.Pointer(&wireTimestamp))
+		}
+		descPtr = uintptr(unsafe.Pointer(&wireDesc))
 	}
+
 	handle, _, _ := procCommandEncoderBeginComputePass.Call(
 		enc.handle,
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "BeginComputePass", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "ComputePassEncoder")
-	return &ComputePassEncoder{handle: handle}
+	return &ComputePassEncoder{handle: handle}, nil
 }
 
 // CopyBufferToBuffer copies data between buffers.
@@ -150,7 +200,7 @@ func (enc *CommandEncoder) PopDebugGroup() {
 	procCommandEncoderPopDebugGroup.Call(enc.handle) //nolint:errcheck
 }
 
-// CopyBufferToTexture copies data from a buffer to a texture.
+// CopyBufferToTexture copies data from a buffer to a texture using low-level wire types.
 // Errors are reported via Device error scopes, not as return values.
 func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
@@ -166,8 +216,38 @@ func (enc *CommandEncoder) CopyBufferToTexture(source *TexelCopyBufferInfo, dest
 }
 
 // CopyTextureToBuffer copies data from a texture to a buffer.
+// Accepts gogpu/wgpu-compatible types: src *Texture, dst *Buffer, regions []BufferTextureCopy.
+// Each region specifies the buffer layout, texture subresource origin, and copy extent.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
+func (enc *CommandEncoder) CopyTextureToBuffer(src *Texture, dst *Buffer, regions []BufferTextureCopy) {
+	mustInit()
+	if enc == nil || enc.handle == 0 || src == nil || dst == nil || len(regions) == 0 {
+		return
+	}
+	for i := range regions {
+		r := &regions[i]
+		srcWire := r.TextureBase.toWire()
+		dstWire := TexelCopyBufferInfo{
+			Layout: TexelCopyBufferLayout{
+				Offset:       r.BufferLayout.Offset,
+				BytesPerRow:  r.BufferLayout.BytesPerRow,
+				RowsPerImage: r.BufferLayout.RowsPerImage,
+			},
+			Buffer: dst.handle,
+		}
+		size := r.Size
+		procCommandEncoderCopyTextureToBuffer.Call( //nolint:errcheck
+			enc.handle,
+			uintptr(unsafe.Pointer(&srcWire)),
+			uintptr(unsafe.Pointer(&dstWire)),
+			uintptr(unsafe.Pointer(&size)),
+		)
+	}
+}
+
+// CopyTextureToBufferRaw copies data from a texture to a buffer using low-level wire types.
+// Prefer [CopyTextureToBuffer] for new code.
+func (enc *CommandEncoder) CopyTextureToBufferRaw(source *TexelCopyTextureInfo, destination *TexelCopyBufferInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
@@ -181,8 +261,31 @@ func (enc *CommandEncoder) CopyTextureToBuffer(source *TexelCopyTextureInfo, des
 }
 
 // CopyTextureToTexture copies data from one texture to another.
+// Accepts gogpu/wgpu-compatible types: src *Texture, dst *Texture, regions []TextureCopy.
+// Each region specifies the source and destination subresource origins and copy extent.
 // Errors are reported via Device error scopes, not as return values.
-func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
+func (enc *CommandEncoder) CopyTextureToTexture(src, dst *Texture, regions []TextureCopy) {
+	mustInit()
+	if enc == nil || enc.handle == 0 || src == nil || dst == nil || len(regions) == 0 {
+		return
+	}
+	for i := range regions {
+		r := &regions[i]
+		srcWire := r.Source.toWire()
+		dstWire := r.Destination.toWire()
+		size := r.Size
+		procCommandEncoderCopyTextureToTexture.Call( //nolint:errcheck
+			enc.handle,
+			uintptr(unsafe.Pointer(&srcWire)),
+			uintptr(unsafe.Pointer(&dstWire)),
+			uintptr(unsafe.Pointer(&size)),
+		)
+	}
+}
+
+// CopyTextureToTextureRaw copies data from one texture to another using low-level wire types.
+// Prefer [CopyTextureToTexture] for new code.
+func (enc *CommandEncoder) CopyTextureToTextureRaw(source *TexelCopyTextureInfo, destination *TexelCopyTextureInfo, copySize *gputypes.Extent3D) {
 	mustInit()
 	if enc == nil || enc.handle == 0 || source == nil || destination == nil || copySize == nil {
 		return
@@ -196,24 +299,29 @@ func (enc *CommandEncoder) CopyTextureToTexture(source *TexelCopyTextureInfo, de
 }
 
 // Finish finishes recording and returns a command buffer.
-func (enc *CommandEncoder) Finish(desc *CommandBufferDescriptor) *CommandBuffer {
-	mustInit()
+// The optional desc argument allows setting a label; pass nothing for defaults.
+// This variadic signature matches the gogpu/wgpu API for compatibility.
+// Returns an error if the FFI call fails or the encoder is nil.
+func (enc *CommandEncoder) Finish(desc ...*CommandBufferDescriptor) (*CommandBuffer, error) {
+	if err := checkInit(); err != nil {
+		return nil, err
+	}
 	if enc == nil || enc.handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CommandEncoder.Finish", Message: "encoder is nil or released"}
 	}
 	var descPtr uintptr
-	if desc != nil {
-		descPtr = uintptr(unsafe.Pointer(desc))
+	if len(desc) > 0 && desc[0] != nil {
+		descPtr = uintptr(unsafe.Pointer(desc[0]))
 	}
 	handle, _, _ := procCommandEncoderFinish.Call(
 		enc.handle,
 		descPtr,
 	)
 	if handle == 0 {
-		return nil
+		return nil, &WGPUError{Op: "CommandEncoder.Finish", Message: "wgpu returned null handle"}
 	}
 	trackResource(handle, "CommandBuffer")
-	return &CommandBuffer{handle: handle}
+	return &CommandBuffer{handle: handle}, nil
 }
 
 // Release releases the command encoder.
@@ -346,20 +454,28 @@ func (cpe *ComputePassEncoder) Release() {
 func (cpe *ComputePassEncoder) Handle() uintptr { return cpe.handle }
 
 // Submit submits command buffers for execution.
-func (q *Queue) Submit(commands ...*CommandBuffer) {
+// Returns the submission index (uint64) and nil on success. The submission
+// index can be used with Device.Poll to track when work completes.
+// Matches gogpu/wgpu Queue.Submit(commands ...*CommandBuffer) (uint64, error).
+func (q *Queue) Submit(commands ...*CommandBuffer) (uint64, error) {
 	mustInit()
 	if q == nil || q.handle == 0 || len(commands) == 0 {
-		return
+		return 0, nil
 	}
 	handles := make([]uintptr, len(commands))
 	for i, cmd := range commands {
-		handles[i] = cmd.handle
+		if cmd != nil {
+			handles[i] = cmd.handle
+		}
 	}
-	procQueueSubmit.Call( //nolint:errcheck
+	// wgpuQueueSubmitForIndex is a wgpu-native extension that returns WGPUSubmissionIndex (uint64).
+	// This enables callers to poll for GPU completion of a specific submission.
+	submissionIndex, _, _ := procQueueSubmitForIndex.Call(
 		q.handle,
 		uintptr(len(handles)),
 		uintptr(unsafe.Pointer(&handles[0])),
 	)
+	return uint64(submissionIndex), nil
 }
 
 // Release releases the command buffer.
