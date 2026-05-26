@@ -296,8 +296,8 @@ func (d *Device) Features() []FeatureName {
 	result := make([]FeatureName, supported.FeatureCount)
 	copy(result, features)
 
-	// Free C-allocated memory
-	procSupportedFeaturesFreeMembers.Call(supported.FeatureCount, supported.Features)
+	// Free C-allocated memory (pass pointer to struct, not individual fields)
+	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(&supported))) //nolint:errcheck
 
 	return result
 }
