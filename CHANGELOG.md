@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 (Unreleased)
+
+### Breaking Changes
+- **wgpu-native v29.0.0.0**: Migrated from v27.0.4.0 to v29.0.0.0 with stable webgpu-headers
+- **API redesign**: All `Create*` methods now return `(*T, error)` instead of `*T`
+- **Method renames**: `GetQueue()` → `Queue()`, `GetSize()` → `Size()`, `GetLimits()` → `Limits()`, etc.
+- **Struct layout changes**: `Limits` field order fixed (ABI-breaking), `VertexBufferLayout` gains `nextInChain`
+- **Removed types**: `SupportedLimits`, `ChainedStructOut`, `InstanceCapabilities`
+- **Enum changes**: `SurfaceGetCurrentTextureStatus` simplified, `InstanceFlag_Default` semantic change
+- **gputypes aliases**: Types re-exported for single-import ergonomics
+
+### Added
+- 271 enterprise ABI verification tests (`TestABI*`)
+- gputypes type aliases and constant re-exports in `wgpu` package
+- New v29 API functions: `GetFeatures`, `GetInstanceFeatures`, `BufferReadMappedRange`, etc.
+- New enums: `InstanceFeatureName`, `ComponentSwizzle`, `PredefinedColorSpace`, `ToneMappingMode`
+- New instance flags: `GPUBasedValidation`, `Debugging`, `AdvancedDebugging`, `WithEnv`
+
+### Changed
+- `convert.go`: Removed 6 identity converters (TextureFormat now matches v29 natively)
+- `wgpuAdapterEnumerateFeatures` → `wgpuAdapterGetFeatures` (single-call pattern)
+- PushConstants → Immediates rename throughout
+
+### Removed
+- `SupportedLimits` wrapper struct
+- `ChainedStructOut` type (aliased to `ChainedStruct`)
+- `InstanceCapabilities` struct
+- DX11 backend support (`InstanceBackendDX11`)
+- `SurfaceGetCurrentTextureStatusOutOfMemory`, `SurfaceGetCurrentTextureStatusDeviceLost`
+
+### Dependencies
+- wgpu-native: v27.0.4.0 → v29.0.0.0
+- goffi: v0.5.0 (unchanged)
+- gputypes: v0.3.0 (unchanged)
+
+---
+
 ## [0.4.3] - 2026-03-29
 
 ### Changed
