@@ -154,13 +154,13 @@ func TestCreateSampler(t *testing.T) {
 
 	t.Log("Creating sampler...")
 	sampler, err := device.CreateSampler(&SamplerDescriptor{
-		AddressModeU:  gputypes.AddressModeRepeat,
-		AddressModeV:  gputypes.AddressModeRepeat,
-		AddressModeW:  gputypes.AddressModeRepeat,
-		MagFilter:     gputypes.FilterModeLinear,
-		MinFilter:     gputypes.FilterModeLinear,
-		MipmapFilter:  gputypes.MipmapFilterModeLinear,
-		Anisotropy: 1,
+		AddressModeU: gputypes.AddressModeRepeat,
+		AddressModeV: gputypes.AddressModeRepeat,
+		AddressModeW: gputypes.AddressModeRepeat,
+		MagFilter:    gputypes.FilterModeLinear,
+		MinFilter:    gputypes.FilterModeLinear,
+		MipmapFilter: gputypes.MipmapFilterModeLinear,
+		Anisotropy:   1,
 	})
 	if err != nil {
 		t.Fatalf("CreateSampler: %v", err)

@@ -28,7 +28,7 @@ func TestCreateBuffer(t *testing.T) {
 
 	t.Log("Creating buffer...")
 	desc := &BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
 		MappedAtCreation: false,
@@ -74,7 +74,7 @@ func TestBufferMappedAtCreation(t *testing.T) {
 
 	t.Log("Creating buffer with MappedAtCreation...")
 	desc := &BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopySrc,
 		Size:             64,
 		MappedAtCreation: true,
@@ -131,7 +131,7 @@ func TestQueueWriteBuffer(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBuffer test...")
 	desc := &BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
 		MappedAtCreation: false,
@@ -180,7 +180,7 @@ func TestQueueWriteBufferRaw(t *testing.T) {
 
 	t.Log("Creating buffer for WriteBufferRaw test...")
 	desc := &BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst,
 		Size:             128,
 		MappedAtCreation: false,

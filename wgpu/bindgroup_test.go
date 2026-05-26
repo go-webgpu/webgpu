@@ -70,7 +70,7 @@ func TestCreateBindGroup(t *testing.T) {
 
 	// Create buffer
 	bufferDesc := &BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: false,
@@ -137,7 +137,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 
 	// Create buffers
 	inputBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: false,
@@ -148,7 +148,7 @@ func TestBindGroupWithMultipleBindings(t *testing.T) {
 	defer inputBuffer.Release()
 
 	outputBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc,
 		Size:             256,
 		MappedAtCreation: false,

@@ -38,14 +38,15 @@ type RequestAdapterOptions struct {
 
 // requestAdapterOptionsWire is the FFI-compatible C-layout struct for wgpuInstanceRequestAdapter.
 // v29 layout: nextInChain(8)+featureLevel(4)+powerPreference(4)+
-//   forceFallbackAdapter(4)+backendType(4)+compatibleSurface(8) = 32 bytes.
+//
+//	forceFallbackAdapter(4)+backendType(4)+compatibleSurface(8) = 32 bytes.
 type requestAdapterOptionsWire struct {
 	NextInChain          uintptr // *ChainedStruct
 	FeatureLevel         FeatureLevel
 	PowerPreference      gputypes.PowerPreference
 	ForceFallbackAdapter Bool
 	BackendType          BackendType // v29: select specific backend
-	CompatibleSurface    uintptr    // WGPUSurface
+	CompatibleSurface    uintptr     // WGPUSurface
 }
 
 // RequestAdapterCallbackInfo holds callback configuration.
@@ -389,15 +390,15 @@ type SupportedFeatures struct {
 // v29: NextInChain type changed from *ChainedStructOut to *ChainedStruct.
 // v29: SubgroupMinSize and SubgroupMaxSize fields added.
 type AdapterInfo struct {
-	NextInChain   uintptr // *ChainedStruct (was *ChainedStructOut in v27)
-	Vendor        StringView
-	Architecture  StringView
-	Device        StringView
-	Description   StringView
-	BackendType   BackendType
-	AdapterType   AdapterType
-	VendorID      uint32
-	DeviceID      uint32
+	NextInChain     uintptr // *ChainedStruct (was *ChainedStructOut in v27)
+	Vendor          StringView
+	Architecture    StringView
+	Device          StringView
+	Description     StringView
+	BackendType     BackendType
+	AdapterType     AdapterType
+	VendorID        uint32
+	DeviceID        uint32
 	SubgroupMinSize uint32 // NEW in v29
 	SubgroupMaxSize uint32 // NEW in v29
 }

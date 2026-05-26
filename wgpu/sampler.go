@@ -37,19 +37,19 @@ func (d *SamplerDescriptor) withMaxAnisotropy(v uint16) *SamplerDescriptor {
 // magFilter(4)+minFilter(4)+mipmapFilter(4)+lodMinClamp(4)+lodMaxClamp(4)+
 // compare(4)+maxAnisotropy(2)+pad(2) = 64 bytes.
 type samplerDescriptorWire struct {
-	NextInChain   uintptr              // 8 bytes
-	Label         StringView           // 16 bytes
-	AddressModeU  gputypes.AddressMode // 4 bytes
-	AddressModeV  gputypes.AddressMode // 4 bytes
-	AddressModeW  gputypes.AddressMode // 4 bytes
-	MagFilter     gputypes.FilterMode  // 4 bytes
-	MinFilter     gputypes.FilterMode  // 4 bytes
+	NextInChain   uintptr                   // 8 bytes
+	Label         StringView                // 16 bytes
+	AddressModeU  gputypes.AddressMode      // 4 bytes
+	AddressModeV  gputypes.AddressMode      // 4 bytes
+	AddressModeW  gputypes.AddressMode      // 4 bytes
+	MagFilter     gputypes.FilterMode       // 4 bytes
+	MinFilter     gputypes.FilterMode       // 4 bytes
 	MipmapFilter  gputypes.MipmapFilterMode // 4 bytes
-	LodMinClamp   float32              // 4 bytes
-	LodMaxClamp   float32              // 4 bytes
-	Compare       gputypes.CompareFunction // 4 bytes
-	MaxAnisotropy uint16               // 2 bytes
-	_pad          [2]byte              //nolint:unused // padding to align to 4 bytes
+	LodMinClamp   float32                   // 4 bytes
+	LodMaxClamp   float32                   // 4 bytes
+	Compare       gputypes.CompareFunction  // 4 bytes
+	MaxAnisotropy uint16                    // 2 bytes
+	_pad          [2]byte                   //nolint:unused // padding to align to 4 bytes
 }
 
 // CreateSampler creates a sampler with the specified descriptor.

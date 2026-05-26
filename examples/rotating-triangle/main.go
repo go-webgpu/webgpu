@@ -349,7 +349,7 @@ func (app *App) createVertexBuffer() error {
 
 	// Create buffer with MappedAtCreation = true for easy data upload
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: true,
@@ -383,7 +383,7 @@ func (app *App) createUniformBuffer() error {
 
 	// Create buffer with Uniform usage and CopyDst for updates
 	app.uniformBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst,
 		Size:             uniformBufferSize,
 		MappedAtCreation: false,
@@ -465,7 +465,7 @@ func (app *App) createPipeline() error {
 		},
 		{
 			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
-			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
+			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}

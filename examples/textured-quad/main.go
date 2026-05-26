@@ -366,7 +366,7 @@ func (app *App) createTexture() error {
 
 	// Create texture
 	textureDesc := wgpu.TextureDescriptor{
-		Label: "",
+		Label:     "",
 		Usage:     wgpu.TextureUsageTextureBinding | wgpu.TextureUsageCopyDst,
 		Dimension: wgpu.TextureDimension2D,
 		Size: wgpu.Extent3D{
@@ -490,7 +490,7 @@ func (app *App) createBuffers() error {
 	// nolint:gosec // len(vertices) is 16, * 4 = 64 bytes - no overflow risk
 	vertexBufferSize := uint64(len(vertices) * 4)
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: true,
@@ -513,7 +513,7 @@ func (app *App) createBuffers() error {
 	// nolint:gosec // len(indices) is 6, * 2 = 12 bytes - no overflow risk
 	indexBufferSize := uint64(len(indices) * 2)
 	app.indexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageIndex | wgpu.BufferUsageCopyDst,
 		Size:             indexBufferSize,
 		MappedAtCreation: true,
@@ -562,7 +562,7 @@ func (app *App) createPipeline() error {
 		},
 		{
 			Format:         wgpu.VertexFormatFloat32x2, // uv: vec2f
-			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
+			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}
@@ -665,7 +665,7 @@ func (app *App) renderQuad(encoder *wgpu.CommandEncoder, view *wgpu.TextureView)
 
 	pass.SetPipeline(app.pipeline)
 	pass.SetBindGroup(0, app.bindGroup, nil)
-	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                       // 16 floats * 4 bytes
+	pass.SetVertexBuffer(0, app.vertexBuffer, 0, uint64(16*4))                   // 16 floats * 4 bytes
 	pass.SetIndexBuffer(app.indexBuffer, wgpu.IndexFormatUint16, 0, uint64(6*2)) // 6 indices * 2 bytes
 	pass.DrawIndexed(6, 1, 0, 0, 0)
 	pass.End()

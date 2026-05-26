@@ -357,7 +357,7 @@ func (app *App) configureSurface() error {
 // createExtraTexture creates the second render target for MRT.
 func (app *App) createExtraTexture() error {
 	app.extraTexture, _ = app.device.CreateTexture(&wgpu.TextureDescriptor{
-		Label: "",
+		Label:     "",
 		Usage:     wgpu.TextureUsageRenderAttachment | wgpu.TextureUsageTextureBinding,
 		Dimension: wgpu.TextureDimension2D,
 		Size: wgpu.Extent3D{
@@ -397,7 +397,7 @@ func (app *App) createVertexBuffer() error {
 
 	// Create buffer with MappedAtCreation = true for easy data upload
 	app.vertexBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst,
 		Size:             vertexBufferSize,
 		MappedAtCreation: true,
@@ -431,7 +431,7 @@ func (app *App) createUniformBuffer() error {
 
 	// Create buffer with Uniform usage and CopyDst for updates
 	app.uniformBuffer, _ = app.device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst,
 		Size:             uniformBufferSize,
 		MappedAtCreation: false,
@@ -498,7 +498,7 @@ func getVertexAttributes() []wgpu.VertexAttribute {
 		},
 		{
 			Format:         wgpu.VertexFormatFloat32x3, // color: vec3f
-			Offset:         8,                              // 2 floats * 4 bytes = 8 bytes offset
+			Offset:         8,                          // 2 floats * 4 bytes = 8 bytes offset
 			ShaderLocation: 1,
 		},
 	}

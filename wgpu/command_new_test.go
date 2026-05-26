@@ -28,7 +28,7 @@ func TestCommandEncoderClearBuffer(t *testing.T) {
 
 	// Create a buffer
 	bufferDesc := BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageCopySrc,
 		Size:             256,
 		MappedAtCreation: false,

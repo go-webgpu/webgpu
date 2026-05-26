@@ -19,15 +19,15 @@ var (
 	procInstanceProcessEvents Proc
 
 	// Function pointers - Adapter
-	procAdapterRelease              Proc
-	procInstanceRequestAdapter      Proc
-	procAdapterRequestDevice        Proc
-	procAdapterGetLimits            Proc
-	procAdapterGetFeatures          Proc // v29: replaces EnumerateFeatures (single-call with SupportedFeatures)
+	procAdapterRelease               Proc
+	procInstanceRequestAdapter       Proc
+	procAdapterRequestDevice         Proc
+	procAdapterGetLimits             Proc
+	procAdapterGetFeatures           Proc // v29: replaces EnumerateFeatures (single-call with SupportedFeatures)
 	procSupportedFeaturesFreeMembers Proc
-	procAdapterHasFeature           Proc
-	procAdapterGetInfo              Proc
-	procAdapterInfoFreeMembers      Proc
+	procAdapterHasFeature            Proc
+	procAdapterGetInfo               Proc
+	procAdapterInfoFreeMembers       Proc
 
 	// Function pointers - Device
 	procDeviceRelease        Proc
@@ -122,19 +122,19 @@ var (
 	procSurfacePresent                 Proc
 
 	// Function pointers - Texture
-	procDeviceCreateTexture                    Proc
-	procTextureRelease                         Proc
-	procTextureDestroy                         Proc
-	procTextureCreateView                      Proc
-	procTextureViewRelease                     Proc
-	procTextureGetWidth                        Proc
-	procTextureGetHeight                       Proc
-	procTextureGetDepthOrArrayLayers           Proc
-	procTextureGetMipLevelCount                Proc
-	procTextureGetFormat                       Proc
-	procTextureGetSampleCount                  Proc // v29: new getter
-	procTextureGetUsage                        Proc // v29: new getter
-	procTextureGetTextureBindingViewDimension  Proc // v29: new getter
+	procDeviceCreateTexture                   Proc
+	procTextureRelease                        Proc
+	procTextureDestroy                        Proc
+	procTextureCreateView                     Proc
+	procTextureViewRelease                    Proc
+	procTextureGetWidth                       Proc
+	procTextureGetHeight                      Proc
+	procTextureGetDepthOrArrayLayers          Proc
+	procTextureGetMipLevelCount               Proc
+	procTextureGetFormat                      Proc
+	procTextureGetSampleCount                 Proc // v29: new getter
+	procTextureGetUsage                       Proc // v29: new getter
+	procTextureGetTextureBindingViewDimension Proc // v29: new getter
 
 	// Function pointers - Sampler
 	procDeviceCreateSampler Proc
@@ -240,7 +240,7 @@ func initSymbols() {
 	procInstanceRequestAdapter = wgpuLib.NewProc("wgpuInstanceRequestAdapter")
 	procAdapterRequestDevice = wgpuLib.NewProc("wgpuAdapterRequestDevice")
 	procAdapterGetLimits = wgpuLib.NewProc("wgpuAdapterGetLimits")
-	procAdapterGetFeatures = wgpuLib.NewProc("wgpuAdapterGetFeatures")                 // v29: replaces wgpuAdapterEnumerateFeatures
+	procAdapterGetFeatures = wgpuLib.NewProc("wgpuAdapterGetFeatures") // v29: replaces wgpuAdapterEnumerateFeatures
 	procSupportedFeaturesFreeMembers = wgpuLib.NewProc("wgpuSupportedFeaturesFreeMembers")
 	procAdapterHasFeature = wgpuLib.NewProc("wgpuAdapterHasFeature")
 	procAdapterGetInfo = wgpuLib.NewProc("wgpuAdapterGetInfo")
@@ -349,8 +349,8 @@ func initSymbols() {
 	procTextureGetDepthOrArrayLayers = wgpuLib.NewProc("wgpuTextureGetDepthOrArrayLayers")
 	procTextureGetMipLevelCount = wgpuLib.NewProc("wgpuTextureGetMipLevelCount")
 	procTextureGetFormat = wgpuLib.NewProc("wgpuTextureGetFormat")
-	procTextureGetSampleCount = wgpuLib.NewProc("wgpuTextureGetSampleCount")                               // v29
-	procTextureGetUsage = wgpuLib.NewProc("wgpuTextureGetUsage")                                           // v29
+	procTextureGetSampleCount = wgpuLib.NewProc("wgpuTextureGetSampleCount")                                 // v29
+	procTextureGetUsage = wgpuLib.NewProc("wgpuTextureGetUsage")                                             // v29
 	procTextureGetTextureBindingViewDimension = wgpuLib.NewProc("wgpuTextureGetTextureBindingViewDimension") // v29
 
 	// Sampler

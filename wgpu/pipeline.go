@@ -38,10 +38,10 @@ type pipelineLayoutDescriptorWire struct {
 // v29 BREAKING: maxPushConstantSize renamed to maxImmediateSize; maxNonSamplerBindings and
 // maxBindingArrayElementsPerShaderStage added.
 type NativeLimits struct {
-	Chain                                ChainedStruct // chain.SType must be STypeNativeLimits
-	MaxImmediateSize                     uint32        // was maxPushConstantSize in v27
-	MaxNonSamplerBindings                uint32        // max live non-sampler bindings (DX12 only)
-	MaxBindingArrayElementsPerShaderStage uint32       // max resources in binding arrays per shader stage
+	Chain                                 ChainedStruct // chain.SType must be STypeNativeLimits
+	MaxImmediateSize                      uint32        // was maxPushConstantSize in v27
+	MaxNonSamplerBindings                 uint32        // max live non-sampler bindings (DX12 only)
+	MaxBindingArrayElementsPerShaderStage uint32        // max resources in binding arrays per shader stage
 }
 
 // PipelineLayoutExtras provides wgpu-native specific pipeline layout extensions.

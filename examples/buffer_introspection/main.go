@@ -62,7 +62,7 @@ func main() {
 	// Create a mappable buffer
 	fmt.Println("\n=== Mappable Buffer Example ===")
 	mappableBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            wgpu.BufferUsageMapRead | wgpu.BufferUsageCopyDst,
 		Size:             1024,
 		MappedAtCreation: true,

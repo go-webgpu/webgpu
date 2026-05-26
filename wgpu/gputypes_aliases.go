@@ -106,47 +106,47 @@ const (
 // --- TextureFormat constants ---
 
 const (
-	TextureFormatUndefined     = gputypes.TextureFormatUndefined
-	TextureFormatR8Unorm       = gputypes.TextureFormatR8Unorm
-	TextureFormatR8Snorm       = gputypes.TextureFormatR8Snorm
-	TextureFormatR8Uint        = gputypes.TextureFormatR8Uint
-	TextureFormatR8Sint        = gputypes.TextureFormatR8Sint
-	TextureFormatR16Uint       = gputypes.TextureFormatR16Uint
-	TextureFormatR16Sint       = gputypes.TextureFormatR16Sint
-	TextureFormatR16Float      = gputypes.TextureFormatR16Float
-	TextureFormatRG8Unorm      = gputypes.TextureFormatRG8Unorm
-	TextureFormatRG8Snorm      = gputypes.TextureFormatRG8Snorm
-	TextureFormatRG8Uint       = gputypes.TextureFormatRG8Uint
-	TextureFormatRG8Sint       = gputypes.TextureFormatRG8Sint
-	TextureFormatR32Float      = gputypes.TextureFormatR32Float
-	TextureFormatR32Uint       = gputypes.TextureFormatR32Uint
-	TextureFormatR32Sint       = gputypes.TextureFormatR32Sint
-	TextureFormatRG16Uint      = gputypes.TextureFormatRG16Uint
-	TextureFormatRG16Sint      = gputypes.TextureFormatRG16Sint
-	TextureFormatRG16Float     = gputypes.TextureFormatRG16Float
-	TextureFormatRGBA8Unorm    = gputypes.TextureFormatRGBA8Unorm
-	TextureFormatRGBA8UnormSrgb = gputypes.TextureFormatRGBA8UnormSrgb
-	TextureFormatRGBA8Snorm    = gputypes.TextureFormatRGBA8Snorm
-	TextureFormatRGBA8Uint     = gputypes.TextureFormatRGBA8Uint
-	TextureFormatRGBA8Sint     = gputypes.TextureFormatRGBA8Sint
-	TextureFormatBGRA8Unorm    = gputypes.TextureFormatBGRA8Unorm
-	TextureFormatBGRA8UnormSrgb = gputypes.TextureFormatBGRA8UnormSrgb
-	TextureFormatRGB10A2Uint   = gputypes.TextureFormatRGB10A2Uint
-	TextureFormatRGB10A2Unorm  = gputypes.TextureFormatRGB10A2Unorm
-	TextureFormatRG11B10Ufloat = gputypes.TextureFormatRG11B10Ufloat
-	TextureFormatRG32Float     = gputypes.TextureFormatRG32Float
-	TextureFormatRG32Uint      = gputypes.TextureFormatRG32Uint
-	TextureFormatRG32Sint      = gputypes.TextureFormatRG32Sint
-	TextureFormatRGBA16Uint    = gputypes.TextureFormatRGBA16Uint
-	TextureFormatRGBA16Sint    = gputypes.TextureFormatRGBA16Sint
-	TextureFormatRGBA16Float   = gputypes.TextureFormatRGBA16Float
-	TextureFormatRGBA32Float   = gputypes.TextureFormatRGBA32Float
-	TextureFormatRGBA32Uint    = gputypes.TextureFormatRGBA32Uint
-	TextureFormatRGBA32Sint    = gputypes.TextureFormatRGBA32Sint
-	TextureFormatDepth32Float  = gputypes.TextureFormatDepth32Float
-	TextureFormatDepth24Plus   = gputypes.TextureFormatDepth24Plus
+	TextureFormatUndefined           = gputypes.TextureFormatUndefined
+	TextureFormatR8Unorm             = gputypes.TextureFormatR8Unorm
+	TextureFormatR8Snorm             = gputypes.TextureFormatR8Snorm
+	TextureFormatR8Uint              = gputypes.TextureFormatR8Uint
+	TextureFormatR8Sint              = gputypes.TextureFormatR8Sint
+	TextureFormatR16Uint             = gputypes.TextureFormatR16Uint
+	TextureFormatR16Sint             = gputypes.TextureFormatR16Sint
+	TextureFormatR16Float            = gputypes.TextureFormatR16Float
+	TextureFormatRG8Unorm            = gputypes.TextureFormatRG8Unorm
+	TextureFormatRG8Snorm            = gputypes.TextureFormatRG8Snorm
+	TextureFormatRG8Uint             = gputypes.TextureFormatRG8Uint
+	TextureFormatRG8Sint             = gputypes.TextureFormatRG8Sint
+	TextureFormatR32Float            = gputypes.TextureFormatR32Float
+	TextureFormatR32Uint             = gputypes.TextureFormatR32Uint
+	TextureFormatR32Sint             = gputypes.TextureFormatR32Sint
+	TextureFormatRG16Uint            = gputypes.TextureFormatRG16Uint
+	TextureFormatRG16Sint            = gputypes.TextureFormatRG16Sint
+	TextureFormatRG16Float           = gputypes.TextureFormatRG16Float
+	TextureFormatRGBA8Unorm          = gputypes.TextureFormatRGBA8Unorm
+	TextureFormatRGBA8UnormSrgb      = gputypes.TextureFormatRGBA8UnormSrgb
+	TextureFormatRGBA8Snorm          = gputypes.TextureFormatRGBA8Snorm
+	TextureFormatRGBA8Uint           = gputypes.TextureFormatRGBA8Uint
+	TextureFormatRGBA8Sint           = gputypes.TextureFormatRGBA8Sint
+	TextureFormatBGRA8Unorm          = gputypes.TextureFormatBGRA8Unorm
+	TextureFormatBGRA8UnormSrgb      = gputypes.TextureFormatBGRA8UnormSrgb
+	TextureFormatRGB10A2Uint         = gputypes.TextureFormatRGB10A2Uint
+	TextureFormatRGB10A2Unorm        = gputypes.TextureFormatRGB10A2Unorm
+	TextureFormatRG11B10Ufloat       = gputypes.TextureFormatRG11B10Ufloat
+	TextureFormatRG32Float           = gputypes.TextureFormatRG32Float
+	TextureFormatRG32Uint            = gputypes.TextureFormatRG32Uint
+	TextureFormatRG32Sint            = gputypes.TextureFormatRG32Sint
+	TextureFormatRGBA16Uint          = gputypes.TextureFormatRGBA16Uint
+	TextureFormatRGBA16Sint          = gputypes.TextureFormatRGBA16Sint
+	TextureFormatRGBA16Float         = gputypes.TextureFormatRGBA16Float
+	TextureFormatRGBA32Float         = gputypes.TextureFormatRGBA32Float
+	TextureFormatRGBA32Uint          = gputypes.TextureFormatRGBA32Uint
+	TextureFormatRGBA32Sint          = gputypes.TextureFormatRGBA32Sint
+	TextureFormatDepth32Float        = gputypes.TextureFormatDepth32Float
+	TextureFormatDepth24Plus         = gputypes.TextureFormatDepth24Plus
 	TextureFormatDepth24PlusStencil8 = gputypes.TextureFormatDepth24PlusStencil8
-	TextureFormatDepth16Unorm  = gputypes.TextureFormatDepth16Unorm
+	TextureFormatDepth16Unorm        = gputypes.TextureFormatDepth16Unorm
 )
 
 // --- TextureDimension constants ---
@@ -222,9 +222,9 @@ const (
 // --- AddressMode constants ---
 
 const (
-	AddressModeRepeat            = gputypes.AddressModeRepeat
-	AddressModeMirrorRepeat      = gputypes.AddressModeMirrorRepeat
-	AddressModeClampToEdge       = gputypes.AddressModeClampToEdge
+	AddressModeRepeat       = gputypes.AddressModeRepeat
+	AddressModeMirrorRepeat = gputypes.AddressModeMirrorRepeat
+	AddressModeClampToEdge  = gputypes.AddressModeClampToEdge
 )
 
 // --- CompareFunction constants ---
@@ -282,22 +282,22 @@ const (
 // --- VertexFormat constants ---
 
 const (
-	VertexFormatUint8x2  = gputypes.VertexFormatUint8x2
-	VertexFormatUint8x4  = gputypes.VertexFormatUint8x4
-	VertexFormatSint8x2  = gputypes.VertexFormatSint8x2
-	VertexFormatSint8x4  = gputypes.VertexFormatSint8x4
-	VertexFormatFloat32  = gputypes.VertexFormatFloat32
+	VertexFormatUint8x2   = gputypes.VertexFormatUint8x2
+	VertexFormatUint8x4   = gputypes.VertexFormatUint8x4
+	VertexFormatSint8x2   = gputypes.VertexFormatSint8x2
+	VertexFormatSint8x4   = gputypes.VertexFormatSint8x4
+	VertexFormatFloat32   = gputypes.VertexFormatFloat32
 	VertexFormatFloat32x2 = gputypes.VertexFormatFloat32x2
 	VertexFormatFloat32x3 = gputypes.VertexFormatFloat32x3
 	VertexFormatFloat32x4 = gputypes.VertexFormatFloat32x4
-	VertexFormatUint32   = gputypes.VertexFormatUint32
-	VertexFormatUint32x2 = gputypes.VertexFormatUint32x2
-	VertexFormatUint32x3 = gputypes.VertexFormatUint32x3
-	VertexFormatUint32x4 = gputypes.VertexFormatUint32x4
-	VertexFormatSint32   = gputypes.VertexFormatSint32
-	VertexFormatSint32x2 = gputypes.VertexFormatSint32x2
-	VertexFormatSint32x3 = gputypes.VertexFormatSint32x3
-	VertexFormatSint32x4 = gputypes.VertexFormatSint32x4
+	VertexFormatUint32    = gputypes.VertexFormatUint32
+	VertexFormatUint32x2  = gputypes.VertexFormatUint32x2
+	VertexFormatUint32x3  = gputypes.VertexFormatUint32x3
+	VertexFormatUint32x4  = gputypes.VertexFormatUint32x4
+	VertexFormatSint32    = gputypes.VertexFormatSint32
+	VertexFormatSint32x2  = gputypes.VertexFormatSint32x2
+	VertexFormatSint32x3  = gputypes.VertexFormatSint32x3
+	VertexFormatSint32x4  = gputypes.VertexFormatSint32x4
 )
 
 // --- VertexStepMode constants ---
@@ -324,10 +324,10 @@ const (
 // --- SamplerBindingType constants ---
 
 const (
-	SamplerBindingTypeUndefined   = gputypes.SamplerBindingTypeUndefined
-	SamplerBindingTypeFiltering   = gputypes.SamplerBindingTypeFiltering
+	SamplerBindingTypeUndefined    = gputypes.SamplerBindingTypeUndefined
+	SamplerBindingTypeFiltering    = gputypes.SamplerBindingTypeFiltering
 	SamplerBindingTypeNonFiltering = gputypes.SamplerBindingTypeNonFiltering
-	SamplerBindingTypeComparison  = gputypes.SamplerBindingTypeComparison
+	SamplerBindingTypeComparison   = gputypes.SamplerBindingTypeComparison
 )
 
 // --- TextureSampleType constants ---

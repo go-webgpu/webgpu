@@ -137,7 +137,7 @@ func TestComputePassDispatch(t *testing.T) {
 	bufferSize := uint64(numElements * 4) // 4 bytes per float32
 
 	buffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: true,
@@ -250,7 +250,7 @@ func TestFullComputeExample(t *testing.T) {
 	bufferSize := uint64(numElements * 4)
 
 	storageBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageStorage | gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: true,
@@ -270,7 +270,7 @@ func TestFullComputeExample(t *testing.T) {
 
 	// Create readback buffer
 	readbackBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageMapRead | gputypes.BufferUsageCopyDst,
 		Size:             bufferSize,
 		MappedAtCreation: false,
@@ -383,7 +383,7 @@ func TestCopyBufferToBuffer(t *testing.T) {
 
 	// Create source buffer with data
 	srcBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopySrc | gputypes.BufferUsageCopyDst,
 		Size:             256,
 		MappedAtCreation: true,
@@ -402,7 +402,7 @@ func TestCopyBufferToBuffer(t *testing.T) {
 
 	// Create destination buffer
 	dstBuffer, err := device.CreateBuffer(&BufferDescriptor{
-		Label: "",
+		Label:            "",
 		Usage:            gputypes.BufferUsageCopyDst | gputypes.BufferUsageMapRead,
 		Size:             256,
 		MappedAtCreation: false,

@@ -377,7 +377,7 @@ func (app *App) createRenderBundle() error {
 	bundleEncoder := app.device.CreateRenderBundleEncoderSimple(
 		colorFormats,
 		wgpu.TextureFormatUndefined, // no depth
-		1,                               // sample count
+		1,                           // sample count
 	)
 	if bundleEncoder == nil {
 		return fmt.Errorf("failed to create render bundle encoder")
