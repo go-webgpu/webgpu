@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.5.0 (Unreleased)
+## v0.5.1 (2026-05-27)
+
+### Added
+
+- **Auto-setup tool** — `go run github.com/go-webgpu/webgpu/cmd/setup@latest` downloads correct wgpu-native binary for your platform
+- **setup package** — public API: `setup.Install(dir)`, `setup.FindLibrary()`, `setup.Version`
+- **internal/nativelib** — platform detection, download, zip extraction with tests
+
+### Changed
+
+- **deps:** goffi v0.5.0 → v0.5.2
+
+## v0.5.0 (2026-05-26)
 
 ### Breaking Changes
 - **wgpu-native v29.0.0.0**: Migrated from v27.0.4.0 to v29.0.0.0 with stable webgpu-headers

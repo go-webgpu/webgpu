@@ -50,12 +50,33 @@ Pure Go WebGPU bindings using [goffi](https://github.com/go-webgpu/goffi) + [wgp
 go get github.com/go-webgpu/webgpu
 ```
 
-Download wgpu-native and place `wgpu_native.dll` (Windows) or `libwgpu_native.so` (Linux) in your project directory or system PATH.
+### wgpu-native Setup (auto)
 
-To use a custom library location:
 ```bash
-export WGPU_NATIVE_PATH=/path/to/libwgpu_native.so
+go run github.com/go-webgpu/webgpu/cmd/setup@latest
 ```
+
+This downloads the correct wgpu-native v29 binary for your platform (Windows/macOS/Linux, amd64/arm64) into `./lib/`.
+
+### wgpu-native Setup (manual)
+
+Download from [gfx-rs/wgpu-native releases](https://github.com/gfx-rs/wgpu-native/releases/tag/v29.0.0.0) and place in your project directory or system PATH.
+
+Custom library location:
+```bash
+export WGPU_NATIVE_PATH=/path/to/libwgpu_native.so      # Linux/macOS
+set WGPU_NATIVE_PATH=C:\path\to\wgpu_native.dll          # Windows
+```
+
+## gogpu/wgpu Integration
+
+This library is the **Rust FFI backend** for [gogpu/wgpu](https://github.com/gogpu/wgpu) — the unified Go WebGPU package. Build with `-tags rust` to use wgpu-native instead of the Pure Go implementation:
+
+```bash
+go build -tags rust ./myapp
+```
+
+Same API, same types, same user code — build tag selects the implementation.
 
 ## Type System
 
