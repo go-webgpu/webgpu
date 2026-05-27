@@ -58,6 +58,24 @@ go run github.com/go-webgpu/webgpu/cmd/setup@latest
 
 This downloads the correct wgpu-native v29 binary for your platform (Windows/macOS/Linux, amd64/arm64) into `./lib/`.
 
+The library is found automatically from `./lib/` — no environment variable needed. To override the search path explicitly:
+
+```bash
+# Linux
+export WGPU_NATIVE_PATH=./lib/libwgpu_native.so
+
+# macOS
+export WGPU_NATIVE_PATH=./lib/libwgpu_native.dylib
+
+# Windows (PowerShell)
+$env:WGPU_NATIVE_PATH = "lib\wgpu_native.dll"
+
+# Windows (cmd)
+set WGPU_NATIVE_PATH=lib\wgpu_native.dll
+```
+
+Or copy the library to your project root — it will also be found automatically.
+
 ### wgpu-native Setup (manual)
 
 Download from [gfx-rs/wgpu-native releases](https://github.com/gfx-rs/wgpu-native/releases/tag/v29.0.0.0) and place in your project directory or system PATH.

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.2 (2026-05-27)
+
+### Fixed
+
+- **Security:** HTTP download timeout (120s) — was: no timeout, hangs forever on network issues
+- **Security:** Decompression bomb protection via `io.LimitReader` (200MB cap, gosec G110)
+- **Security:** HTTP status code validation — was: no check for 404/500 responses
+- **Correctness:** `dst.Close()` error checked on write path — was: unchecked, corrupted library on Windows
+- **Correctness:** macOS prints `DYLD_LIBRARY_PATH` — was: `LD_LIBRARY_PATH` (wrong for macOS)
+- **Correctness:** `wgpu.Init()` searches `./lib/` directory — auto-setup default location now auto-discovered
+
+### Added
+
+- Download progress indicator with Content-Length (MB)
+- 10 new tests: `Download()` (happy/404/network error), `FindLibrary()` (env/missing/lib-dir)
+- Package documentation for `internal/nativelib`
+- README: `WGPU_NATIVE_PATH` instructions for all platforms after auto-setup
+
 ## v0.5.1 (2026-05-27)
 
 ### Added
