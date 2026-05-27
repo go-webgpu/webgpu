@@ -2,10 +2,64 @@ package nativelib
 
 import (
 	"archive/zip"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestDownload(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("fake content")) //nolint:errcheck // test response
+	}))
+	defer ts.Close()
+
+	path, err := Download(ts.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(path)
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "fake content" {
+		t.Errorf("content = %q, want %q", string(data), "fake content")
+	}
+}
+
+func TestDownloadHTTPError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	_, err := Download(ts.URL)
+	if err == nil {
+		t.Fatal("expected error for HTTP 404")
+	}
+}
+
+func TestDownloadNetworkError(t *testing.T) {
+	// Use a server that immediately closes the connection.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("ResponseWriter does not support Hijacker")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	}))
+	defer ts.Close()
+
+	_, err := Download(ts.URL)
+	if err == nil {
+		t.Fatal("expected error for connection drop")
+	}
+}
 
 func TestExtractLibrary(t *testing.T) {
 	zipPath := createTestZip(t, "test.dll", []byte("fake dll content"))
@@ -59,7 +113,7 @@ func TestExtractLibraryNotFound(t *testing.T) {
 
 func TestExtractLibraryInvalidZip(t *testing.T) {
 	tmpFile := filepath.Join(t.TempDir(), "bad.zip")
-	os.WriteFile(tmpFile, []byte("not a zip"), 0o644)
+	os.WriteFile(tmpFile, []byte("not a zip"), 0o644) //nolint:errcheck // test setup
 
 	_, err := ExtractLibrary(tmpFile, t.TempDir(), "test.dll")
 	if err == nil {
@@ -74,15 +128,15 @@ func createTestZip(t *testing.T, name string, content []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // test helper
 
 	w := zip.NewWriter(f)
 	entry, err := w.Create(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	entry.Write(content)
-	w.Close()
+	entry.Write(content) //nolint:errcheck // test helper
+	w.Close()            //nolint:errcheck // test helper
 	return path
 }
 
@@ -93,14 +147,14 @@ func createTestZipNested(t *testing.T, name string, content []byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // test helper
 
 	w := zip.NewWriter(f)
 	entry, err := w.Create(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	entry.Write(content)
-	w.Close()
+	entry.Write(content) //nolint:errcheck // test helper
+	w.Close()            //nolint:errcheck // test helper
 	return path
 }

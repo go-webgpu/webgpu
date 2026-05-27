@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 )
@@ -196,10 +197,9 @@ var (
 //
 // The library is located using the following strategy (first match wins):
 //  1. WGPU_NATIVE_PATH environment variable (explicit full path)
-//  2. Platform default name (searched via OS library loader):
-//     - Windows: wgpu_native.dll
-//     - macOS: libwgpu_native.dylib
-//     - Linux: libwgpu_native.so
+//  2. ./lib/<name> — default location installed by cmd/setup
+//  3. ./<name> — current directory
+//  4. OS default search (PATH on Windows, LD_LIBRARY_PATH/DYLD_LIBRARY_PATH on Unix)
 func Init() error {
 	initOnce.Do(func() {
 		libPath := getLibraryPath()
@@ -216,17 +216,34 @@ func Init() error {
 }
 
 func getLibraryPath() string {
+	// 1. WGPU_NATIVE_PATH env var — explicit override always wins.
 	if path := os.Getenv("WGPU_NATIVE_PATH"); path != "" {
 		return path
 	}
+
+	var libName string
 	switch runtime.GOOS {
 	case "windows":
-		return "wgpu_native.dll"
+		libName = "wgpu_native.dll"
 	case "darwin":
-		return "libwgpu_native.dylib"
+		libName = "libwgpu_native.dylib"
 	default: // linux, freebsd, etc.
-		return "libwgpu_native.so"
+		libName = "libwgpu_native.so"
 	}
+
+	// 2. ./lib/<name> — auto-setup default location (go run .../cmd/setup installs here).
+	libPath := filepath.Join("lib", libName)
+	if _, err := os.Stat(libPath); err == nil {
+		return libPath
+	}
+
+	// 3. ./lib_name — current directory.
+	if _, err := os.Stat(libName); err == nil {
+		return libName
+	}
+
+	// 4. OS default search (dlopen / LoadLibrary searches PATH / LD_LIBRARY_PATH).
+	return libName
 }
 
 func initSymbols() {

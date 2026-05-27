@@ -52,7 +52,10 @@ func Install(destDir string) (string, error) {
 		return "", err
 	}
 
-	absPath, _ := filepath.Abs(libPath)
+	absPath, err := filepath.Abs(libPath)
+	if err != nil {
+		absPath = libPath
+	}
 	fmt.Printf("Installed: %s\n\n", absPath)
 	printUsage(platform, absPath, destDir)
 
@@ -67,7 +70,10 @@ func FindLibrary() string {
 }
 
 func printUsage(platform *nativelib.Platform, absPath, destDir string) {
-	dir, _ := filepath.Abs(destDir)
+	dir, err := filepath.Abs(destDir)
+	if err != nil {
+		dir = destDir
+	}
 
 	fmt.Println("To use, set environment variable:")
 	switch platform.OS {
@@ -77,11 +83,13 @@ func printUsage(platform *nativelib.Platform, absPath, destDir string) {
 		fmt.Printf("  export WGPU_NATIVE_PATH=%s\n", absPath)
 	}
 
-	fmt.Println("\nOr add directory to PATH:")
+	fmt.Println("\nOr add directory to library path:")
 	switch platform.OS {
 	case "windows":
 		fmt.Printf("  set PATH=%s;%%PATH%%\n", dir)
-	default:
+	case "darwin":
+		fmt.Printf("  export DYLD_LIBRARY_PATH=%s:$DYLD_LIBRARY_PATH\n", dir)
+	default: // linux and others
 		fmt.Printf("  export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH\n", dir)
 	}
 }
