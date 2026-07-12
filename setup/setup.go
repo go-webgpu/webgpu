@@ -32,8 +32,8 @@ func Install(destDir string) (string, error) {
 	if destDir == "" {
 		destDir = "lib"
 	}
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return "", fmt.Errorf("create directory %s: %w", destDir, err)
+	if mkdirErr := os.MkdirAll(destDir, 0o755); mkdirErr != nil { //nolint:gosec // G301: 0755 is standard for library directories
+		return "", fmt.Errorf("create directory %s: %w", destDir, mkdirErr)
 	}
 
 	url := platform.DownloadURL(Version)
@@ -44,7 +44,7 @@ func Install(destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(zipPath)
+	defer func() { _ = os.Remove(zipPath) }()
 
 	fmt.Printf("Extracting %s...\n", platform.LibName)
 	libPath, err := nativelib.ExtractLibrary(zipPath, destDir, platform.LibName)

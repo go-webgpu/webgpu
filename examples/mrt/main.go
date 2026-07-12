@@ -419,7 +419,9 @@ func (app *App) createVertexBuffer() error {
 	copy(mappedSlice, vertices)
 
 	// Unmap buffer to commit data to GPU
-	app.vertexBuffer.Unmap()
+	if unmapErr := app.vertexBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap vertex buffer: %v", unmapErr)
+	}
 
 	return nil
 }

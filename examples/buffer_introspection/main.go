@@ -77,7 +77,9 @@ func main() {
 	fmt.Printf("Initial map state (MappedAtCreation): %s\n", mapStateToString(mapState))
 
 	// Unmap the buffer
-	mappableBuffer.Unmap()
+	if err := mappableBuffer.Unmap(); err != nil {
+		log.Printf("unmap: %v", err)
+	}
 
 	// Check state after unmap
 	mapState = mappableBuffer.MapState()

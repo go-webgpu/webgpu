@@ -45,7 +45,7 @@ func main() {
 	fmt.Println("Queue obtained successfully")
 
 	// Pop error scope and check for errors
-	errType, message := device.PopErrorScope(instance)
+	errType, message := device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	if errType != wgpu.ErrorTypeNoError {
 		fmt.Printf("ERROR: Validation error occurred: %s\n", message)
 	} else {
@@ -64,11 +64,11 @@ func main() {
 	fmt.Println("Performing GPU operations...")
 
 	// Pop inner scope first (LIFO)
-	errType, message = device.PopErrorScope(instance)
+	errType, message = device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	fmt.Printf("Inner scope: errType=%v, message=%q\n", errType, message)
 
 	// Pop outer scope
-	errType, message = device.PopErrorScope(instance)
+	errType, message = device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	fmt.Printf("Outer scope: errType=%v, message=%q\n", errType, message)
 
 	// Example 3: Different error filters
@@ -77,19 +77,19 @@ func main() {
 	// Catch validation errors
 	device.PushErrorScope(wgpu.ErrorFilterValidation)
 	fmt.Println("Monitoring for validation errors...")
-	errType, _ = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	fmt.Printf("Validation filter: errType=%v\n", errType)
 
 	// Catch out-of-memory errors
 	device.PushErrorScope(wgpu.ErrorFilterOutOfMemory)
 	fmt.Println("Monitoring for out-of-memory errors...")
-	errType, _ = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	fmt.Printf("Out-of-memory filter: errType=%v\n", errType)
 
 	// Catch internal errors
 	device.PushErrorScope(wgpu.ErrorFilterInternal)
 	fmt.Println("Monitoring for internal errors...")
-	errType, _ = device.PopErrorScope(instance)
+	errType, _ = device.PopErrorScope(instance) //nolint:staticcheck // example demonstrates deprecated API
 	fmt.Printf("Internal filter: errType=%v\n", errType)
 
 	fmt.Println("\n=== Error Handling Examples Completed ===")

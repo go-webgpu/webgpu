@@ -78,7 +78,7 @@ func LibraryName() string {
 
 func FindLibrary() string {
 	if p := os.Getenv("WGPU_NATIVE_PATH"); p != "" {
-		if _, err := os.Stat(p); err == nil {
+		if _, err := os.Stat(p); err == nil { //nolint:gosec // G703: user-provided env var path, validated by Stat
 			return p
 		}
 	}
@@ -102,7 +102,7 @@ func FindLibrary() string {
 
 	for _, dir := range strings.Split(os.Getenv("PATH"), string(os.PathListSeparator)) {
 		p := filepath.Join(dir, libName)
-		if _, err := os.Stat(p); err == nil {
+		if _, err := os.Stat(p); err == nil { //nolint:gosec // G703: dir from PATH env, libName from internal constants
 			return p
 		}
 	}

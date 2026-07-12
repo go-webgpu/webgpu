@@ -10,13 +10,14 @@ This document tracks upstream dependencies, pinned versions, and compatibility f
 |------------|---------|--------|------|
 | **wgpu-native** | [v29.0.0.0](https://github.com/gfx-rs/wgpu-native/releases/tag/v29.0.0.0) | — | 2026-04-10 |
 | **webgpu.h** | wgpu-native bundled | [`7d3186c`](https://github.com/webgpu-native/webgpu-headers/commit/7d3186c3dd2c708703524027b46b8703534ab3cc) | stable |
-| **goffi** | [v0.5.0](https://github.com/go-webgpu/goffi/releases/tag/v0.5.0) | [`ca3231c`](https://github.com/go-webgpu/goffi/commit/ca3231c) | 2026-03-20 |
-| **gputypes** | [v0.3.0](https://github.com/gogpu/gputypes/releases/tag/v0.3.0) | [`209398e`](https://github.com/gogpu/gputypes/commit/209398e) | 2026-03-20 |
+| **goffi** | [v0.6.0](https://github.com/go-webgpu/goffi/releases/tag/v0.6.0) | [`895a3fa`](https://github.com/go-webgpu/goffi/commit/895a3fa) | 2026-07-12 |
+| **gputypes** | [v0.5.1](https://github.com/gogpu/gputypes/releases/tag/v0.5.1) | [`239da90`](https://github.com/gogpu/gputypes/commit/239da90) | 2026-07-12 |
 
 ## Compatibility Matrix
 
 | go-webgpu | wgpu-native | goffi | gputypes | Go |
 |-----------|-------------|-------|----------|----|
+| v0.5.3 | v29.0.0.0 | v0.6.0 | v0.5.1 | 1.25+ |
 | v0.5.0 | v29.0.0.0 | v0.5.0 | v0.3.0 | 1.25+ |
 | v0.4.3 | v27.0.4.0 | v0.5.0 | v0.3.0 | 1.25+ |
 | v0.4.2 | v27.0.4.0 | v0.4.2 | v0.2.0 | 1.25+ |
@@ -111,4 +112,4 @@ Enum values in gputypes follow the webgpu.h specification. When gputypes updates
 
 ---
 
-*Last updated: 2026-05-26 (v0.5.0)*
+*Last updated: 2026-07-12 (v0.5.3)*

@@ -218,7 +218,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	startTimestamp := *(*uint64)(unsafe.Pointer(&data[0]))
 	endTimestamp := *(*uint64)(unsafe.Pointer(&data[8]))
 
-	stagingBuffer.Unmap()
+	if err := stagingBuffer.Unmap(); err != nil {
+		log.Printf("unmap staging buffer: %v", err)
+	}
 
 	// Calculate elapsed ticks.
 	// Note: To convert to nanoseconds, you need the timestamp period

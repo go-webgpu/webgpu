@@ -355,7 +355,9 @@ func (app *App) createBuffers() error {
 		mappedSlice := unsafe.Slice((*Vertex)(ptr), len(vertices))
 		copy(mappedSlice, vertices)
 	}
-	app.vertexBuffer.Unmap()
+	if err := app.vertexBuffer.Unmap(); err != nil {
+		log.Printf("unmap vertex buffer: %v", err)
+	}
 
 	// Create indirect buffer with draw arguments
 	// This is the key part - the GPU reads these parameters!
@@ -388,7 +390,9 @@ func (app *App) createBuffers() error {
 	if indirectPtr != nil {
 		*(*wgpu.DrawIndirectArgs)(indirectPtr) = indirectArgs
 	}
-	app.indirectBuffer.Unmap()
+	if err := app.indirectBuffer.Unmap(); err != nil {
+		log.Printf("unmap indirect buffer: %v", err)
+	}
 
 	return nil
 }

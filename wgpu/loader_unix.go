@@ -116,7 +116,7 @@ func (u *unixProc) Call(args ...uintptr) (uintptr, uintptr, error) {
 
 	// Call the function
 	var result uintptr
-	err := ffi.CallFunction(&u.cif, u.fnPtr, unsafe.Pointer(&result), argPtrs)
+	_, err := ffi.CallFunction(&u.cif, u.fnPtr, unsafe.Pointer(&result), argPtrs)
 	if err != nil {
 		return 0, 0, fmt.Errorf("wgpu: call to %s failed: %w", u.name, err)
 	}
