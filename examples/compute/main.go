@@ -24,7 +24,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 `
 
-func main() {
+func main() { //nolint:gocyclo,cyclop // example: sequential GPU setup is inherently linear
 	// Initialize WebGPU
 	if err := wgpu.Init(); err != nil {
 		log.Fatal(err)
@@ -94,7 +94,9 @@ func main() {
 		mappedSlice := unsafe.Slice((*float32)(ptr), numElements)
 		copy(mappedSlice, inputData)
 	}
-	storageBuffer.Unmap()
+	if unmapErr := storageBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap storage buffer: %v", unmapErr)
+	}
 
 	// Create readback buffer for results
 	readbackBuffer, err := device.CreateBuffer(&wgpu.BufferDescriptor{
@@ -194,7 +196,9 @@ func main() {
 			fmt.Println("All results correct!")
 		}
 	}
-	readbackBuffer.Unmap()
+	if unmapErr := readbackBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap readback buffer: %v", unmapErr)
+	}
 
 	fmt.Println()
 	fmt.Println("Key concepts demonstrated:")

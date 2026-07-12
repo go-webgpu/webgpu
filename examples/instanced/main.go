@@ -145,7 +145,9 @@ func main() {
 		mappedSlice := unsafe.Slice((*Vertex)(ptr), len(triangleVertices))
 		copy(mappedSlice, triangleVertices)
 	}
-	vertexBuffer.Unmap()
+	if unmapErr := vertexBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap vertex buffer: %v", unmapErr)
+	}
 
 	// Create instance buffer (per-instance data)
 	instanceBufferSize := uint64(len(instanceData)) * uint64(unsafe.Sizeof(instanceData[0]))
@@ -165,7 +167,9 @@ func main() {
 		mappedSlice := unsafe.Slice((*InstanceData)(ptr), len(instanceData))
 		copy(mappedSlice, instanceData)
 	}
-	instanceBuffer.Unmap()
+	if unmapErr := instanceBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap instance buffer: %v", unmapErr)
+	}
 
 	// Define vertex attributes for per-vertex buffer
 	vertexAttributes := []wgpu.VertexAttribute{

@@ -51,12 +51,12 @@ func Download(url string) (string, error) {
 
 	if _, err := io.Copy(tmpFile, io.LimitReader(resp.Body, maxLibSize)); err != nil {
 		tmpFile.Close() //nolint:errcheck // cleanup on write error
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("download write: %w", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("close %s: %w", tmpPath, err)
 	}
 

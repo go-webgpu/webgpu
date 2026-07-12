@@ -507,7 +507,9 @@ func (app *App) createBuffers() error {
 	// nolint:gosec,govet // vPtr is from GetMappedRange, validated non-nil, safe for slice conversion
 	vMappedSlice := unsafe.Slice((*float32)(vPtr), len(vertices))
 	copy(vMappedSlice, vertices)
-	app.vertexBuffer.Unmap()
+	if unmapErr := app.vertexBuffer.Unmap(); unmapErr != nil {
+		log.Printf("unmap vertex buffer: %v", unmapErr)
+	}
 
 	// Create index buffer
 	// nolint:gosec // len(indices) is 6, * 2 = 12 bytes - no overflow risk
@@ -530,7 +532,9 @@ func (app *App) createBuffers() error {
 	// nolint:gosec,govet // iPtr is from GetMappedRange, validated non-nil, safe for slice conversion
 	iMappedSlice := unsafe.Slice((*uint16)(iPtr), len(indices))
 	copy(iMappedSlice, indices)
-	app.indexBuffer.Unmap()
+	if err := app.indexBuffer.Unmap(); err != nil {
+		log.Printf("unmap index buffer: %v", err)
+	}
 
 	return nil
 }

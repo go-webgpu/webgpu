@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.3 (2026-07-12)
+
+### Changed
+
+- **deps:** goffi v0.5.2 → v0.6.0 — assembly-level errno capture, callback stack safety fix, zero-allocation FFI
+- **deps:** gputypes v0.5.0 → v0.5.1
+- **deps:** golang.org/x/sys v0.42.0 → v0.47.0
+
+### Fixed
+
+- Adapt to goffi v0.6.0 breaking change: `CallFunction` now returns `(syscall.Errno, error)`
+- Fix all golangci-lint issues: unchecked `Buffer.Unmap()` errors in examples, `os.Remove` in setup, variable shadowing
+
+### Highlights (from goffi v0.6.0)
+
+- **errno capture** — first pure-Go FFI with correct errno on Linux (captured in assembly trampoline, ~3-5ns overhead)
+- **Callback stack fix** — `sync.Pool` + `runtime.Pinner` prevents goroutine stack move corruption during C callbacks
+- **Zero-allocation FFI** — ABI-safe struct layout eliminates allocations in steady state
+
 ## v0.5.2 (2026-05-27)
 
 ### Fixed

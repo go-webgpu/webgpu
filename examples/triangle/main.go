@@ -401,8 +401,8 @@ func (app *App) render() error {
 	defer encoder.Release()
 
 	// Render triangle
-	if err := app.renderTriangle(encoder, app.surfaceTexView); err != nil {
-		return err
+	if renderErr := app.renderTriangle(encoder, app.surfaceTexView); renderErr != nil {
+		return renderErr
 	}
 
 	// Finish encoding
