@@ -478,6 +478,31 @@ func (q *Queue) Submit(commands ...*CommandBuffer) (uint64, error) {
 	return uint64(submissionIndex), nil
 }
 
+// GetTimestampPeriod returns the duration of one GPU timestamp tick in
+// nanoseconds, as reported by wgpu-native. It returns zero for a nil or
+// released queue, or when the native call is unavailable.
+func (q *Queue) GetTimestampPeriod() float32 {
+	if q == nil || q.handle == 0 {
+		return 0
+	}
+	if procQueueGetTimestampPeriod == nil {
+		mustInit()
+	}
+	if procQueueGetTimestampPeriod == nil {
+		return 0
+	}
+
+	proc, ok := procQueueGetTimestampPeriod.(float32Proc)
+	if !ok {
+		return 0
+	}
+	period, err := proc.CallFloat32(q.handle)
+	if err != nil {
+		return 0
+	}
+	return period
+}
+
 // Release releases the command buffer.
 func (cb *CommandBuffer) Release() {
 	if cb.handle != 0 {

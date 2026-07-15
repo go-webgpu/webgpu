@@ -125,3 +125,40 @@ func (u *unixProc) Call(args ...uintptr) (uintptr, uintptr, error) {
 	// This matches Windows syscall.LazyProc.Call signature
 	return result, 0, nil
 }
+
+// CallFloat32 invokes a procedure whose native return type is float32.
+//
+// Proc.Call uses a pointer-sized return descriptor for the rest of the API.
+// A float32 is returned in the platform floating-point register instead, so
+// it needs a call interface prepared with FloatTypeDescriptor.
+func (u *unixProc) CallFloat32(args ...uintptr) (float32, error) {
+	if u.fnPtr == nil {
+		return 0, fmt.Errorf("wgpu: failed to get symbol %s from %s", u.name, u.lib.name)
+	}
+
+	argTypes := make([]*types.TypeDescriptor, len(args))
+	for i := range argTypes {
+		argTypes[i] = types.PointerTypeDescriptor
+	}
+
+	var cif types.CallInterface
+	if err := ffi.PrepareCallInterface(
+		&cif,
+		types.UnixCallingConvention,
+		types.FloatTypeDescriptor,
+		argTypes,
+	); err != nil {
+		return 0, fmt.Errorf("wgpu: failed to prepare CIF for %s: %w", u.name, err)
+	}
+
+	argPtrs := make([]unsafe.Pointer, len(args))
+	for i := range args {
+		argPtrs[i] = unsafe.Pointer(&args[i])
+	}
+
+	var result float32
+	if _, err := ffi.CallFunction(&cif, u.fnPtr, unsafe.Pointer(&result), argPtrs); err != nil {
+		return 0, fmt.Errorf("wgpu: call to %s failed: %w", u.name, err)
+	}
+	return result, nil
+}

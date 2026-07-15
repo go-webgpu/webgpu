@@ -18,3 +18,11 @@ type Proc interface {
 	// Arguments are passed as uintptr to match C ABI.
 	Call(args ...uintptr) (uintptr, uintptr, error)
 }
+
+// float32Proc is implemented by platform loaders for procedures whose native
+// return type is float32. Proc.Call intentionally keeps the existing integer
+// return contract for the rest of the WebGPU API; this narrow interface lets
+// those procedures use the platform's floating-point return ABI instead.
+type float32Proc interface {
+	CallFloat32(args ...uintptr) (float32, error)
+}
