@@ -79,21 +79,9 @@ var (
 	adapterCallbackOnce sync.Once
 )
 
-// adapterCallbackHandler is the Go function called by C code via ffi.NewCallback.
-// Windows x64 ABI: args in RCX, RDX, R8, R9, then stack.
-// Signature: void(status uint32, adapter uintptr, message *StringView, userdata1 uintptr, userdata2 uintptr)
-// Note: On Windows x64 ABI, structs > 8 bytes are passed by pointer.
-// goffi v0.2.1+ requires all args to be uintptr and exactly one uintptr return.
-func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, userdata1, userdata2 uintptr) uintptr {
-	// Extract message string (message is pointer to StringView on Windows)
-	var msg string
-	if message != 0 {
-		sv := (*StringView)(ptrFromUintptr(message))
-		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
-		}
-	}
-
+// handleAdapterCallback completes a request after the platform callback entry
+// normalizes the ABI-specific WGPUStringView representation.
+func handleAdapterCallback(status uintptr, adapter uintptr, message StringView, userdata1 uintptr) uintptr {
 	// Find and complete the request
 	adapterRequestsMu.Lock()
 	req, ok := adapterRequests[userdata1]
@@ -108,16 +96,15 @@ func adapterCallbackHandler(status uintptr, adapter uintptr, message uintptr, us
 			trackResource(adapter, "Adapter")
 			req.adapter = &Adapter{handle: adapter}
 		}
-		req.message = msg
+		req.message = stringViewToString(message)
 		close(req.done)
 	}
 	return 0
 }
 
-// initAdapterCallback creates the C callback function pointer using goffi.
-// goffi v0.2.1+ properly handles Windows x64 calling convention.
+// initAdapterCallback creates the platform-correct C callback function pointer.
 func initAdapterCallback() {
-	adapterCallbackPtr = ffi.NewCallback(adapterCallbackHandler)
+	adapterCallbackPtr = ffi.NewCallback(adapterCallbackEntry)
 }
 
 // RequestAdapter requests a GPU adapter from the instance.

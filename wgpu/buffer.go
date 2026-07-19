@@ -67,18 +67,9 @@ var (
 	mapCallbackOnce sync.Once
 )
 
-// mapCallbackHandler is the Go function called by C code via ffi.NewCallback.
-// Signature: void(status uint32, message *StringView, userdata1 uintptr, userdata2 uintptr)
-func mapCallbackHandler(status uintptr, message uintptr, userdata1, userdata2 uintptr) uintptr {
-	// Extract message string
-	var msg string
-	if message != 0 {
-		sv := (*StringView)(ptrFromUintptr(message))
-		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
-		}
-	}
-
+// handleMapCallback completes a request after the platform callback entry
+// normalizes the ABI-specific WGPUStringView representation.
+func handleMapCallback(status uintptr, message StringView, userdata1 uintptr) uintptr {
 	// Find and complete the request
 	mapRequestsMu.Lock()
 	req, ok := mapRequests[userdata1]
@@ -89,15 +80,15 @@ func mapCallbackHandler(status uintptr, message uintptr, userdata1, userdata2 ui
 
 	if ok && req != nil {
 		req.status = MapAsyncStatus(status)
-		req.message = msg
+		req.message = stringViewToString(message)
 		close(req.done)
 	}
 	return 0
 }
 
-// initMapCallback creates the C callback function pointer using goffi.
+// initMapCallback creates the platform-correct C callback function pointer.
 func initMapCallback() {
-	mapCallbackPtr = ffi.NewCallback(mapCallbackHandler)
+	mapCallbackPtr = ffi.NewCallback(mapCallbackEntry)
 }
 
 // BufferDescriptor describes a GPU buffer to create.

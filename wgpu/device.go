@@ -38,18 +38,9 @@ var (
 	deviceCallbackOnce sync.Once
 )
 
-// deviceCallbackHandler is the Go function called by C code via ffi.NewCallback.
-// Signature: void(status uint32, device uintptr, message *StringView, userdata1 uintptr, userdata2 uintptr)
-func deviceCallbackHandler(status uintptr, device uintptr, message uintptr, userdata1, userdata2 uintptr) uintptr {
-	// Extract message string (message is pointer to StringView on Windows)
-	var msg string
-	if message != 0 {
-		sv := (*StringView)(ptrFromUintptr(message))
-		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
-		}
-	}
-
+// handleDeviceCallback completes a request after the platform callback entry
+// normalizes the ABI-specific WGPUStringView representation.
+func handleDeviceCallback(status uintptr, device uintptr, message StringView, userdata1 uintptr) uintptr {
 	// Find and complete the request
 	deviceRequestsMu.Lock()
 	req, ok := deviceRequests[userdata1]
@@ -64,15 +55,15 @@ func deviceCallbackHandler(status uintptr, device uintptr, message uintptr, user
 			trackResource(device, "Device")
 			req.device = &Device{handle: device}
 		}
-		req.message = msg
+		req.message = stringViewToString(message)
 		close(req.done)
 	}
 	return 0
 }
 
-// initDeviceCallback creates the C callback function pointer using goffi.
+// initDeviceCallback creates the platform-correct C callback function pointer.
 func initDeviceCallback() {
-	deviceCallbackPtr = ffi.NewCallback(deviceCallbackHandler)
+	deviceCallbackPtr = ffi.NewCallback(deviceCallbackEntry)
 }
 
 // RequestDevice requests a GPU device from the adapter.
