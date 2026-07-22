@@ -3,7 +3,6 @@
 package wgpu
 
 import (
-	"runtime"
 	"unsafe"
 )
 
@@ -31,8 +30,6 @@ func (inst *Instance) CreateSurfaceFromAndroidNativeWindow(window uintptr) (*Sur
 		inst.handle,
 		uintptr(unsafe.Pointer(&desc)),
 	)
-	runtime.KeepAlive(&source)
-	runtime.KeepAlive(&desc)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
 	}
