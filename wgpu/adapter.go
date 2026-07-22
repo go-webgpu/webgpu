@@ -81,6 +81,7 @@ var (
 
 // handleAdapterCallback completes a request after the platform callback entry
 // normalizes the ABI-specific WGPUStringView representation.
+// userdata2 is reserved by WebGPU and discarded by the platform entry.
 func handleAdapterCallback(status uintptr, adapter uintptr, message StringView, userdata1 uintptr) uintptr {
 	// Find and complete the request
 	adapterRequestsMu.Lock()

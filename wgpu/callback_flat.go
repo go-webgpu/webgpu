@@ -2,6 +2,10 @@
 
 package wgpu
 
+// Callback entry implementations support amd64 and arm64 on Linux, macOS,
+// FreeBSD, and Windows. Windows amd64 uses callback_windows_amd64.go;
+// wgpu-native does not support other architectures.
+//
 // Unix amd64/arm64 and Windows ARM64 ABIs pass the two-word WGPUStringView
 // callback argument by value in integer registers. goffi callbacks expose
 // those words as separate uintptr arguments, so each entry reconstructs the

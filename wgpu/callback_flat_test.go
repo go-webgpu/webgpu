@@ -96,14 +96,27 @@ func TestABICallbackEntriesPreserveStringViewAndUserdata(t *testing.T) {
 	})
 }
 
-func assertCallbackCompleted(t *testing.T, done <-chan struct{}, message string) {
-	t.Helper()
-	select {
-	case <-done:
-	default:
-		t.Fatal("callback did not complete the registered request")
-	}
-	if message != "callback message" {
-		t.Fatalf("message = %q, want %q", message, "callback message")
-	}
+func TestABICallbackEntriesHandleMessageEdges(t *testing.T) {
+	t.Run("null and empty", func(t *testing.T) {
+		const requestID = uintptr(105)
+		req := registerTestAdapterRequest(t, requestID)
+
+		adapterCallbackEntry(0, 0, 0, 0, requestID, 0)
+
+		assertCallbackMessage(t, req.done, req.message, "")
+	})
+
+	t.Run("zero length with non-null data", func(t *testing.T) {
+		const requestID = uintptr(106)
+		req := registerTestAdapterRequest(t, requestID)
+		message := []byte("ignored")
+
+		adapterCallbackEntry(0, 0, uintptr(unsafe.Pointer(&message[0])), 0, requestID, 0)
+
+		assertCallbackMessage(t, req.done, req.message, "")
+	})
+
+	t.Run("unknown userdata", func(t *testing.T) {
+		adapterCallbackEntry(0, 0, 0, 0, ^uintptr(0), 0)
+	})
 }
