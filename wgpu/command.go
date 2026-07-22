@@ -486,9 +486,6 @@ func (q *Queue) GetTimestampPeriod() float32 {
 		return 0
 	}
 	if procQueueGetTimestampPeriod == nil {
-		mustInit()
-	}
-	if procQueueGetTimestampPeriod == nil {
 		return 0
 	}
 

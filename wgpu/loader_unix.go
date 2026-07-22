@@ -136,6 +136,7 @@ func (u *unixProc) CallFloat32(args ...uintptr) (float32, error) {
 		return 0, fmt.Errorf("wgpu: failed to get symbol %s from %s", u.name, u.lib.name)
 	}
 
+	// TODO: cache the prepared float-return CIF as Call does for integer returns.
 	argTypes := make([]*types.TypeDescriptor, len(args))
 	for i := range argTypes {
 		argTypes[i] = types.PointerTypeDescriptor

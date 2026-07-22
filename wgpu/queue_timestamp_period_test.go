@@ -49,6 +49,16 @@ func TestQueueGetTimestampPeriodRequiresFloat32Proc(t *testing.T) {
 	}
 }
 
+func TestQueueGetTimestampPeriodUnavailable(t *testing.T) {
+	original := procQueueGetTimestampPeriod
+	procQueueGetTimestampPeriod = nil
+	defer func() { procQueueGetTimestampPeriod = original }()
+
+	if got := (&Queue{handle: 0x1234}).GetTimestampPeriod(); got != 0 {
+		t.Fatalf("queue timestamp period = %v, want 0 for unavailable proc", got)
+	}
+}
+
 func TestQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
 	stub := &timestampPeriodProcStub{period: 0.125}
 	original := procQueueGetTimestampPeriod

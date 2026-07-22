@@ -53,6 +53,7 @@ func (w *windowsProc) CallFloat32(args ...uintptr) (float32, error) {
 		return 0, err
 	}
 
+	// TODO: cache the prepared float-return CIF as unixProc.Call does for integer returns.
 	argTypes := make([]*types.TypeDescriptor, len(args))
 	for i := range argTypes {
 		argTypes[i] = types.PointerTypeDescriptor

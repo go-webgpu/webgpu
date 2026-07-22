@@ -227,7 +227,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 	elapsedTicks := endTimestamp - startTimestamp
 	period := queue.GetTimestampPeriod()
 	if period <= 0 {
-		return fmt.Errorf("timestamp period unavailable")
+		const fallbackPeriod = float32(1)
+		log.Printf("timestamp period unavailable; using %.1f ns/tick fallback", fallbackPeriod)
+		period = fallbackPeriod
 	}
 	elapsedNs := float64(elapsedTicks) * float64(period)
 
