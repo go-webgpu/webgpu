@@ -135,31 +135,5 @@ func (u *unixProc) CallFloat32(args ...uintptr) (float32, error) {
 	if u.fnPtr == nil {
 		return 0, fmt.Errorf("wgpu: failed to get symbol %s from %s", u.name, u.lib.name)
 	}
-
-	// TODO: cache the prepared float-return CIF as Call does for integer returns.
-	argTypes := make([]*types.TypeDescriptor, len(args))
-	for i := range argTypes {
-		argTypes[i] = types.PointerTypeDescriptor
-	}
-
-	var cif types.CallInterface
-	if err := ffi.PrepareCallInterface(
-		&cif,
-		types.UnixCallingConvention,
-		types.FloatTypeDescriptor,
-		argTypes,
-	); err != nil {
-		return 0, fmt.Errorf("wgpu: failed to prepare CIF for %s: %w", u.name, err)
-	}
-
-	argPtrs := make([]unsafe.Pointer, len(args))
-	for i := range args {
-		argPtrs[i] = unsafe.Pointer(&args[i])
-	}
-
-	var result float32
-	if _, err := ffi.CallFunction(&cif, u.fnPtr, unsafe.Pointer(&result), argPtrs); err != nil {
-		return 0, fmt.Errorf("wgpu: call to %s failed: %w", u.name, err)
-	}
-	return result, nil
+	return callFloat32(nativeFloat32CallOps, u.name, types.UnixCallingConvention, u.fnPtr, args...)
 }

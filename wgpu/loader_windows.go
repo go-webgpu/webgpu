@@ -6,7 +6,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/go-webgpu/goffi/ffi"
 	"github.com/go-webgpu/goffi/types"
 )
 
@@ -52,27 +51,11 @@ func (w *windowsProc) CallFloat32(args ...uintptr) (float32, error) {
 	if err := w.proc.Find(); err != nil {
 		return 0, err
 	}
-
-	// TODO: cache the prepared float-return CIF as unixProc.Call does for integer returns.
-	argTypes := make([]*types.TypeDescriptor, len(args))
-	for i := range argTypes {
-		argTypes[i] = types.PointerTypeDescriptor
-	}
-	var cif types.CallInterface
-	if err := ffi.PrepareCallInterface(
-		&cif,
+	return callFloat32(
+		nativeFloat32CallOps,
+		w.proc.Name,
 		types.WindowsCallingConvention,
-		types.FloatTypeDescriptor,
-		argTypes,
-	); err != nil {
-		return 0, err
-	}
-
-	argPtrs := make([]unsafe.Pointer, len(args))
-	for i := range args {
-		argPtrs[i] = unsafe.Pointer(&args[i])
-	}
-	var result float32
-	_, err := ffi.CallFunction(&cif, unsafe.Pointer(w.proc.Addr()), unsafe.Pointer(&result), argPtrs)
-	return result, err
+		unsafe.Pointer(w.proc.Addr()),
+		args...,
+	)
 }

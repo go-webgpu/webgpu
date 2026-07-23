@@ -18,3 +18,13 @@ func closeTimestampPeriodABILibrary(t *testing.T, library Library) {
 		t.Fatalf("close timestamp-period ABI library: %v", err)
 	}
 }
+
+func TestABIFloat32ProcMissingSymbol(t *testing.T) {
+	proc := &unixProc{
+		lib:  &unixLibrary{name: "missing-library"},
+		name: "missing-symbol",
+	}
+	if _, err := proc.CallFloat32(0x1234); err == nil {
+		t.Fatal("missing symbol returned no error")
+	}
+}
