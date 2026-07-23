@@ -21,7 +21,7 @@ func (p *timestampPeriodProcStub) CallFloat32(args ...uintptr) (float32, error) 
 	return p.period, nil
 }
 
-func TestQueueGetTimestampPeriodNullGuard(t *testing.T) {
+func TestABIQueueGetTimestampPeriodNullGuard(t *testing.T) {
 	var nilQueue *Queue
 	if got := nilQueue.GetTimestampPeriod(); got != 0 {
 		t.Fatalf("nil queue timestamp period = %v, want 0", got)
@@ -39,7 +39,7 @@ func (*integerOnlyTimestampPeriodProc) Call(args ...uintptr) (uintptr, uintptr, 
 	return 0, 0, nil
 }
 
-func TestQueueGetTimestampPeriodRequiresFloat32Proc(t *testing.T) {
+func TestABIQueueGetTimestampPeriodRequiresFloat32Proc(t *testing.T) {
 	original := procQueueGetTimestampPeriod
 	procQueueGetTimestampPeriod = &integerOnlyTimestampPeriodProc{}
 	defer func() { procQueueGetTimestampPeriod = original }()
@@ -49,7 +49,7 @@ func TestQueueGetTimestampPeriodRequiresFloat32Proc(t *testing.T) {
 	}
 }
 
-func TestQueueGetTimestampPeriodUnavailable(t *testing.T) {
+func TestABIQueueGetTimestampPeriodUnavailable(t *testing.T) {
 	original := procQueueGetTimestampPeriod
 	procQueueGetTimestampPeriod = nil
 	defer func() { procQueueGetTimestampPeriod = original }()
@@ -59,7 +59,7 @@ func TestQueueGetTimestampPeriodUnavailable(t *testing.T) {
 	}
 }
 
-func TestQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
+func TestABIQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
 	stub := &timestampPeriodProcStub{period: 0.125}
 	original := procQueueGetTimestampPeriod
 	procQueueGetTimestampPeriod = stub
@@ -74,7 +74,7 @@ func TestQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
 	}
 }
 
-func TestQueueGetTimestampPeriodDynamicLibraryABI(t *testing.T) {
+func TestABIQueueGetTimestampPeriodDynamicLibrary(t *testing.T) {
 	path := os.Getenv("WGPU_TIMESTAMP_PERIOD_ABI_STUB_LIBRARY")
 	if path == "" {
 		t.Skip("set WGPU_TIMESTAMP_PERIOD_ABI_STUB_LIBRARY to a shared library exporting the test symbol")
