@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-func TestCallbackStringViewWindowsAMD64(t *testing.T) {
+func TestABICallbackStringViewWindowsAMD64(t *testing.T) {
 	if got := callbackStringView(0); got != (StringView{}) {
 		t.Fatalf("callbackStringView(0) = %#v, want empty", got)
 	}
@@ -22,7 +22,7 @@ func TestCallbackStringViewWindowsAMD64(t *testing.T) {
 	}
 }
 
-func TestAdapterCallbackEntryWindowsAMD64(t *testing.T) {
+func TestABIAdapterCallbackEntryWindowsAMD64(t *testing.T) {
 	const requestID = uintptr(201)
 	req := registerTestAdapterRequest(t, requestID)
 	message := []byte("callback message")
