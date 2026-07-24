@@ -63,20 +63,9 @@ var (
 	errorScopeCallbackOnce sync.Once
 )
 
-// errorScopeCallbackHandler is the Go function called by C code via ffi.NewCallback.
-// Signature matches: void callback(WGPUPopErrorScopeStatus status, WGPUErrorType type,
-//
-//	WGPUStringView message, void* userdata1, void* userdata2)
-func errorScopeCallbackHandler(status uintptr, errType uintptr, message uintptr, userdata1, _ uintptr) uintptr {
-	// Extract message string (message is pointer to StringView)
-	var msg string
-	if message != 0 {
-		sv := (*StringView)(ptrFromUintptr(message))
-		if sv.Data != 0 && sv.Length > 0 && sv.Length < 1<<20 {
-			msg = unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
-		}
-	}
-
+// handleErrorScopeCallback completes a request after the platform callback
+// entry normalizes the ABI-specific WGPUStringView representation.
+func handleErrorScopeCallback(status uintptr, errType uintptr, message StringView, userdata1 uintptr) uintptr {
 	// Find and complete the operation
 	errorScopeResultsMu.Lock()
 	result, ok := errorScopeResults[userdata1]
@@ -88,16 +77,16 @@ func errorScopeCallbackHandler(status uintptr, errType uintptr, message uintptr,
 	if ok && result != nil {
 		result.status = PopErrorScopeStatus(status)
 		result.errType = ErrorType(errType)
-		result.message = msg
+		result.message = stringViewToString(message)
 		close(result.done)
 	}
 
 	return 0 // void return
 }
 
-// initErrorScopeCallback creates the C callback function pointer using goffi.
+// initErrorScopeCallback creates the platform-correct C callback function pointer.
 func initErrorScopeCallback() {
-	errorScopeCallbackPtr = ffi.NewCallback(errorScopeCallbackHandler)
+	errorScopeCallbackPtr = ffi.NewCallback(errorScopeCallbackEntry)
 }
 
 // Deprecated: PopErrorScope panics on failure. Use PopErrorScopeAsync instead.
