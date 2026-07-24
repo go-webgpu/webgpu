@@ -5,13 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## v0.5.4 (2026-07-24)
 
 ### Added
 
 - Android `ANativeWindow*` surface creation through
   `Instance.CreateSurfaceFromAndroidNativeWindow`, including v29 wire-layout
-  and zero-handle validation tests.
+  and zero-handle validation tests ([#24](https://github.com/go-webgpu/webgpu/pull/24) by [@besmpl](https://github.com/besmpl))
+- `Queue.GetTimestampPeriod()` — returns GPU timestamp tick duration in nanoseconds via platform-correct float32 ABI path ([#23](https://github.com/go-webgpu/webgpu/pull/23) by [@besmpl](https://github.com/besmpl))
+- `float32Proc` interface and shared `callFloat32` path for procedures with native float returns
+
+### Fixed
+
+- **macOS/Linux: RequestAdapter no longer hangs** — callback entry points now correctly reconstruct `WGPUStringView` from two integer registers on Unix amd64/arm64 and Windows ARM64, preserving `userdata` for request completion. Windows x64 retains its indirect-aggregate convention. Closes [#17](https://github.com/go-webgpu/webgpu/issues/17) ([#25](https://github.com/go-webgpu/webgpu/pull/25) by [@besmpl](https://github.com/besmpl))
+- `go vet` warning in `loader_windows.go` — use `ptrFromUintptr` for DLL function address conversion
+- Consolidate three separate `require` directives in `go.mod` into a single block
+
+### Changed
+
+- **deps:** goffi v0.6.0 → v0.6.2 — Windows x64 float return via XMM0 capture, Android ARM64 preview
 
 ## v0.5.3 (2026-07-12)
 
