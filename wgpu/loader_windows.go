@@ -4,7 +4,6 @@ package wgpu
 
 import (
 	"syscall"
-	"unsafe"
 
 	"github.com/go-webgpu/goffi/types"
 )
@@ -55,7 +54,7 @@ func (w *windowsProc) CallFloat32(args ...uintptr) (float32, error) {
 		nativeFloat32CallOps,
 		w.proc.Name,
 		types.WindowsCallingConvention,
-		unsafe.Pointer(w.proc.Addr()),
+		ptrFromUintptr(w.proc.Addr()),
 		args...,
 	)
 }
