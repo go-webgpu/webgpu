@@ -42,8 +42,9 @@ var (
 	procDeviceGetLimits      Proc
 
 	// Function pointers - Queue
-	procQueueRelease     Proc
-	procQueueWriteBuffer Proc
+	procQueueRelease            Proc
+	procQueueWriteBuffer        Proc
+	procQueueGetTimestampPeriod Proc
 
 	// Function pointers - Instance (global)
 	procGetInstanceFeatures Proc // v29: global instance feature query
@@ -277,6 +278,7 @@ func initSymbols() {
 	// Queue
 	procQueueRelease = wgpuLib.NewProc("wgpuQueueRelease")
 	procQueueWriteBuffer = wgpuLib.NewProc("wgpuQueueWriteBuffer")
+	procQueueGetTimestampPeriod = wgpuLib.NewProc("wgpuQueueGetTimestampPeriod")
 
 	// Instance global queries (v29)
 	procGetInstanceFeatures = wgpuLib.NewProc("wgpuGetInstanceFeatures")

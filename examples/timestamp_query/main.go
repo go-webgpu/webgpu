@@ -222,20 +222,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 		log.Printf("unmap staging buffer: %v", err)
 	}
 
-	// Calculate elapsed ticks.
-	// Note: To convert to nanoseconds, you need the timestamp period
-	// from the adapter (typically 1 ns/tick, but varies by GPU).
+	// Calculate elapsed ticks and convert them with the period reported by
+	// the queue. The period varies by GPU and backend.
 	elapsedTicks := endTimestamp - startTimestamp
-
-	// Assume 1 ns/tick (common on most GPUs).
-	const assumedPeriodNs = 1.0
-	elapsedNs := float64(elapsedTicks) * assumedPeriodNs
+	period := queue.GetTimestampPeriod()
+	if period <= 0 {
+		const fallbackPeriod = float32(1)
+		log.Printf("timestamp period unavailable; using %.1f ns/tick fallback", fallbackPeriod)
+		period = fallbackPeriod
+	}
+	elapsedNs := float64(elapsedTicks) * float64(period)
 
 	fmt.Printf("Timestamp Query Results:\n")
 	fmt.Printf("  Start timestamp:   %d ticks\n", startTimestamp)
 	fmt.Printf("  End timestamp:     %d ticks\n", endTimestamp)
 	fmt.Printf("  Elapsed ticks:     %d\n", elapsedTicks)
-	fmt.Printf("  GPU execution time: ~%.3f ms (assuming 1 ns/tick)\n", elapsedNs/1_000_000)
+	fmt.Printf("  Timestamp period:   %.6f ns/tick\n", period)
+	fmt.Printf("  GPU execution time: ~%.3f ms\n", elapsedNs/1_000_000)
 	fmt.Println()
 	fmt.Println("GPU timestamp queries provide accurate profiling!")
 

@@ -4,6 +4,9 @@ package wgpu
 
 import (
 	"syscall"
+	"unsafe"
+
+	"github.com/go-webgpu/goffi/types"
 )
 
 // windowsLibrary wraps syscall.LazyDLL to implement the Library interface.
@@ -39,4 +42,20 @@ func (w *windowsLibrary) NewProc(name string) Proc {
 // This directly delegates to syscall.LazyProc.Call().
 func (w *windowsProc) Call(args ...uintptr) (uintptr, uintptr, error) {
 	return w.proc.Call(args...)
+}
+
+// CallFloat32 invokes a float32-returning procedure through goffi so the
+// Windows x64 ABI reads XMM0. syscall.LazyProc.Call only exposes integer
+// return registers and therefore cannot safely call this signature.
+func (w *windowsProc) CallFloat32(args ...uintptr) (float32, error) {
+	if err := w.proc.Find(); err != nil {
+		return 0, err
+	}
+	return callFloat32(
+		nativeFloat32CallOps,
+		w.proc.Name,
+		types.WindowsCallingConvention,
+		unsafe.Pointer(w.proc.Addr()),
+		args...,
+	)
 }
