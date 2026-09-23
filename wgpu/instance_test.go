@@ -90,3 +90,15 @@ func TestCreateInstanceReturnsErrLibraryNotLoaded(t *testing.T) {
 	}
 	t.Logf("ErrLibraryNotLoaded is defined: %v", ErrLibraryNotLoaded)
 }
+
+func TestCreateInstanceWithNativeBackends(t *testing.T) {
+	// Chains WGPUInstanceExtras; Primary keeps the native backend of every platform.
+	inst, err := CreateInstance(&InstanceDescriptor{NativeBackends: InstanceBackendPrimary})
+	if err != nil {
+		t.Fatalf("CreateInstance(NativeBackends) failed: %v", err)
+	}
+	defer inst.Release()
+	if inst.Handle() == 0 {
+		t.Fatal("Instance handle is zero")
+	}
+}
