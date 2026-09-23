@@ -46,7 +46,7 @@ func (*integerOnlyTimestampPeriodProc) Call(args ...uintptr) (uintptr, uintptr, 
 
 func TestABIQueueGetTimestampPeriodRequiresFloat32Proc(t *testing.T) {
 	original := procQueueGetTimestampPeriod
-	procQueueGetTimestampPeriod = &integerOnlyTimestampPeriodProc{}
+	procQueueGetTimestampPeriod = newProc(&integerOnlyTimestampPeriodProc{})
 	defer func() { procQueueGetTimestampPeriod = original }()
 
 	if got := (&Queue{handle: 0x1234}).GetTimestampPeriod(); got != 0 {
@@ -67,7 +67,7 @@ func TestABIQueueGetTimestampPeriodUnavailable(t *testing.T) {
 func TestABIQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
 	stub := &timestampPeriodProcStub{period: 0.125}
 	original := procQueueGetTimestampPeriod
-	procQueueGetTimestampPeriod = stub
+	procQueueGetTimestampPeriod = newProc(stub)
 	defer func() { procQueueGetTimestampPeriod = original }()
 
 	got := (&Queue{handle: 0x1234}).GetTimestampPeriod()
@@ -82,7 +82,7 @@ func TestABIQueueGetTimestampPeriodUsesNativeFloat32(t *testing.T) {
 func TestABIQueueGetTimestampPeriodCallError(t *testing.T) {
 	stub := &timestampPeriodProcStub{period: 0.125, err: errors.New("call failed")}
 	original := procQueueGetTimestampPeriod
-	procQueueGetTimestampPeriod = stub
+	procQueueGetTimestampPeriod = newProc(stub)
 	defer func() { procQueueGetTimestampPeriod = original }()
 
 	if got := (&Queue{handle: 0x1234}).GetTimestampPeriod(); got != 0 {
@@ -100,7 +100,7 @@ func TestABIQueueGetTimestampPeriodDynamicLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer closeTimestampPeriodABILibrary(t, library)
-	proc, ok := library.NewProc("wgpuQueueGetTimestampPeriod").(float32Proc)
+	proc, ok := library.NewProc("wgpuQueueGetTimestampPeriod").impl.(float32Proc)
 	if !ok {
 		t.Fatal("platform loader does not implement float32 return calls")
 	}

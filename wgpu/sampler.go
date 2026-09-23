@@ -80,7 +80,7 @@ func (d *Device) CreateSampler(desc *SamplerDescriptor) (*Sampler, error) {
 
 	handle, _, _ := procDeviceCreateSampler.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateSampler", Message: "wgpu returned null handle"}

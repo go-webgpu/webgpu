@@ -67,6 +67,8 @@ type RenderPassDepthStencilAttachment struct {
 // renderPassDepthStencilAttachment is the native structure (40 bytes).
 // Uses uint32 for LoadOp/StoreOp with wgpu-native converted values.
 type renderPassDepthStencilAttachment struct {
+	// nextInChain comes first in wgpu-native v29's webgpu.h.
+	nextInChain       uintptr
 	view              uintptr
 	depthLoadOp       uint32 // wgpu-native converted value
 	depthStoreOp      uint32 // wgpu-native converted value
@@ -172,7 +174,7 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) (*RenderP
 			stencilClearValue: desc.DepthStencilAttachment.StencilClearValue,
 			stencilReadOnly:   stencilRO,
 		}
-		depthStencilPtr = uintptr(unsafe.Pointer(&nativeDepthStencil))
+		depthStencilPtr = uintptr(unsafe.Pointer(pin(&nativeDepthStencil)))
 	}
 
 	// Build timestamp writes if present (v29: passTimestampWrites with nextInChain)
@@ -185,14 +187,14 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) (*RenderP
 			beginningOfPassWriteIndex: desc.TimestampWrites.BeginningOfPassWriteIndex,
 			endOfPassWriteIndex:       desc.TimestampWrites.EndOfPassWriteIndex,
 		}
-		timestampWritesPtr = uintptr(unsafe.Pointer(&nativeTimestampWrites))
+		timestampWritesPtr = uintptr(unsafe.Pointer(pin(&nativeTimestampWrites)))
 	}
 
 	nativeDesc := renderPassDescriptor{
 		nextInChain:            0,
 		label:                  stringToStringView(desc.Label),
 		colorAttachmentCount:   uintptr(len(nativeColorAttachments)),
-		colorAttachments:       uintptr(unsafe.Pointer(&nativeColorAttachments[0])),
+		colorAttachments:       uintptr(unsafe.Pointer(pin(&nativeColorAttachments[0]))),
 		depthStencilAttachment: depthStencilPtr,
 		occlusionQuerySet:      0,
 		timestampWrites:        timestampWritesPtr,
@@ -200,7 +202,7 @@ func (enc *CommandEncoder) BeginRenderPass(desc *RenderPassDescriptor) (*RenderP
 
 	handle, _, _ := procCommandEncoderBeginRenderPass.Call(
 		enc.handle,
-		uintptr(unsafe.Pointer(&nativeDesc)),
+		uintptr(unsafe.Pointer(pin(&nativeDesc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "BeginRenderPass", Message: "wgpu returned null handle"}
@@ -228,7 +230,7 @@ func (rpe *RenderPassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup, 
 	var offsetsPtr uintptr
 	offsetCount := uintptr(0)
 	if len(dynamicOffsets) > 0 {
-		offsetsPtr = uintptr(unsafe.Pointer(&dynamicOffsets[0]))
+		offsetsPtr = uintptr(unsafe.Pointer(pin(&dynamicOffsets[0])))
 		offsetCount = uintptr(len(dynamicOffsets))
 	}
 
@@ -414,12 +416,12 @@ func (rpe *RenderPassEncoder) InsertDebugMarker(markerLabel string) {
 		return
 	}
 	label := StringView{
-		Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+		Data:   uintptr(unsafe.Pointer(pin(&labelBytes[0]))),
 		Length: uintptr(len(labelBytes)),
 	}
 	procRenderPassEncoderInsertDebugMarker.Call( //nolint:errcheck
 		rpe.handle,
-		uintptr(unsafe.Pointer(&label)),
+		uintptr(unsafe.Pointer(pin(&label))),
 	)
 }
 
@@ -435,12 +437,12 @@ func (rpe *RenderPassEncoder) PushDebugGroup(groupLabel string) {
 		return
 	}
 	label := StringView{
-		Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+		Data:   uintptr(unsafe.Pointer(pin(&labelBytes[0]))),
 		Length: uintptr(len(labelBytes)),
 	}
 	procRenderPassEncoderPushDebugGroup.Call( //nolint:errcheck
 		rpe.handle,
-		uintptr(unsafe.Pointer(&label)),
+		uintptr(unsafe.Pointer(pin(&label))),
 	)
 }
 

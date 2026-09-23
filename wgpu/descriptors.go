@@ -19,7 +19,7 @@ func stringToStringView(s string) StringView {
 	}
 	b := []byte(s)
 	return StringView{
-		Data:   uintptr(unsafe.Pointer(&b[0])),
+		Data:   uintptr(unsafe.Pointer(pin(&b[0]))),
 		Length: uintptr(len(b)),
 	}
 }

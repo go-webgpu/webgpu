@@ -17,6 +17,10 @@ type VertexAttribute struct {
 // vertexAttributeWire is the FFI-compatible structure with converted Format.
 // Field order matches webgpu.h: format, offset, shaderLocation
 type vertexAttributeWire struct {
+	// NextInChain comes first in wgpu-native v29's webgpu.h. Without it the
+	// format was read from the offset field and wgpu-native panicked with
+	// "invalid vertex format for vertex attribute: 0".
+	NextInChain    uintptr
 	Format         uint32 // converted from gputypes.VertexFormat
 	_pad1          [4]byte
 	Offset         uint64
@@ -236,7 +240,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 
 	if len(entryPointBytes) > 0 {
 		nativeVertex.entryPoint = StringView{
-			Data:   uintptr(unsafe.Pointer(&entryPointBytes[0])),
+			Data:   uintptr(unsafe.Pointer(pin(&entryPointBytes[0]))),
 			Length: uintptr(len(entryPointBytes) - 1),
 		}
 	} else {
@@ -262,7 +266,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 						ShaderLocation: attr.ShaderLocation,
 					}
 				}
-				attrsPtr = uintptr(unsafe.Pointer(&allNativeAttrs[i][0]))
+				attrsPtr = uintptr(unsafe.Pointer(pin(&allNativeAttrs[i][0])))
 			}
 			nativeBuffers[i] = vertexBufferLayoutWire{
 				NextInChain:    0, // v29: required first field
@@ -272,7 +276,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 				Attributes:     attrsPtr,
 			}
 		}
-		nativeVertex.buffers = uintptr(unsafe.Pointer(&nativeBuffers[0]))
+		nativeVertex.buffers = uintptr(unsafe.Pointer(pin(&nativeBuffers[0])))
 	}
 
 	// Build primitive state
@@ -328,7 +332,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 			depthBiasSlopeScale: desc.DepthStencil.DepthBiasSlopeScale,
 			depthBiasClamp:      desc.DepthStencil.DepthBiasClamp,
 		}
-		depthStencilPtr = uintptr(unsafe.Pointer(&nativeDepthStencil))
+		depthStencilPtr = uintptr(unsafe.Pointer(pin(&nativeDepthStencil)))
 	}
 
 	// Build fragment state if present
@@ -352,7 +356,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 
 		if len(fragEntryPointBytes) > 0 {
 			nativeFragment.entryPoint = StringView{
-				Data:   uintptr(unsafe.Pointer(&fragEntryPointBytes[0])),
+				Data:   uintptr(unsafe.Pointer(pin(&fragEntryPointBytes[0]))),
 				Length: uintptr(len(fragEntryPointBytes) - 1),
 			}
 		} else {
@@ -368,15 +372,15 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 				writeMask:   uint64(target.WriteMask), // widen to uint64
 			}
 			if target.Blend != nil {
-				nativeTargets[i].blend = uintptr(unsafe.Pointer(target.Blend))
+				nativeTargets[i].blend = uintptr(unsafe.Pointer(pin(target.Blend)))
 			}
 		}
 
 		if len(nativeTargets) > 0 {
-			nativeFragment.targets = uintptr(unsafe.Pointer(&nativeTargets[0]))
+			nativeFragment.targets = uintptr(unsafe.Pointer(pin(&nativeTargets[0])))
 		}
 
-		fragmentPtr = uintptr(unsafe.Pointer(&nativeFragment))
+		fragmentPtr = uintptr(unsafe.Pointer(pin(&nativeFragment)))
 	}
 
 	// Build pipeline layout
@@ -399,7 +403,7 @@ func (d *Device) CreateRenderPipeline(desc *RenderPipelineDescriptor) (*RenderPi
 
 	handle, _, _ := procDeviceCreateRenderPipeline.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&nativeDesc)),
+		uintptr(unsafe.Pointer(pin(&nativeDesc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateRenderPipeline", Message: "wgpu returned null handle"}

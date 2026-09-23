@@ -43,13 +43,13 @@ func (inst *Instance) CreateSurfaceFromXlibWindow(display uintptr, window uint64
 
 	// Build WGPUSurfaceDescriptor with source chained
 	desc := surfaceDescriptor{
-		nextInChain: uintptr(unsafe.Pointer(&source)),
+		nextInChain: uintptr(unsafe.Pointer(pin(&source))),
 		label:       EmptyStringView(),
 	}
 
 	handle, _, _ := procInstanceCreateSurface.Call(
 		inst.handle,
-		uintptr(unsafe.Pointer(&desc)),
+		uintptr(unsafe.Pointer(pin(&desc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}
@@ -82,13 +82,13 @@ func (inst *Instance) CreateSurfaceFromWaylandSurface(display, surface uintptr) 
 
 	// Build WGPUSurfaceDescriptor with source chained
 	desc := surfaceDescriptor{
-		nextInChain: uintptr(unsafe.Pointer(&source)),
+		nextInChain: uintptr(unsafe.Pointer(pin(&source))),
 		label:       EmptyStringView(),
 	}
 
 	handle, _, _ := procInstanceCreateSurface.Call(
 		inst.handle,
-		uintptr(unsafe.Pointer(&desc)),
+		uintptr(unsafe.Pointer(pin(&desc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateSurface", Message: "failed to create surface"}

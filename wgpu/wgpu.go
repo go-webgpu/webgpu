@@ -15,182 +15,182 @@ var (
 	initErr  error
 
 	// Function pointers - Instance
-	procCreateInstance        Proc
-	procInstanceRelease       Proc
-	procInstanceProcessEvents Proc
+	procCreateInstance        *Proc
+	procInstanceRelease       *Proc
+	procInstanceProcessEvents *Proc
 
 	// Function pointers - Adapter
-	procAdapterRelease               Proc
-	procInstanceRequestAdapter       Proc
-	procAdapterRequestDevice         Proc
-	procAdapterGetLimits             Proc
-	procAdapterGetFeatures           Proc // v29: replaces EnumerateFeatures (single-call with SupportedFeatures)
-	procSupportedFeaturesFreeMembers Proc
-	procAdapterHasFeature            Proc
-	procAdapterGetInfo               Proc
-	procAdapterInfoFreeMembers       Proc
+	procAdapterRelease               *Proc
+	procInstanceRequestAdapter       *Proc
+	procAdapterRequestDevice         *Proc
+	procAdapterGetLimits             *Proc
+	procAdapterGetFeatures           *Proc // v29: replaces EnumerateFeatures (single-call with SupportedFeatures)
+	procSupportedFeaturesFreeMembers *Proc
+	procAdapterHasFeature            *Proc
+	procAdapterGetInfo               *Proc
+	procAdapterInfoFreeMembers       *Proc
 
 	// Function pointers - Device
-	procDeviceRelease        Proc
-	procDeviceGetQueue       Proc
-	procDeviceCreateBuffer   Proc
-	procDevicePoll           Proc // wgpu-native extension
-	procDevicePushErrorScope Proc
-	procDevicePopErrorScope  Proc
-	procDeviceGetFeatures    Proc
-	procDeviceHasFeature     Proc
-	procDeviceGetLimits      Proc
+	procDeviceRelease        *Proc
+	procDeviceGetQueue       *Proc
+	procDeviceCreateBuffer   *Proc
+	procDevicePoll           *Proc // wgpu-native extension
+	procDevicePushErrorScope *Proc
+	procDevicePopErrorScope  *Proc
+	procDeviceGetFeatures    *Proc
+	procDeviceHasFeature     *Proc
+	procDeviceGetLimits      *Proc
 
 	// Function pointers - Queue
-	procQueueRelease            Proc
-	procQueueWriteBuffer        Proc
-	procQueueGetTimestampPeriod Proc
+	procQueueRelease            *Proc
+	procQueueWriteBuffer        *Proc
+	procQueueGetTimestampPeriod *Proc
 
 	// Function pointers - Instance (global)
-	procGetInstanceFeatures Proc // v29: global instance feature query
-	procGetInstanceLimits   Proc // v29: global instance limits query
-	procHasInstanceFeature  Proc // v29: check a single instance feature
+	procGetInstanceFeatures *Proc // v29: global instance feature query
+	procGetInstanceLimits   *Proc // v29: global instance limits query
+	procHasInstanceFeature  *Proc // v29: check a single instance feature
 
 	// Function pointers - Buffer
-	procBufferRelease          Proc
-	procBufferDestroy          Proc
-	procBufferGetMappedRange   Proc
-	procBufferReadMappedRange  Proc // v29: explicit read mapped range
-	procBufferWriteMappedRange Proc // v29: explicit write mapped range
-	procBufferUnmap            Proc
-	procBufferGetSize          Proc
-	procBufferMapAsync         Proc
-	procBufferGetUsage         Proc
-	procBufferGetMapState      Proc
+	procBufferRelease          *Proc
+	procBufferDestroy          *Proc
+	procBufferGetMappedRange   *Proc
+	procBufferReadMappedRange  *Proc // v29: explicit read mapped range
+	procBufferWriteMappedRange *Proc // v29: explicit write mapped range
+	procBufferUnmap            *Proc
+	procBufferGetSize          *Proc
+	procBufferMapAsync         *Proc
+	procBufferGetUsage         *Proc
+	procBufferGetMapState      *Proc
 
 	// Function pointers - ShaderModule
-	procDeviceCreateShaderModule Proc
-	procShaderModuleRelease      Proc
+	procDeviceCreateShaderModule *Proc
+	procShaderModuleRelease      *Proc
 
 	// Function pointers - BindGroupLayout
-	procDeviceCreateBindGroupLayout Proc
-	procBindGroupLayoutRelease      Proc
+	procDeviceCreateBindGroupLayout *Proc
+	procBindGroupLayoutRelease      *Proc
 
 	// Function pointers - BindGroup
-	procDeviceCreateBindGroup Proc
-	procBindGroupRelease      Proc
+	procDeviceCreateBindGroup *Proc
+	procBindGroupRelease      *Proc
 
 	// Function pointers - PipelineLayout
-	procDeviceCreatePipelineLayout Proc
-	procPipelineLayoutRelease      Proc
+	procDeviceCreatePipelineLayout *Proc
+	procPipelineLayoutRelease      *Proc
 
 	// Function pointers - ComputePipeline
-	procDeviceCreateComputePipeline       Proc
-	procComputePipelineGetBindGroupLayout Proc
-	procComputePipelineRelease            Proc
+	procDeviceCreateComputePipeline       *Proc
+	procComputePipelineGetBindGroupLayout *Proc
+	procComputePipelineRelease            *Proc
 
 	// Function pointers - CommandEncoder
-	procDeviceCreateCommandEncoder         Proc
-	procCommandEncoderBeginComputePass     Proc
-	procCommandEncoderCopyBufferToBuffer   Proc
-	procCommandEncoderCopyBufferToTexture  Proc
-	procCommandEncoderCopyTextureToBuffer  Proc
-	procCommandEncoderCopyTextureToTexture Proc
-	procCommandEncoderClearBuffer          Proc
-	procCommandEncoderInsertDebugMarker    Proc
-	procCommandEncoderPushDebugGroup       Proc
-	procCommandEncoderPopDebugGroup        Proc
-	procCommandEncoderFinish               Proc
-	procCommandEncoderRelease              Proc
+	procDeviceCreateCommandEncoder         *Proc
+	procCommandEncoderBeginComputePass     *Proc
+	procCommandEncoderCopyBufferToBuffer   *Proc
+	procCommandEncoderCopyBufferToTexture  *Proc
+	procCommandEncoderCopyTextureToBuffer  *Proc
+	procCommandEncoderCopyTextureToTexture *Proc
+	procCommandEncoderClearBuffer          *Proc
+	procCommandEncoderInsertDebugMarker    *Proc
+	procCommandEncoderPushDebugGroup       *Proc
+	procCommandEncoderPopDebugGroup        *Proc
+	procCommandEncoderFinish               *Proc
+	procCommandEncoderRelease              *Proc
 
 	// Function pointers - ComputePassEncoder
-	procComputePassEncoderSetPipeline                Proc
-	procComputePassEncoderSetBindGroup               Proc
-	procComputePassEncoderDispatchWorkgroups         Proc
-	procComputePassEncoderDispatchWorkgroupsIndirect Proc
-	procComputePassEncoderEnd                        Proc
-	procComputePassEncoderRelease                    Proc
+	procComputePassEncoderSetPipeline                *Proc
+	procComputePassEncoderSetBindGroup               *Proc
+	procComputePassEncoderDispatchWorkgroups         *Proc
+	procComputePassEncoderDispatchWorkgroupsIndirect *Proc
+	procComputePassEncoderEnd                        *Proc
+	procComputePassEncoderRelease                    *Proc
 
 	// Function pointers - CommandBuffer
-	procCommandBufferRelease Proc
+	procCommandBufferRelease *Proc
 
 	// Function pointers - Queue (additional)
-	procQueueSubmit         Proc
-	procQueueSubmitForIndex Proc // wgpu-native extension: returns WGPUSubmissionIndex (uint64)
+	procQueueSubmit         *Proc
+	procQueueSubmitForIndex *Proc // wgpu-native extension: returns WGPUSubmissionIndex (uint64)
 
 	// Function pointers - Surface
-	procInstanceCreateSurface          Proc
-	procSurfaceRelease                 Proc
-	procSurfaceConfigure               Proc
-	procSurfaceUnconfigure             Proc
-	procSurfaceGetCapabilities         Proc
-	procSurfaceCapabilitiesFreeMembers Proc
-	procSurfaceGetCurrentTexture       Proc
-	procSurfacePresent                 Proc
+	procInstanceCreateSurface          *Proc
+	procSurfaceRelease                 *Proc
+	procSurfaceConfigure               *Proc
+	procSurfaceUnconfigure             *Proc
+	procSurfaceGetCapabilities         *Proc
+	procSurfaceCapabilitiesFreeMembers *Proc
+	procSurfaceGetCurrentTexture       *Proc
+	procSurfacePresent                 *Proc
 
 	// Function pointers - Texture
-	procDeviceCreateTexture                   Proc
-	procTextureRelease                        Proc
-	procTextureDestroy                        Proc
-	procTextureCreateView                     Proc
-	procTextureViewRelease                    Proc
-	procTextureGetWidth                       Proc
-	procTextureGetHeight                      Proc
-	procTextureGetDepthOrArrayLayers          Proc
-	procTextureGetMipLevelCount               Proc
-	procTextureGetFormat                      Proc
-	procTextureGetSampleCount                 Proc // v29: new getter
-	procTextureGetUsage                       Proc // v29: new getter
-	procTextureGetTextureBindingViewDimension Proc // v29: new getter
+	procDeviceCreateTexture                   *Proc
+	procTextureRelease                        *Proc
+	procTextureDestroy                        *Proc
+	procTextureCreateView                     *Proc
+	procTextureViewRelease                    *Proc
+	procTextureGetWidth                       *Proc
+	procTextureGetHeight                      *Proc
+	procTextureGetDepthOrArrayLayers          *Proc
+	procTextureGetMipLevelCount               *Proc
+	procTextureGetFormat                      *Proc
+	procTextureGetSampleCount                 *Proc // v29: new getter
+	procTextureGetUsage                       *Proc // v29: new getter
+	procTextureGetTextureBindingViewDimension *Proc // v29: new getter
 
 	// Function pointers - Sampler
-	procDeviceCreateSampler Proc
-	procSamplerRelease      Proc
+	procDeviceCreateSampler *Proc
+	procSamplerRelease      *Proc
 
 	// Function pointers - Queue (texture operations)
-	procQueueWriteTexture Proc
+	procQueueWriteTexture *Proc
 
 	// Function pointers - RenderPass
-	procCommandEncoderBeginRenderPass        Proc
-	procRenderPassEncoderSetPipeline         Proc
-	procRenderPassEncoderSetBindGroup        Proc
-	procRenderPassEncoderSetVertexBuffer     Proc
-	procRenderPassEncoderSetIndexBuffer      Proc
-	procRenderPassEncoderDraw                Proc
-	procRenderPassEncoderDrawIndexed         Proc
-	procRenderPassEncoderDrawIndirect        Proc
-	procRenderPassEncoderDrawIndexedIndirect Proc
-	procRenderPassEncoderEnd                 Proc
-	procRenderPassEncoderRelease             Proc
-	procRenderPassEncoderSetViewport         Proc
-	procRenderPassEncoderSetScissorRect      Proc
-	procRenderPassEncoderSetBlendConstant    Proc
-	procRenderPassEncoderSetStencilReference Proc
-	procRenderPassEncoderInsertDebugMarker   Proc
-	procRenderPassEncoderPushDebugGroup      Proc
-	procRenderPassEncoderPopDebugGroup       Proc
+	procCommandEncoderBeginRenderPass        *Proc
+	procRenderPassEncoderSetPipeline         *Proc
+	procRenderPassEncoderSetBindGroup        *Proc
+	procRenderPassEncoderSetVertexBuffer     *Proc
+	procRenderPassEncoderSetIndexBuffer      *Proc
+	procRenderPassEncoderDraw                *Proc
+	procRenderPassEncoderDrawIndexed         *Proc
+	procRenderPassEncoderDrawIndirect        *Proc
+	procRenderPassEncoderDrawIndexedIndirect *Proc
+	procRenderPassEncoderEnd                 *Proc
+	procRenderPassEncoderRelease             *Proc
+	procRenderPassEncoderSetViewport         *Proc
+	procRenderPassEncoderSetScissorRect      *Proc
+	procRenderPassEncoderSetBlendConstant    *Proc
+	procRenderPassEncoderSetStencilReference *Proc
+	procRenderPassEncoderInsertDebugMarker   *Proc
+	procRenderPassEncoderPushDebugGroup      *Proc
+	procRenderPassEncoderPopDebugGroup       *Proc
 
 	// Function pointers - RenderPipeline
-	procDeviceCreateRenderPipeline       Proc
-	procRenderPipelineRelease            Proc
-	procRenderPipelineGetBindGroupLayout Proc
+	procDeviceCreateRenderPipeline       *Proc
+	procRenderPipelineRelease            *Proc
+	procRenderPipelineGetBindGroupLayout *Proc
 
 	// Function pointers - QuerySet
-	procDeviceCreateQuerySet          Proc
-	procQuerySetDestroy               Proc
-	procQuerySetRelease               Proc
-	procCommandEncoderWriteTimestamp  Proc
-	procCommandEncoderResolveQuerySet Proc
+	procDeviceCreateQuerySet          *Proc
+	procQuerySetDestroy               *Proc
+	procQuerySetRelease               *Proc
+	procCommandEncoderWriteTimestamp  *Proc
+	procCommandEncoderResolveQuerySet *Proc
 
 	// Function pointers - RenderBundle
-	procDeviceCreateRenderBundleEncoder        Proc
-	procRenderBundleEncoderSetPipeline         Proc
-	procRenderBundleEncoderSetBindGroup        Proc
-	procRenderBundleEncoderSetVertexBuffer     Proc
-	procRenderBundleEncoderSetIndexBuffer      Proc
-	procRenderBundleEncoderDraw                Proc
-	procRenderBundleEncoderDrawIndexed         Proc
-	procRenderBundleEncoderDrawIndirect        Proc
-	procRenderBundleEncoderDrawIndexedIndirect Proc
-	procRenderBundleEncoderFinish              Proc
-	procRenderBundleEncoderRelease             Proc
-	procRenderBundleRelease                    Proc
-	procRenderPassEncoderExecuteBundles        Proc
+	procDeviceCreateRenderBundleEncoder        *Proc
+	procRenderBundleEncoderSetPipeline         *Proc
+	procRenderBundleEncoderSetBindGroup        *Proc
+	procRenderBundleEncoderSetVertexBuffer     *Proc
+	procRenderBundleEncoderSetIndexBuffer      *Proc
+	procRenderBundleEncoderDraw                *Proc
+	procRenderBundleEncoderDrawIndexed         *Proc
+	procRenderBundleEncoderDrawIndirect        *Proc
+	procRenderBundleEncoderDrawIndexedIndirect *Proc
+	procRenderBundleEncoderFinish              *Proc
+	procRenderBundleEncoderRelease             *Proc
+	procRenderBundleRelease                    *Proc
+	procRenderPassEncoderExecuteBundles        *Proc
 )
 
 // Init initializes the wgpu library. Called automatically on first use.

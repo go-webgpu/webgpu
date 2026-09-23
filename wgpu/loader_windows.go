@@ -31,10 +31,10 @@ func loadLibrary(name string) (Library, error) {
 }
 
 // NewProc retrieves a procedure from the Windows DLL.
-func (w *windowsLibrary) NewProc(name string) Proc {
-	return &windowsProc{
+func (w *windowsLibrary) NewProc(name string) *Proc {
+	return newProc(&windowsProc{
 		proc: w.dll.NewProc(name),
-	}
+	})
 }
 
 // Call invokes the Windows procedure with the given arguments.

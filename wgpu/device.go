@@ -100,13 +100,13 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 		}
 		if len(options.RequiredFeatures) > 0 {
 			wire.RequiredFeatureCount = uintptr(len(options.RequiredFeatures))
-			wire.RequiredFeatures = uintptr(unsafe.Pointer(&options.RequiredFeatures[0]))
+			wire.RequiredFeatures = uintptr(unsafe.Pointer(pin(&options.RequiredFeatures[0])))
 		}
 		if options.RequiredLimits != nil {
 			reqLimitsWire = limitsToWire(options.RequiredLimits)
-			wire.RequiredLimits = uintptr(unsafe.Pointer(&reqLimitsWire))
+			wire.RequiredLimits = uintptr(unsafe.Pointer(pin(&reqLimitsWire)))
 		}
-		optionsPtr = uintptr(unsafe.Pointer(&wire))
+		optionsPtr = uintptr(unsafe.Pointer(pin(&wire)))
 	}
 	_ = reqLimitsWire // ensure not optimised away before the call below
 
@@ -123,7 +123,7 @@ func (a *Adapter) RequestDevice(options *DeviceDescriptor) (*Device, error) {
 	procAdapterRequestDevice.Call( //nolint:errcheck
 		a.handle,
 		optionsPtr,
-		uintptr(unsafe.Pointer(&callbackInfo)),
+		uintptr(unsafe.Pointer(pin(&callbackInfo))),
 	)
 
 	// Process events until callback fires
@@ -156,7 +156,7 @@ func fetchDeviceLimits(handle uintptr) Limits {
 	var wire limitsWire
 	status, _, _ := procDeviceGetLimits.Call(
 		handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if WGPUStatus(status) != WGPUStatusSuccess {
 		return Limits{}
@@ -344,7 +344,7 @@ func (d *Device) Features() []FeatureName {
 	var supported SupportedFeatures
 	procDeviceGetFeatures.Call( //nolint:errcheck
 		d.handle,
-		uintptr(unsafe.Pointer(&supported)),
+		uintptr(unsafe.Pointer(pin(&supported))),
 	)
 
 	if supported.FeatureCount == 0 || supported.Features == 0 {
@@ -360,7 +360,7 @@ func (d *Device) Features() []FeatureName {
 	copy(result, features)
 
 	// Free C-allocated memory (pass pointer to struct, not individual fields)
-	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(&supported))) //nolint:errcheck
+	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(pin(&supported)))) //nolint:errcheck
 
 	return result
 }
