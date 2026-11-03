@@ -1,0 +1,29 @@
+# webgpu
+
+> Go bindings to wgpu-native, the Rust WebGPU implementation, called through the goffi FFI library, so no CGO and no C toolchain are needed. The `wgpu` package wraps the webgpu.h API in idiomatic Go (errors, slices, strings, context-aware buffer mapping) and re-exports the WebGPU types from gogpu/gputypes. It is the backend of gogpu/wgpu when that is built with `-tags rust`, and can also be used on its own. The wgpu-native shared library is loaded at run time: `go run github.com/go-webgpu/webgpu/cmd/setup@latest` downloads the pinned release into `./lib/`, and `WGPU_NATIVE_PATH` overrides the search. Targets Windows, Linux and macOS on amd64 and arm64, through Vulkan, Metal, DX12 or OpenGL. Requires Go 1.25 or later. Beta: pre-1.0, so the API may change between minor versions.
+
+## Docs
+
+- [wgpu API reference](https://pkg.go.dev/github.com/go-webgpu/webgpu/wgpu): the public API
+- [setup API reference](https://pkg.go.dev/github.com/go-webgpu/webgpu/setup): finding and installing the wgpu-native library from Go code
+- [README](https://github.com/go-webgpu/webgpu/blob/main/README.md): installation, quick start, feature status
+- [Architecture](https://github.com/go-webgpu/webgpu/blob/main/docs/ARCHITECTURE.md): FFI layers, wire structs, enum conversion between gputypes and webgpu.h
+- [Error handling](https://github.com/go-webgpu/webgpu/blob/main/docs/ERROR_HANDLING.md): catching GPU errors with error scopes
+- [CHANGELOG](https://github.com/go-webgpu/webgpu/blob/main/CHANGELOG.md): changes per release
+- [Stability policy](https://github.com/go-webgpu/webgpu/blob/main/STABILITY.md): what may change in a minor or patch release
+
+## Examples
+
+- [Examples](https://github.com/go-webgpu/webgpu/tree/main/examples): triangle, textured quad, cube with depth buffer, instancing, compute, indirect draws, render bundles, MRT, timestamp queries, error scopes
+
+## Ecosystem
+
+- [gogpu/wgpu](https://github.com/gogpu/wgpu): Pure Go WebGPU; uses this module as its `-tags rust` backend
+- [go-webgpu/goffi](https://github.com/go-webgpu/goffi): the pure Go FFI library these bindings call through
+- [gogpu/gputypes](https://github.com/gogpu/gputypes): the shared WebGPU type definitions
+- [gfx-rs/wgpu-native](https://github.com/gfx-rs/wgpu-native): the native library
+
+## Optional
+
+- [Upstream dependencies](https://github.com/go-webgpu/webgpu/blob/main/UPSTREAM.md): pinned versions of wgpu-native, goffi and gputypes
+- [Migration guide](https://github.com/go-webgpu/webgpu/blob/main/MIGRATION.md): moving from the v0.4 API to v0.5
