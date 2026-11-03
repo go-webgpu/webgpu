@@ -146,7 +146,7 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 			ForceFallbackAdapter: boolToWGPU(options.ForceFallbackAdapter),
 			CompatibleSurface:    surfaceHandle,
 		}
-		optionsPtr = uintptr(unsafe.Pointer(&wire))
+		optionsPtr = uintptr(unsafe.Pointer(pin(&wire)))
 	}
 
 	// Prepare callback info
@@ -163,7 +163,7 @@ func (i *Instance) RequestAdapter(options *RequestAdapterOptions) (*Adapter, err
 	procInstanceRequestAdapter.Call( //nolint:errcheck
 		i.handle,
 		optionsPtr,
-		uintptr(unsafe.Pointer(&callbackInfo)),
+		uintptr(unsafe.Pointer(pin(&callbackInfo))),
 	)
 
 	// Process events until callback fires
@@ -196,7 +196,7 @@ func fetchAdapterLimits(handle uintptr) Limits {
 	var wire limitsWire
 	status, _, _ := procAdapterGetLimits.Call(
 		handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if WGPUStatus(status) != WGPUStatusSuccess {
 		return Limits{}
@@ -428,7 +428,7 @@ func (a *Adapter) Features() []FeatureName {
 	var sf SupportedFeatures
 	procAdapterGetFeatures.Call( //nolint:errcheck
 		a.handle,
-		uintptr(unsafe.Pointer(&sf)),
+		uintptr(unsafe.Pointer(pin(&sf))),
 	)
 
 	if sf.FeatureCount == 0 || sf.Features == 0 {
@@ -445,7 +445,7 @@ func (a *Adapter) Features() []FeatureName {
 	}
 
 	// Free C-allocated memory
-	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(&sf))) //nolint:errcheck
+	procSupportedFeaturesFreeMembers.Call(uintptr(unsafe.Pointer(pin(&sf)))) //nolint:errcheck
 
 	return features
 }
@@ -486,7 +486,7 @@ func (a *Adapter) Info() (*AdapterInfoGo, error) {
 	var nativeInfo AdapterInfo
 	status, _, _ := procAdapterGetInfo.Call(
 		a.handle,
-		uintptr(unsafe.Pointer(&nativeInfo)),
+		uintptr(unsafe.Pointer(pin(&nativeInfo))),
 	)
 
 	if WGPUStatus(status) != WGPUStatusSuccess {
@@ -516,7 +516,7 @@ func (a *Adapter) Info() (*AdapterInfoGo, error) {
 	}
 
 	// Free C memory allocated by wgpu-native
-	procAdapterInfoFreeMembers.Call(uintptr(unsafe.Pointer(&nativeInfo))) //nolint:errcheck
+	procAdapterInfoFreeMembers.Call(uintptr(unsafe.Pointer(pin(&nativeInfo)))) //nolint:errcheck
 
 	return info, nil
 }
@@ -531,5 +531,8 @@ func stringViewToString(sv StringView) string {
 	if sv.Length > 1<<20 { // 1MB max
 		return ""
 	}
-	return unsafe.String((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length))
+	// Copy the bytes: the StringView memory belongs to wgpu-native and is
+	// freed or reused after the call. Aliasing it with unsafe.String returned
+	// garbage adapter names when the string was read later.
+	return string(unsafe.Slice((*byte)(ptrFromUintptr(sv.Data)), int(sv.Length)))
 }

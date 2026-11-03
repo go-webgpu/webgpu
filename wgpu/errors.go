@@ -164,7 +164,7 @@ func (d *Device) PopErrorScopeAsync(instance *Instance) (ErrorType, string, erro
 	// nolint:gosec // FFI requires unsafe.Pointer conversion for struct passing
 	procDevicePopErrorScope.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&callbackInfo)),
+		uintptr(unsafe.Pointer(pin(&callbackInfo))),
 	)
 
 	// Process events until callback fires

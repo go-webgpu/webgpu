@@ -134,7 +134,7 @@ func (s *Surface) Configure(device *Device, config *SurfaceConfiguration) error 
 
 	procSurfaceConfigure.Call( //nolint:errcheck
 		s.handle,
-		uintptr(unsafe.Pointer(&nativeConfig)),
+		uintptr(unsafe.Pointer(pin(&nativeConfig))),
 	)
 	return nil
 }
@@ -169,14 +169,18 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, bool, error) {
 
 	procSurfaceGetCurrentTexture.Call( //nolint:errcheck
 		s.handle,
-		uintptr(unsafe.Pointer(&surfTex)),
+		uintptr(unsafe.Pointer(pin(&surfTex))),
 	)
 
-	result := &SurfaceTexture{
-		Texture: &Texture{handle: surfTex.texture},
-		Status:  surfTex.status,
+	result := &SurfaceTexture{Status: surfTex.status}
+	if surfTex.texture != 0 {
+		result.Texture = &Texture{handle: surfTex.texture}
 	}
 
+	// The result is returned on error statuses too (with Status, and with
+	// Texture only when wgpu handed one out) so the caller can present or
+	// release it. Dropping the handle leaked the acquired texture and the
+	// next GetCurrentTexture aborted with "Surface image is already acquired".
 	switch surfTex.status {
 	case SurfaceGetCurrentTextureStatusSuccessOptimal:
 		return result, false, nil
@@ -186,19 +190,22 @@ func (s *Surface) GetCurrentTexture() (*SurfaceTexture, bool, error) {
 	case SurfaceGetCurrentTextureStatusOutdated:
 		return result, false, ErrSurfaceNeedsReconfigure
 	case SurfaceGetCurrentTextureStatusLost:
-		return nil, false, ErrSurfaceLost
+		return result, false, ErrSurfaceLost
 	case SurfaceGetCurrentTextureStatusTimeout:
-		return nil, false, ErrSurfaceTimeout
+		return result, false, ErrSurfaceTimeout
 	case NativeSurfaceGetCurrentTextureStatusOccluded:
 		// wgpu-native v29: window is occluded/minimized (Metal backend only).
 		// No texture is returned; caller should skip this frame and try again.
-		return nil, false, ErrSurfaceOccluded
+		return result, false, ErrSurfaceOccluded
 	default:
 		// v29: SurfaceGetCurrentTextureStatusError (0x06) covers all error cases
 		// including former OutOfMemory (0x06) and DeviceLost (0x07).
-		return nil, false, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
+		return result, false, &WGPUError{Op: "Surface.GetCurrentTexture", Message: "failed to get surface texture"}
 	}
 }
+
+// wgpuStatusSuccess is WGPUStatus_Success from webgpu.h (WGPUStatus_Error = 2).
+const wgpuStatusSuccess = 0x00000001
 
 // Present presents the current frame to the surface.
 // The texture argument is accepted for API compatibility with gogpu/wgpu but
@@ -209,7 +216,15 @@ func (s *Surface) Present(texture ...*SurfaceTexture) error {
 	if s == nil || s.handle == 0 {
 		return nil
 	}
-	procSurfacePresent.Call(s.handle) //nolint:errcheck
+	// wgpuSurfacePresent returns a WGPUStatus. On failure the acquired
+	// texture was not presented (wgpu already dropped the acquisition, or
+	// there was none) and the caller must not release it as presented:
+	// wgpu-native would discard it a second time and abort with "already
+	// acquired".
+	status, _, _ := procSurfacePresent.Call(s.handle)
+	if status != wgpuStatusSuccess {
+		return &WGPUError{Op: "Surface.Present", Message: "presentation failed"}
+	}
 	return nil
 }
 
@@ -245,7 +260,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 	procSurfaceGetCapabilities.Call( //nolint:errcheck
 		s.handle,
 		adapter.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 
 	// Convert wire struct to Go struct
@@ -281,7 +296,7 @@ func (s *Surface) GetCapabilities(adapter *Adapter) (*SurfaceCapabilities, error
 	}
 
 	// Free C memory allocated by wgpu-native
-	procSurfaceCapabilitiesFreeMembers.Call(uintptr(unsafe.Pointer(&wire))) //nolint:errcheck
+	procSurfaceCapabilitiesFreeMembers.Call(uintptr(unsafe.Pointer(pin(&wire)))) //nolint:errcheck
 
 	return caps, nil
 }

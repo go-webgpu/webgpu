@@ -56,7 +56,7 @@ func (d *Device) CreateCommandEncoder(desc *CommandEncoderDescriptor) (*CommandE
 		wire := commandEncoderDescriptorWire{
 			Label: stringToStringView(desc.Label),
 		}
-		descPtr = uintptr(unsafe.Pointer(&wire))
+		descPtr = uintptr(unsafe.Pointer(pin(&wire)))
 	}
 	handle, _, _ := procDeviceCreateCommandEncoder.Call(
 		d.handle,
@@ -88,7 +88,7 @@ func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) (*Compu
 		if desc.Label != "" {
 			labelBytes := []byte(desc.Label)
 			wireDesc.label = StringView{
-				Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+				Data:   uintptr(unsafe.Pointer(pin(&labelBytes[0]))),
 				Length: uintptr(len(labelBytes)),
 			}
 		} else {
@@ -101,9 +101,9 @@ func (enc *CommandEncoder) BeginComputePass(desc *ComputePassDescriptor) (*Compu
 				beginningOfPassWriteIndex: desc.TimestampWrites.BeginningOfPassWriteIndex,
 				endOfPassWriteIndex:       desc.TimestampWrites.EndOfPassWriteIndex,
 			}
-			wireDesc.timestampWrites = uintptr(unsafe.Pointer(&wireTimestamp))
+			wireDesc.timestampWrites = uintptr(unsafe.Pointer(pin(&wireTimestamp)))
 		}
-		descPtr = uintptr(unsafe.Pointer(&wireDesc))
+		descPtr = uintptr(unsafe.Pointer(pin(&wireDesc)))
 	}
 
 	handle, _, _ := procCommandEncoderBeginComputePass.Call(
@@ -160,12 +160,12 @@ func (enc *CommandEncoder) InsertDebugMarker(markerLabel string) {
 		return
 	}
 	label := StringView{
-		Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+		Data:   uintptr(unsafe.Pointer(pin(&labelBytes[0]))),
 		Length: uintptr(len(labelBytes)),
 	}
 	procCommandEncoderInsertDebugMarker.Call( //nolint:errcheck
 		enc.handle,
-		uintptr(unsafe.Pointer(&label)),
+		uintptr(unsafe.Pointer(pin(&label))),
 	)
 }
 
@@ -181,12 +181,12 @@ func (enc *CommandEncoder) PushDebugGroup(groupLabel string) {
 		return
 	}
 	label := StringView{
-		Data:   uintptr(unsafe.Pointer(&labelBytes[0])),
+		Data:   uintptr(unsafe.Pointer(pin(&labelBytes[0]))),
 		Length: uintptr(len(labelBytes)),
 	}
 	procCommandEncoderPushDebugGroup.Call( //nolint:errcheck
 		enc.handle,
-		uintptr(unsafe.Pointer(&label)),
+		uintptr(unsafe.Pointer(pin(&label))),
 	)
 }
 
@@ -238,9 +238,9 @@ func (enc *CommandEncoder) CopyTextureToBuffer(src *Texture, dst *Buffer, region
 		size := r.Size
 		procCommandEncoderCopyTextureToBuffer.Call( //nolint:errcheck
 			enc.handle,
-			uintptr(unsafe.Pointer(&srcWire)),
-			uintptr(unsafe.Pointer(&dstWire)),
-			uintptr(unsafe.Pointer(&size)),
+			uintptr(unsafe.Pointer(pin(&srcWire))),
+			uintptr(unsafe.Pointer(pin(&dstWire))),
+			uintptr(unsafe.Pointer(pin(&size))),
 		)
 	}
 }
@@ -276,9 +276,9 @@ func (enc *CommandEncoder) CopyTextureToTexture(src, dst *Texture, regions []Tex
 		size := r.Size
 		procCommandEncoderCopyTextureToTexture.Call( //nolint:errcheck
 			enc.handle,
-			uintptr(unsafe.Pointer(&srcWire)),
-			uintptr(unsafe.Pointer(&dstWire)),
-			uintptr(unsafe.Pointer(&size)),
+			uintptr(unsafe.Pointer(pin(&srcWire))),
+			uintptr(unsafe.Pointer(pin(&dstWire))),
+			uintptr(unsafe.Pointer(pin(&size))),
 		)
 	}
 }
@@ -311,7 +311,7 @@ func (enc *CommandEncoder) Finish(desc ...*CommandBufferDescriptor) (*CommandBuf
 	}
 	var descPtr uintptr
 	if len(desc) > 0 && desc[0] != nil {
-		descPtr = uintptr(unsafe.Pointer(desc[0]))
+		descPtr = uintptr(unsafe.Pointer(pin(desc[0])))
 	}
 	handle, _, _ := procCommandEncoderFinish.Call(
 		enc.handle,
@@ -389,7 +389,7 @@ func (cpe *ComputePassEncoder) SetBindGroup(groupIndex uint32, group *BindGroup,
 	var offsetsPtr uintptr
 	offsetCount := uintptr(0)
 	if len(dynamicOffsets) > 0 {
-		offsetsPtr = uintptr(unsafe.Pointer(&dynamicOffsets[0]))
+		offsetsPtr = uintptr(unsafe.Pointer(pin(&dynamicOffsets[0])))
 		offsetCount = uintptr(len(dynamicOffsets))
 	}
 	procComputePassEncoderSetBindGroup.Call( //nolint:errcheck
@@ -473,7 +473,7 @@ func (q *Queue) Submit(commands ...*CommandBuffer) (uint64, error) {
 	submissionIndex, _, _ := procQueueSubmitForIndex.Call(
 		q.handle,
 		uintptr(len(handles)),
-		uintptr(unsafe.Pointer(&handles[0])),
+		uintptr(unsafe.Pointer(pin(&handles[0]))),
 	)
 	return uint64(submissionIndex), nil
 }
@@ -489,7 +489,7 @@ func (q *Queue) GetTimestampPeriod() float32 {
 		return 0
 	}
 
-	proc, ok := procQueueGetTimestampPeriod.(float32Proc)
+	proc, ok := procQueueGetTimestampPeriod.impl.(float32Proc)
 	if !ok {
 		return 0
 	}

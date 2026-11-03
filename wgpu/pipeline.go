@@ -94,7 +94,7 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) (*Pipeline
 				handles[i] = l.handle
 			}
 		}
-		layoutsPtr = uintptr(unsafe.Pointer(&handles[0]))
+		layoutsPtr = uintptr(unsafe.Pointer(pin(&handles[0])))
 	}
 
 	wire := pipelineLayoutDescriptorWire{
@@ -105,7 +105,7 @@ func (d *Device) CreatePipelineLayout(desc *PipelineLayoutDescriptor) (*Pipeline
 
 	handle, _, _ := procDeviceCreatePipelineLayout.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreatePipelineLayout", Message: "wgpu returned null handle"}
@@ -157,7 +157,7 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) (*Comput
 	}
 	if len(entryPointBytes) > 0 {
 		compute.EntryPoint = StringView{
-			Data:   uintptr(unsafe.Pointer(&entryPointBytes[0])),
+			Data:   uintptr(unsafe.Pointer(pin(&entryPointBytes[0]))),
 			Length: uintptr(len(entryPointBytes)),
 		}
 	} else {
@@ -177,7 +177,7 @@ func (d *Device) CreateComputePipeline(desc *ComputePipelineDescriptor) (*Comput
 
 	handle, _, _ := procDeviceCreateComputePipeline.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateComputePipeline", Message: "wgpu returned null handle"}

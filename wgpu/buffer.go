@@ -131,7 +131,7 @@ func (d *Device) CreateBuffer(desc *BufferDescriptor) (*Buffer, error) {
 	}
 	handle, _, _ := procDeviceCreateBuffer.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateBuffer", Message: "wgpu returned null handle"}
@@ -222,7 +222,7 @@ func (q *Queue) WriteBuffer(buffer *Buffer, offset uint64, data []byte) error {
 		q.handle,
 		buffer.handle,
 		uintptr(offset),
-		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(unsafe.Pointer(pin(&data[0]))),
 		uintptr(len(data)),
 	)
 	return nil

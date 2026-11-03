@@ -42,34 +42,34 @@ func loadLibrary(name string) (Library, error) {
 }
 
 // NewProc retrieves a procedure from the Unix shared library.
-func (u *unixLibrary) NewProc(name string) Proc {
+func (u *unixLibrary) NewProc(name string) *Proc {
 	if u.handle == nil {
 		// Return a proc that will fail on Call
-		return &unixProc{
+		return newProc(&unixProc{
 			lib:      u,
 			name:     name,
 			fnPtr:    nil,
 			prepared: false,
-		}
+		})
 	}
 
 	fnPtr, err := ffi.GetSymbol(u.handle, name)
 	if err != nil {
 		// Return a proc that will fail on Call
-		return &unixProc{
+		return newProc(&unixProc{
 			lib:      u,
 			name:     name,
 			fnPtr:    nil,
 			prepared: false,
-		}
+		})
 	}
 
-	return &unixProc{
+	return newProc(&unixProc{
 		lib:      u,
 		name:     name,
 		fnPtr:    fnPtr,
 		prepared: false,
-	}
+	})
 }
 
 // Call invokes the Unix procedure with the given arguments.

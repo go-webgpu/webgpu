@@ -38,19 +38,19 @@ func (d *Device) CreateShaderModuleWGSL(code string) (*ShaderModule, error) {
 			SType: uint32(STypeShaderSourceWGSL),
 		},
 		Code: StringView{
-			Data:   uintptr(unsafe.Pointer(&codeBytes[0])),
+			Data:   uintptr(unsafe.Pointer(pin(&codeBytes[0]))),
 			Length: uintptr(len(codeBytes)),
 		},
 	}
 
 	desc := ShaderModuleDescriptor{
-		NextInChain: uintptr(unsafe.Pointer(&wgslSource)),
+		NextInChain: uintptr(unsafe.Pointer(pin(&wgslSource))),
 		Label:       EmptyStringView(),
 	}
 
 	handle, _, _ := procDeviceCreateShaderModule.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&desc)),
+		uintptr(unsafe.Pointer(pin(&desc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateShaderModuleWGSL", Message: "wgpu returned null handle"}
@@ -139,18 +139,18 @@ func (d *Device) CreateShaderModuleSPIRV(label string, spirv []uint32) (*ShaderM
 			Next:  0,
 			SType: uint32(STypeShaderSourceSPIRV),
 		},
-		Code:     uintptr(unsafe.Pointer(&spirv[0])),
+		Code:     uintptr(unsafe.Pointer(pin(&spirv[0]))),
 		CodeSize: uint32(len(spirv)),
 	}
 
 	desc := ShaderModuleDescriptor{
-		NextInChain: uintptr(unsafe.Pointer(&spirvSource)),
+		NextInChain: uintptr(unsafe.Pointer(pin(&spirvSource))),
 		Label:       stringToStringView(label),
 	}
 
 	handle, _, _ := procDeviceCreateShaderModule.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&desc)),
+		uintptr(unsafe.Pointer(pin(&desc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateShaderModuleSPIRV", Message: "wgpu returned null handle"}

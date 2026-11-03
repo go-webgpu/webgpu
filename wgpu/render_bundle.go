@@ -66,12 +66,12 @@ func (d *Device) CreateRenderBundleEncoder(desc *RenderBundleEncoderDescriptor) 
 		for i, f := range desc.ColorFormats {
 			convertedFormats[i] = uint32(f)
 		}
-		wire.colorFormats = uintptr(unsafe.Pointer(&convertedFormats[0]))
+		wire.colorFormats = uintptr(unsafe.Pointer(pin(&convertedFormats[0])))
 	}
 
 	handle, _, _ := procDeviceCreateRenderBundleEncoder.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wire)),
+		uintptr(unsafe.Pointer(pin(&wire))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateRenderBundleEncoder", Message: "wgpu returned null handle"}
@@ -107,7 +107,7 @@ func (rbe *RenderBundleEncoder) SetBindGroup(groupIndex uint32, group *BindGroup
 	}
 	var offsetsPtr uintptr
 	if len(dynamicOffsets) > 0 {
-		offsetsPtr = uintptr(unsafe.Pointer(&dynamicOffsets[0]))
+		offsetsPtr = uintptr(unsafe.Pointer(pin(&dynamicOffsets[0])))
 	}
 	procRenderBundleEncoderSetBindGroup.Call( //nolint:errcheck
 		rbe.handle,
@@ -215,7 +215,7 @@ func (rbe *RenderBundleEncoder) Finish(desc ...*RenderBundleDescriptor) *RenderB
 
 	var descPtr uintptr
 	if len(desc) > 0 && desc[0] != nil {
-		descPtr = uintptr(unsafe.Pointer(desc[0]))
+		descPtr = uintptr(unsafe.Pointer(pin(desc[0])))
 	}
 
 	handle, _, _ := procRenderBundleEncoderFinish.Call(rbe.handle, descPtr)
@@ -267,6 +267,6 @@ func (rpe *RenderPassEncoder) ExecuteBundles(bundles []*RenderBundle) {
 	procRenderPassEncoderExecuteBundles.Call( //nolint:errcheck
 		rpe.handle,
 		uintptr(len(handles)),
-		uintptr(unsafe.Pointer(&handles[0])),
+		uintptr(unsafe.Pointer(pin(&handles[0]))),
 	)
 }

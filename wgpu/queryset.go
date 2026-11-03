@@ -38,7 +38,7 @@ func (d *Device) CreateQuerySet(desc *QuerySetDescriptor) (*QuerySet, error) {
 
 	handle, _, _ := procDeviceCreateQuerySet.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&nativeDesc)),
+		uintptr(unsafe.Pointer(pin(&nativeDesc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateQuerySet", Message: "wgpu returned null handle"}

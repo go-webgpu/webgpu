@@ -88,7 +88,7 @@ func (t *Texture) CreateView(desc *TextureViewDescriptor) (*TextureView, error) 
 			Aspect:          desc.Aspect,
 			Usage:           uint64(desc.Usage), // bitflags, uint64 in wgpu-native
 		}
-		descPtr = uintptr(unsafe.Pointer(&wireDesc))
+		descPtr = uintptr(unsafe.Pointer(pin(&wireDesc)))
 	}
 
 	handle, _, _ := procTextureCreateView.Call(
@@ -219,7 +219,7 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
 			wireFormats[i] = uint32(f)
 		}
 		viewFormatCount = uintptr(len(wireFormats))
-		viewFormatsPtr = uintptr(unsafe.Pointer(&wireFormats[0]))
+		viewFormatsPtr = uintptr(unsafe.Pointer(pin(&wireFormats[0])))
 	}
 
 	// Convert to wire format with wgpu-native enum values
@@ -237,7 +237,7 @@ func (d *Device) CreateTexture(desc *TextureDescriptor) (*Texture, error) {
 
 	handle, _, _ := procDeviceCreateTexture.Call(
 		d.handle,
-		uintptr(unsafe.Pointer(&wireDesc)),
+		uintptr(unsafe.Pointer(pin(&wireDesc))),
 	)
 	if handle == 0 {
 		return nil, &WGPUError{Op: "CreateTexture", Message: "wgpu returned null handle"}
@@ -322,10 +322,10 @@ func (q *Queue) WriteTexture(dest *ImageCopyTexture, data []byte, layout *ImageD
 	}
 	procQueueWriteTexture.Call( //nolint:errcheck
 		q.handle,
-		uintptr(unsafe.Pointer(&wire)),
-		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(unsafe.Pointer(pin(&wire))),
+		uintptr(unsafe.Pointer(pin(&data[0]))),
 		uintptr(len(data)),
-		uintptr(unsafe.Pointer(&wireLayout)),
+		uintptr(unsafe.Pointer(pin(&wireLayout))),
 		uintptr(unsafe.Pointer(size)),
 	)
 	return nil
@@ -341,7 +341,7 @@ func (q *Queue) WriteTextureRaw(dest *TexelCopyTextureInfo, data []byte, layout 
 	procQueueWriteTexture.Call( //nolint:errcheck
 		q.handle,
 		uintptr(unsafe.Pointer(dest)),
-		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(unsafe.Pointer(pin(&data[0]))),
 		uintptr(len(data)),
 		uintptr(unsafe.Pointer(layout)),
 		uintptr(unsafe.Pointer(size)),

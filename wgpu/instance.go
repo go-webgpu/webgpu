@@ -69,7 +69,7 @@ func CreateInstance(desc *InstanceDescriptor) (*Instance, error) {
 	var wirePtr uintptr
 	if desc != nil {
 		wire := instanceDescriptorWire{} // zero = default, backends/flags handled by wgpu-native extensions
-		wirePtr = uintptr(unsafe.Pointer(&wire))
+		wirePtr = uintptr(unsafe.Pointer(pin(&wire)))
 	}
 
 	handle, _, _ := procCreateInstance.Call(wirePtr)

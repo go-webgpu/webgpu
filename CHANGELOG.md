@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **wgpu-native v29 ABI:** `bindGroupLayoutEntryWire` gains `bindingArraySize`
+  after `visibility`, and `vertexAttributeWire` / `renderPassDepthStencilAttachment`
+  gain the leading `nextInChain`, matching the `webgpu.h` shipped with
+  wgpu-native v29.0.0.0. Without them wgpu-native panicked with "invalid buffer
+  binding type for buffer binding layout at binding N" and "invalid vertex
+  format for vertex attribute: 0", and depth attachments were misread.
+- `AdapterInfo` strings are copied out of wgpu-native memory instead of aliased
+  with `unsafe.String`; the adapter name read garbage once wgpu-native reused
+  the buffer.
+- `Surface.GetCurrentTexture` returns the `SurfaceTexture` (status, and the
+  texture when wgpu acquired one) on error statuses so the caller can present
+  or release it. Dropping it left the swapchain image acquired and the next
+  call aborted with "Surface image is already acquired".
+- `Surface.Present` reports a failed `wgpuSurfacePresent` instead of always
+  returning nil; releasing the texture after a failed present made wgpu-native
+  discard the acquisition twice and abort.
+- `Proc.Call` carries `//go:uintptrescapes`. Callers pass Go structs as
+  `uintptr(unsafe.Pointer(&x))`; without the directive those locals could move
+  with the goroutine stack between the conversion and the native call, so
+  wgpu-native wrote its output to stale memory (seen as
+  `wgpuSurfaceGetCurrentTexture` returning a zeroed `WGPUSurfaceTexture` about
+  once every few program starts).
+- Nested descriptors are pinned on the heap: every Go struct whose address
+  reaches wgpu-native only as a `uintptr` stored in another struct (render pass
+  attachments, dynamic offsets of `SetBindGroup`, color target `Blend`, surface
+  sources, ...) goes through `pin`, which forces heap allocation.
+  `//go:uintptrescapes` only covers pointers converted in the call's argument
+  list, so these could still move with the goroutine stack before the call.
+
+### Changed
+
+- **Breaking for custom loaders:** `Proc` is now a concrete struct wrapping the
+  platform implementation and `Library.NewProc` returns `*Proc`. The directive
+  above is only honored on direct calls, so it could not stay on an interface.
+- `TestABIWireStructAlignment` asserts the v29 layouts (the migration gap
+  sub-tests are gone).
+
 ## v0.5.5 (2026-08-02)
 
 ### Changed

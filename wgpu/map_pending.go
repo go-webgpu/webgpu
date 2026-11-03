@@ -109,7 +109,7 @@ func (b *Buffer) mapAsyncStart(mode MapMode, offset, size uint64) (*mapRequest, 
 		uintptr(mode),
 		uintptr(offset),
 		uintptr(size),
-		uintptr(unsafe.Pointer(&callbackInfo)),
+		uintptr(unsafe.Pointer(pin(&callbackInfo))),
 	)
 
 	return req, nil
