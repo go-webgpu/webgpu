@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- `InstanceDescriptor.NativeBackends`: chains `WGPUInstanceExtras` to
+  `wgpuCreateInstance` so callers can restrict the backends wgpu-native
+  enumerates (e.g. `InstanceBackendDX12`). Previously the descriptor was
+  ignored and there was no way to pick a backend.
+- Windows: `Instance.CreateSurfaceFromSwapChainPanel` for
+  `WGPUSurfaceSourceSwapChainPanel` (DX12 composition swap chains handed to an
+  `ISwapChainPanelNative`), with v29 wire-layout tests.
+
 ## v0.5.5 (2026-08-02)
 
 ### Changed

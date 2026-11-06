@@ -53,6 +53,11 @@ func TestABIStructSizes(t *testing.T) {
 		{"instanceDescriptorWire", unsafe.Sizeof(instanceDescriptorWire{}), 32},
 		// InstanceLimits: nextInChain(8)+timedWaitAnyMaxCount(8) = 16
 		{"InstanceLimits", unsafe.Sizeof(InstanceLimits{}), 16},
+		// nativeDisplayHandleWire: type(4)+pad(4)+union(16) = 24
+		{"nativeDisplayHandleWire", unsafe.Sizeof(nativeDisplayHandleWire{}), 24},
+		// instanceExtrasWire: chain(16)+backends(8)+flags(8)+3 enums(12)+pad(4)+
+		//   dxcPath(16)+2 enums(8)+2 budgets(16)+displayHandle(24) = 112
+		{"instanceExtrasWire", unsafe.Sizeof(instanceExtrasWire{}), 112},
 
 		// Adapter-level structs
 		// requestAdapterOptionsWire: nextInChain(8)+featureLevel(4)+powerPreference(4)+
@@ -263,6 +268,37 @@ func TestABIStructFieldOffsets(t *testing.T) {
 			t.Run(o.name, func(t *testing.T) {
 				if o.got != o.expected {
 					t.Errorf("offsetof(instanceDescriptorWire.%s) = %d, want %d",
+						o.name, o.got, o.expected)
+				}
+			})
+		}
+	})
+
+	t.Run("instanceExtrasWire", func(t *testing.T) {
+		var e instanceExtrasWire
+		offsets := []struct {
+			name     string
+			got      uintptr
+			expected uintptr
+		}{
+			{"Chain", unsafe.Offsetof(e.Chain), 0},
+			{"Backends", unsafe.Offsetof(e.Backends), 16},
+			{"Flags", unsafe.Offsetof(e.Flags), 24},
+			{"Dx12ShaderCompiler", unsafe.Offsetof(e.Dx12ShaderCompiler), 32},
+			{"Gles3MinorVersion", unsafe.Offsetof(e.Gles3MinorVersion), 36},
+			{"GLFenceBehaviour", unsafe.Offsetof(e.GLFenceBehaviour), 40},
+			{"DxcPath", unsafe.Offsetof(e.DxcPath), 48},
+			{"DxcMaxShaderModel", unsafe.Offsetof(e.DxcMaxShaderModel), 64},
+			{"Dx12PresentationSystem", unsafe.Offsetof(e.Dx12PresentationSystem), 68},
+			{"BudgetForDeviceCreation", unsafe.Offsetof(e.BudgetForDeviceCreation), 72},
+			{"BudgetForDeviceLoss", unsafe.Offsetof(e.BudgetForDeviceLoss), 80},
+			{"DisplayHandle", unsafe.Offsetof(e.DisplayHandle), 88},
+		}
+		for _, o := range offsets {
+			o := o
+			t.Run(o.name, func(t *testing.T) {
+				if o.got != o.expected {
+					t.Errorf("offsetof(instanceExtrasWire.%s) = %d, want %d",
 						o.name, o.got, o.expected)
 				}
 			})
@@ -600,6 +636,7 @@ func TestABIEnumValues(t *testing.T) {
 			{"InstanceExtras", uint32(STypeInstanceExtras), 0x00030006},
 			{"BindGroupEntryExtras", uint32(STypeBindGroupEntryExtras), 0x00030007},
 			{"BindGroupLayoutEntryExtras", uint32(STypeBindGroupLayoutEntryExtras), 0x00030008},
+			{"SurfaceSourceSwapChainPanel", uint32(STypeSurfaceSourceSwapChainPanel), 0x0003000B},
 		}
 		runEnumTests(t, tests)
 	})
